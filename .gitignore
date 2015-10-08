@@ -11,22 +11,31 @@
 # Libraries
 *.lib
 *.a
-*.la
-*.lo
+#*.la
+#*.lo
 
 # Shared objects (inc. Windows DLLs)
-*.dll
+#*.dll
 *.so
 *.so.*
-*.dylib
+#*.dylib
 
 # Executables
 *.exe
-*.out
+.out
 *.app
 *.i*86
 *.x86_64
-*.hex
+.hex
 
 # Debug files
 *.dSYM/
+
+#Code BLocks project files
+*.cbp
+*.depend
+*.layout
+bin/
+obj/
+*.*~
+*.
