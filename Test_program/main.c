@@ -5,21 +5,17 @@
 #include "../Memory_Profiler_Static_library/mem_prof_static.h"
 
 
-extern void *__libc_malloc(size_t size);
-extern void  __libc_free(void *);
-
 pthread_t tid[3];
+
 
 void* Thread(void *arg)
 {
     int *pointer;
-
-
+    //int enable;
 
     while(1) {
         printf("Thread %d \n",(int)arg);
         pointer = (int *)malloc(sizeof(int));
-        printf("After malloc\n");
         free(pointer);
         sleep(1);
     }
@@ -40,16 +36,22 @@ int main()
     err = pthread_create(&(tid[1]), NULL, &Thread, (int*)2);
     printf("\n Created Thread 2\n");
 
-
-    /*usleep(5);
+    /*result_malloc = (int *)malloc(sizeof(int));
+    free(result_malloc);
+    usleep(20);
     printf("Set enable to 1\n");
-    enable = 1;
+    enable = 1;*/
 
-    usleep(5);
+
+   /* usleep(20);
+    result_malloc = (int *)malloc(sizeof(int));
+    free(result_malloc);
     printf("Set enable to 0\n");
     enable = 0;*/
 
-    while(1);
+
+//enable = 1;
+   while(1);
 
 
     /*
