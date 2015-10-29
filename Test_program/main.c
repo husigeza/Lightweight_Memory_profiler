@@ -2,19 +2,18 @@
 #include <stdlib.h>
 #include <dlfcn.h>
 #include <pthread.h>
-#include "../Memory_Profiler_Static_library/mem_prof_static.h"
+#include <unistd.h>
+
 
 
 pthread_t tid[3];
 
-
 void* Thread(void *arg)
 {
     int *pointer;
-    //int enable;
 
     while(1) {
-        printf("Thread %d \n",(int)arg);
+        printf("Thread %d \n",(int*)arg);
         pointer = (int *)malloc(sizeof(int));
         free(pointer);
         sleep(1);
@@ -26,14 +25,13 @@ void* Thread(void *arg)
 
 int main()
 {
-    char *error;
-    int *result_malloc;
-    int err;
 
-    err = pthread_create(&(tid[0]), NULL, &Thread, (int*)1);
+
+
+    pthread_create(&(tid[0]), NULL, &Thread, (int*)1);
     printf("\n Created Thread 1\n");
 
-    err = pthread_create(&(tid[1]), NULL, &Thread, (int*)2);
+    pthread_create(&(tid[1]), NULL, &Thread, (int*)2);
     printf("\n Created Thread 2\n");
 
     /*result_malloc = (int *)malloc(sizeof(int));

@@ -38,3 +38,16 @@
 bin/
 obj/
 *.*~
+
+
+#Eclipse
+.metadata/
+.cproject
+.project
+.settings/
+Debug/
+RemoteSystemsTempFiles/
+
+
+
+

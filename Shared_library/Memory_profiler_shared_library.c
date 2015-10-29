@@ -1,3 +1,5 @@
+#include "Memory_profiler_shared_library.h"
+
 #include <stdio.h>
 #include <signal.h>
 #include <unistd.h>
@@ -10,8 +12,6 @@
 #include <errno.h>
 #include <sys/mman.h>
 
-
-#include "mem_prof_dll.h"
 
 
 #define fifo_path "/home/egezhus/mem_prof_fifo"
@@ -137,7 +137,7 @@ bool profiling_allowed(void) {
 
 void signal_callback_handler(int signum) {
 
-    enable = ~enable;
+    enable = !enable;
 }
 
 
