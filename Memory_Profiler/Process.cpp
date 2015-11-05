@@ -132,10 +132,10 @@ void Process_handler::Init_shared_memory() {
 	this->shared_memory = shm_open(("/"+PID_string).c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
 	if (shared_memory < 0) printf("Error while creating shared memory:%d \n", errno);
 
-	int err = ftruncate(shared_memory, sizeof(memory_profiler_log_entry_t));
+	int err = ftruncate(shared_memory, sizeof(memory_profiler_struct_t));
 	if (err < 0) printf("Error while truncating shared memory: %d \n", errno);
 
-	this->memory_profiler_struct = (memory_profiler_struct_t*) mmap(NULL, sizeof(memory_profiler_log_entry_t),PROT_READ, MAP_SHARED, this->shared_memory, 0);
+	this->memory_profiler_struct = (memory_profiler_struct_t*) mmap(NULL, sizeof(memory_profiler_struct_t),PROT_READ, MAP_SHARED, this->shared_memory, 0);
 	if (memory_profiler_struct == MAP_FAILED) printf("Failed mapping the shared memory: %d \n", errno);
 
 }

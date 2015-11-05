@@ -20,7 +20,7 @@
 #include <stdlib.h>
 
 #define fifo_path "/home/egezhus/mem_prof_fifo"
-#define max_log_entry 1
+#define max_log_entry 100
 #define max_call_stack_depth 10
 
 extern void *__libc_malloc(size_t size);

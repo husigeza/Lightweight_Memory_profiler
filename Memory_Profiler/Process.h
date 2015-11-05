@@ -14,7 +14,7 @@
 
 using namespace std;
 
-#define max_log_entry 1
+#define max_log_entry 100
 #define max_call_stack_depth 10
 
 typedef struct memory_profiler_log_entry_s{
