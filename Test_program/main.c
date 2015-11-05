@@ -3,18 +3,36 @@
 #include <dlfcn.h>
 #include <pthread.h>
 #include <unistd.h>
-
+#include <execinfo.h>
+#include <string.h>
 
 
 pthread_t tid[3];
 
-void* Thread(void *arg)
+#define max_call_stack_depth 100
+
+void dummy_malloc_1(int *pointer, int *i){
+
+	*i += 1;
+
+	pointer = (int *)malloc(sizeof(int));
+}
+
+void dummy_malloc_2(int *pointer, int *i){
+
+	*i += 1;
+
+	pointer = (int *)malloc(sizeof(int));
+}
+
+void* Thread_1(void *arg)
 {
-    int *pointer;
+    int *pointer = NULL;
+    int i;
 
     while(1) {
         printf("Thread %d \n",(int*)arg);
-        pointer = (int *)malloc(sizeof(int));
+        dummy_malloc_1(pointer,&i);
         free(pointer);
         sleep(1);
     }
@@ -23,60 +41,36 @@ void* Thread(void *arg)
 }
 
 
+void* Thread_2(void *arg)
+{
+    int *pointer = NULL;
+    int i;
+
+    while(1) {
+        printf("Thread %d \n",(int*)arg);
+        dummy_malloc_2(pointer,&i);
+        free(pointer);
+        sleep(1);
+    }
+
+
+    return NULL;
+}
+
+
+
 int main()
 {
 
-
-
-    pthread_create(&(tid[0]), NULL, &Thread, (int*)1);
+    pthread_create(&(tid[0]), NULL, &Thread_1, (int*)1);
     printf("\n Created Thread 1\n");
 
-    pthread_create(&(tid[1]), NULL, &Thread, (int*)2);
-    printf("\n Created Thread 2\n");
+   /* pthread_create(&(tid[1]), NULL, &Thread_2, (int*)2);
+    printf("\n Created Thread 2\n");*/
 
-    /*result_malloc = (int *)malloc(sizeof(int));
-    free(result_malloc);
-    usleep(20);
-    printf("Set enable to 1\n");
-    enable = 1;*/
-
-
-   /* usleep(20);
-    result_malloc = (int *)malloc(sizeof(int));
-    free(result_malloc);
-    printf("Set enable to 0\n");
-    enable = 0;*/
-
-
-//enable = 1;
-   while(1);
-
-
-    /*
-    printf("Before first malloc\n");
-    result_malloc = malloc(sizeof(int));
-    free(result_malloc);
-    printf("After first malloc\n");
-
-
-    SampleAddInt(3,4);
-
-    printf("Before second malloc\n");
-    printf("Set enable to 1\n");
-    enable = 1;
-    result_malloc = malloc(sizeof(int));
-    free(result_malloc);
-    printf("After second malloc\n");
-
-
-
-    printf("Before third malloc\n");
-    printf("Set enable to 0\n");
-    enable = 0;
-    result_malloc = malloc(sizeof(int));
-    free(result_malloc);
-    printf("After third malloc\n");
-    */
+    while(1){
+    	sleep(1);
+   }
 
     return 0;
 }

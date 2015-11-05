@@ -3,9 +3,11 @@
 
 #include <stdbool.h>
 
+void* Memory_profiler_start_thread(void *arg);
 void* Hearthbeat(void *arg);
 bool profiling_allowed(void);
-void signal_callback_handler(int signum);
+void set_profiling(bool value);
+
 
 
 #endif // MEMORY_PROFILER_SHARED_LIBRARY_H_INCLUDED
