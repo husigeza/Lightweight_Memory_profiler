@@ -174,7 +174,7 @@ void Memory_Profiler::Print_profiled_process_shared_memory(const pid_t PID) {
 
 		for (int j=0; j < shared_memory->log_count; j++) {
 
-			//if(shared_memory->log_entry[j].valid == true){
+			if(shared_memory->log_entry[j].valid == true){
 				cout << endl <<"Shared memory PID: " << PID << endl;
 				cout <<"Shared_memory index: " << j << endl;
 				cout <<"Thread ID: " << shared_memory->log_entry[j].thread_id << endl;
@@ -186,7 +186,7 @@ void Memory_Profiler::Print_profiled_process_shared_memory(const pid_t PID) {
 				for(uint32_t i=0; i < shared_memory->log_entry[j].size;i++){
 					cout << shared_memory->log_entry[j].call_stack[i] << endl;
 				}
-			//}
+			}
 		}
 	//}
 }

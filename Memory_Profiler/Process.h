@@ -14,8 +14,8 @@
 
 using namespace std;
 
-#define max_log_entry 100
-#define max_call_stack_depth 10
+#define max_log_entry 1000
+#define max_call_stack_depth 15
 
 typedef struct memory_profiler_log_entry_s{
 	pthread_t thread_id;
