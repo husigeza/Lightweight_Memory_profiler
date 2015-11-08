@@ -14,6 +14,7 @@ Process_handler::Process_handler(){
 	PID = 0;
 	PID_string = "";
 	profiled = false;
+	alive = false;
 	memory_profiler_struct = NULL;
 	shared_memory = 0;
     semaphore_shared_memory = 0;
@@ -28,6 +29,7 @@ Process_handler::Process_handler(pid_t PID) {
 	this->PID = PID;
 	PID_string=to_string(PID);
 	profiled = false;
+	alive = true;
 	memory_profiler_struct = NULL;
 	shared_memory = 0;
     semaphore_shared_memory = 0;
@@ -56,6 +58,7 @@ Process_handler::Process_handler(Process_handler &&obj) {
 	PID = obj.PID;
 	PID_string = obj.PID_string;
 	profiled = obj.profiled;
+	alive = obj.alive;
 	memory_profiler_struct = obj.memory_profiler_struct;
 	shared_memory = obj.shared_memory;
     semaphore_shared_memory = obj.semaphore_shared_memory;
@@ -64,6 +67,7 @@ Process_handler::Process_handler(Process_handler &&obj) {
 	obj.PID = 0;
 	obj.PID_string = "";
 	obj.profiled = false;
+	obj.alive = false;
 	obj.memory_profiler_struct = NULL;
 	obj.shared_memory = 0;
 	obj.semaphore_shared_memory = 0;
@@ -76,7 +80,8 @@ Process_handler& Process_handler::operator=(Process_handler&& obj){
 
 		PID = 0;
 		PID_string = "";
-		profiled = 0;
+		profiled = false;
+		alive = false;
 		delete memory_profiler_struct;
 		shared_memory = 0;
 	    semaphore_shared_memory = 0;
@@ -85,6 +90,7 @@ Process_handler& Process_handler::operator=(Process_handler&& obj){
 		PID = obj.PID;
 		PID_string = obj.PID_string;
 		profiled = obj.profiled;
+		alive = obj.alive;
 		memory_profiler_struct = obj.memory_profiler_struct;
 		shared_memory = obj.shared_memory;
 	    semaphore_shared_memory = obj.semaphore_shared_memory;
@@ -94,6 +100,7 @@ Process_handler& Process_handler::operator=(Process_handler&& obj){
 		obj.PID = 0;
 		obj.PID_string = "";
 		obj.profiled = false;
+		obj.alive = false;
 		obj.memory_profiler_struct = NULL;
 		obj.shared_memory = 0;
 		obj.semaphore_shared_memory = 0;
@@ -146,7 +153,7 @@ void Process_handler::Send_signal() {
 
 }
 
-void Process_handler::Start_profiling(){
+void Process_handler::Start_Stop_profiling(){
 
 	sem_post(semaphore);
 

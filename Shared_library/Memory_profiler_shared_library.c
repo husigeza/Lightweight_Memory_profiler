@@ -39,6 +39,8 @@ static int shared_memory;
 
 static int trace_size = 0;
 
+static int mem_prof_fifo;
+
 sem_t enable_semaphore;
 sem_t thread_semaphore;
 
@@ -120,10 +122,12 @@ void __attribute__ ((constructor)) init() {
 
 void __attribute__ ((destructor)) finit(){
 
+	printf("Closing shared lib\n");
 	munmap(memory_profiler_struct, sizeof(memory_profiler_struct_t));
 	sem_destroy(&thread_semaphore);
 	shm_unlink(PID_string_shared_mem);
 	shm_unlink(PID_string_sem);
+	close(mem_prof_fifo);
 
 
 }
@@ -211,7 +215,6 @@ void* Memory_profiler_start_thread(void *arg){
 
 void* Hearthbeat(void *arg) {
 
-	int mem_prof_fifo;
 
 	while (true) {
 
@@ -223,10 +226,12 @@ void* Hearthbeat(void *arg) {
 
 				printf("Failed writing the FIFO\n");
 			}
+
+			close(mem_prof_fifo);
 		} else {
 			printf("Failed opening the FIFO, errno: %d\n", errno);
 		}
-		close(mem_prof_fifo);
+
 
 		sleep(1);
 	}

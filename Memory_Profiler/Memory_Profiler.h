@@ -15,12 +15,15 @@ class Memory_Profiler {
         Memory_Profiler();
         ~Memory_Profiler();
 
-        void Add_Process_to_list(const pid_t PID);
+        bool Add_Process_to_list(const pid_t PID);
 
         void Add_process_to_profiling(const pid_t PID);
         void Add_all_process_to_profiling();
         map<const pid_t,Process_handler>& Get_profiled_processes_list();
         map<const pid_t,Process_handler>& Get_all_processes_list();
+
+        void Set_process_alive_flag(const pid_t PID, bool value);
+        bool Get_process_alive_flag(const pid_t PID);
 
         void Remove_process_from_profiling(const pid_t PID);
         void Remove_all_process_from_profiling();
@@ -34,9 +37,10 @@ class Memory_Profiler {
         void Read_FIFO();
 
         void Print_all_processes()const;
+        void Print_alive_processes();
         void Print_profiled_processes();
         void Print_profiled_process_shared_memory(const pid_t PID);
-        void Print_all_profiled_processes_shared_memory();
+        void Print_all_processes_shared_memory();
 
 
 

@@ -18,7 +18,7 @@ void* Read_FIFO_thread(void *arg) {
 
 	while (true) {
 		mem_prof.Read_FIFO();
-		sleep(1);
+		sleep(2);
 	}
 	return 0;
 }
@@ -49,10 +49,12 @@ int main() {
 	while (1) {
 
 		getchar();
-		mem_prof.Add_all_process_to_profiling();
+		mem_prof.Print_all_processes();
+		mem_prof.Print_alive_processes();
 		mem_prof.Print_profiled_processes();
+		/*getchar();
+		mem_prof.Add_all_process_to_profiling();
 		cout << "Added all to profiled" << endl;
-		//mem_prof.Send_signal_to_all_processes();
 		mem_prof.Start_stop_profiling_all_processes();
 		cout << "Signal sent" << endl;
 		getchar();
@@ -61,7 +63,7 @@ int main() {
 		mem_prof.Remove_all_process_from_profiling();
 		cout << "Removed all from profiled" << endl;
 		getchar();
-		mem_prof.Print_all_profiled_processes_shared_memory();
+		mem_prof.Print_all_processes_shared_memory();*/
 
 		//sleep(3);
 	}
