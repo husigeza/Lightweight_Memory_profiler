@@ -69,15 +69,18 @@ void
 signal_callback_handler(int signum)
 {
 
-   munmap(memory_profiler_struct, sizeof(memory_profiler_struct_t));
-   sem_destroy(&thread_semaphore);
+	sem_destroy(&thread_semaphore);
+	sem_destroy(memory_profiler_start_semaphore);
 
-   shm_unlink(PID_string_sem);
-   shm_unlink(PID_string_shared_mem);
-   printf("Caught signal %d\n",signum);
+	munmap(memory_profiler_struct, sizeof(memory_profiler_struct_t));
+	munmap(memory_profiler_start_semaphore, sizeof(sem_t));
 
-   // Terminate program
-   exit(signum);
+	shm_unlink(PID_string_sem);
+	//shm_unlink(PID_string_shared_mem);
+	printf("Caught signal %d\n",signum);
+
+	// Terminate program
+	exit(signum);
 }
 
 void __attribute__ ((constructor)) init() {
@@ -89,8 +92,6 @@ void __attribute__ ((constructor)) init() {
 	sprintf(PID_string, "%d", getpid());
 
 	printf("current process is: %s\n", PID_string);
-
-	printf("page size: %d\n", getpagesize());
 
 	if(sem_init(&enable_semaphore,0,1) == -1) printf("Error in enable_semaphore init, errno: %d\n",errno);
 	if(sem_init(&thread_semaphore,0,1) == -1) printf("Error in thread_semaphore init, errno: %d\n",errno);
@@ -107,8 +108,6 @@ void __attribute__ ((constructor)) init() {
 
 	if(sem_init(memory_profiler_start_semaphore,1,0) == -1) printf("Error in memory_profiler_start_semaphore init, errno: %d\n",errno);
 
-
-
 	err = pthread_create(&memory_profiler_start_thread_id, NULL, &Memory_profiler_start_thread, NULL);
 	if (err) printf("Memory_profiler_start thread creation failed error:%d \n", err);
 
@@ -122,7 +121,6 @@ void __attribute__ ((destructor)) finit(){
 
 	munmap(memory_profiler_struct, sizeof(memory_profiler_struct_t));
 	sem_destroy(&thread_semaphore);
-	shm_unlink(PID_string_shared_mem);
 	shm_unlink(PID_string_sem);
 
 
@@ -148,6 +146,7 @@ void* malloc(size_t size) {
 
 		void* pointer = __libc_malloc(size);
 
+		//TODO: Make this faster for multiple thread, don't defend the whole structure
 		sem_wait(&thread_semaphore);
 
 		printf("log_count %d\n",memory_profiler_struct->log_count);
@@ -187,7 +186,7 @@ void* Memory_profiler_start_thread(void *arg){
 
 			sprintf(PID_string_shared_mem, "/%d", getpid());
 			shared_memory = shm_open(PID_string_shared_mem, /*O_CREAT | */O_RDWR, S_IRWXU | S_IRWXG | S_IRWXO);
-			if (shared_memory < 0) printf("Error while creating shared memory:%d \n", errno);
+			if (shared_memory < 0) printf("Error while opening shared memory:%d \n", errno);
 
 		   printf("memory_profiler_struct_t size %lu \n",sizeof(memory_profiler_struct_t));
 		   printf("log_entry size %lu \n",sizeof(memory_profiler_log_entry_t));
@@ -201,8 +200,6 @@ void* Memory_profiler_start_thread(void *arg){
 
 		} else {
 			printf("closing shared memory for profiling\n");
-
-			shm_unlink(PID_string_shared_mem);
 			munmap(memory_profiler_struct, sizeof(memory_profiler_struct_t));
 			set_profiling(false);
 		}
