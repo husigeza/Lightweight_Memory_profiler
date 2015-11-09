@@ -41,11 +41,12 @@ int main() {
 	if (err) {
 		printf("Thread creation failed error:%d \n", err);
 	} else {
-		printf("Thread created\n");
+		printf("Read_FIFO_thread created\n");
 	}
 
-
-
+	/*sleep(3);
+	mem_prof.Add_all_process_to_profiling();
+	mem_prof.Start_stop_profiling_all_processes();*/
 	while (1) {
 
 		getchar();

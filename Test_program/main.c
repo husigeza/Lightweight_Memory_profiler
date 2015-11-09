@@ -65,8 +65,8 @@ int main()
     pthread_create(&(tid[0]), NULL, &Thread_1, (int*)1);
     printf("\n Created Thread 1\n");
 
-   /* pthread_create(&(tid[1]), NULL, &Thread_2, (int*)2);
-    printf("\n Created Thread 2\n");*/
+   pthread_create(&(tid[1]), NULL, &Thread_2, (int*)2);
+    printf("\n Created Thread 2\n");
 
     while(1){
     	sleep(1);

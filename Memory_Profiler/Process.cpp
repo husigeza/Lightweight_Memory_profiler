@@ -114,10 +114,7 @@ Process_handler::~Process_handler() {
 	cout << "Process destructor" << endl;
 
 	//delete memory_profiler_struct;
-
 	munmap(semaphore, sizeof(sem_t));
-	shm_unlink(("/" + PID_string +"_start_sem").c_str());
-
 	munmap(memory_profiler_struct, sizeof(memory_profiler_log_entry_t));
 	shm_unlink(("/" + PID_string).c_str());
 
@@ -126,24 +123,33 @@ Process_handler::~Process_handler() {
 void Process_handler::Init_semaphore() {
 
 	this->semaphore_shared_memory = shm_open(("/"+PID_string +"_start_sem").c_str(), O_RDWR, S_IRWXU | S_IRWXG | S_IRWXO);
-	if (semaphore_shared_memory < 0) printf("Error while creating semaphore shared memory:%d \n", errno);
+	if (semaphore_shared_memory < 0) printf("Error while opening semaphore shared memory:%d \n", errno);
 
 	this->semaphore = (sem_t*)mmap(NULL, sizeof(sem_t), PROT_WRITE,MAP_SHARED, semaphore_shared_memory, 0);
-	if (semaphore == MAP_FAILED) {
-		printf("Failed mapping the semaphore shared memory: %d \n", errno);
-	}
+	if (semaphore == MAP_FAILED) printf("Failed mapping the semaphore shared memory: %d \n", errno);
 }
 
 void Process_handler::Init_shared_memory() {
 
-	this->shared_memory = shm_open(("/"+PID_string).c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
-	if (shared_memory < 0) printf("Error while creating shared memory:%d \n", errno);
+	// If this is the first profiling of a rpocess create the shared memory, if the shared memory already exists (e.g: second profiling for a process), use it
+	this->shared_memory = shm_open(("/"+PID_string).c_str(), O_CREAT | O_RDWR | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO);
 
-	int err = ftruncate(shared_memory, sizeof(memory_profiler_struct_t));
-	if (err < 0) printf("Error while truncating shared memory: %d \n", errno);
+	if (shared_memory < 0) {
+		if(errno == EEXIST) {
+			return;
+		}
+		else printf("Error while creating shared memory:%d \n", errno);
+	}
+	else{
+		// Map the shared memory if it has not existed before
+		int err = ftruncate(shared_memory, sizeof(memory_profiler_struct_t));
+		if (err < 0) printf("Error while truncating shared memory: %d \n", errno);
 
-	this->memory_profiler_struct = (memory_profiler_struct_t*) mmap(NULL, sizeof(memory_profiler_struct_t),PROT_READ, MAP_SHARED, this->shared_memory, 0);
-	if (memory_profiler_struct == MAP_FAILED) printf("Failed mapping the shared memory: %d \n", errno);
+		this->memory_profiler_struct = (memory_profiler_struct_t*) mmap(NULL, sizeof(memory_profiler_struct_t),PROT_READ, MAP_SHARED, this->shared_memory, 0);
+		if (memory_profiler_struct == MAP_FAILED) printf("Failed mapping the shared memory: %d \n", errno);
+
+	}
+
 
 }
 
