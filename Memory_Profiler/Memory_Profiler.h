@@ -9,10 +9,12 @@ using namespace std;
 class Memory_Profiler {
 
         map<pid_t const,Process_handler> Processes;
+        string fifo_path;
+        int mem_prof_fifo;
 
     public:
-
         Memory_Profiler();
+        Memory_Profiler(string fifo_path);
         ~Memory_Profiler();
 
         bool Add_Process_to_list(const pid_t PID);
