@@ -10,14 +10,14 @@
 #include "Memory_Profiler.h"
 #include "Process.h"
 
-#define fifo_path "/home/egezhus/mem_prof_fifo"
-
 using namespace std;
 
 
-Memory_Profiler::Memory_Profiler() {
+Memory_Profiler::Memory_Profiler(string fifo_path) {
 
-	if (mkfifo(fifo_path, 0666) == -1) {
+	this->fifo_path = fifo_path;
+
+	if (mkfifo(this->fifo_path.c_str(), 0666) == -1) {
 
 		if (errno == EEXIST) {
 			cout << "FIFO already exists" << endl;
@@ -27,12 +27,15 @@ Memory_Profiler::Memory_Profiler() {
 		return;
 	}
 	cout << "FIFO is created" << endl;
+
+	mem_prof_fifo = open(fifo_path.c_str(), O_RDONLY | O_NONBLOCK );
 }
 
 Memory_Profiler::~Memory_Profiler() {
 
 	cout << "Memory profiler destructor" << endl;
-	unlink(fifo_path);
+	close(mem_prof_fifo);
+	unlink(fifo_path.c_str());
 	Processes.clear();
 
 }
@@ -173,52 +176,38 @@ void Memory_Profiler::Send_signal_to_all_processes() {
 
 void Memory_Profiler::Read_FIFO() {
 
-	int mem_prof_fifo = open(fifo_path, O_RDONLY | O_NONBLOCK );
-
 	vector<pid_t> alive_processes;
 	pid_t pid;
-
 	char buffer[6];
 	size_t buff_size = 6;
-
-	int res, counter = 0;
-
+	int res;
 	map<const pid_t, Process_handler>::iterator it;
 
 	if (mem_prof_fifo != -1) {
 		while ((res = read(mem_prof_fifo, &buffer, sizeof(buffer))) != 0) {
 
-			if (res != -1) {
+			if (res > 0) {
 				pid = stoi(buffer, &buff_size);
 				Add_Process_to_list(pid);
 				alive_processes.push_back(pid);
 
 			} else {
-				//printf("Failed reading the FIFO\n");
-				//break;
+				cout << "Failed reading the FIFO" << endl;
+				return;
 			}
-			counter++;
 		}
-
-		if(counter == 0){
-			for (it = Processes.begin(); it != Processes.end(); it++) {
+		// IF nobody has written the FIFO, res = 0, alive_processes = 0, all the processes are dead
+		for (it = Processes.begin(); it != Processes.end(); it++) {
+			if(find(alive_processes.begin(), alive_processes.end(), it->first) == alive_processes.end()) {
 				Set_process_alive_flag(it->first,false);
 			}
-		}
-		else {
-			for (it = Processes.begin(); it != Processes.end(); it++) {
-				if(find(alive_processes.begin(), alive_processes.end(), it->first) == alive_processes.end()) {
-					Set_process_alive_flag(it->first,false);
-				}
-				else {
-					Set_process_alive_flag(it->first,true);
-				}
+			else {
+				Set_process_alive_flag(it->first,true);
 			}
 		}
 	} else {
 		cout << "Failed opening the FIFO, errno: " << errno << endl;
 	}
-	close(mem_prof_fifo);
 }
 
 void Memory_Profiler::Print_profiled_process_shared_memory(const pid_t PID) {

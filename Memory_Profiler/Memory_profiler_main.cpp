@@ -6,11 +6,11 @@
 
 #include <signal.h>
 
-#define fifo_path "/home/egezhus/mem_prof_fifo"
+#define path_to_FIFO "/home/egezhus/mem_prof_fifo"
 
 using namespace std;
 
-static Memory_Profiler mem_prof;
+static Memory_Profiler mem_prof(path_to_FIFO);
 static pthread_t FIFO_read_thread_id;
 
 
