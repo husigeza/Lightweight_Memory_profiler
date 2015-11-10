@@ -197,7 +197,7 @@ void Memory_Profiler::Read_FIFO() {
 				alive_processes.push_back(pid);
 
 			} else {
-				//printf("Failed reading the FIFO\n");
+				//cout << "Failed reading the FIFO"  << endl;
 				//break;
 			}
 			counter++;

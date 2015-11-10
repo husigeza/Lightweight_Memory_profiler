@@ -44,16 +44,13 @@ int main() {
 		printf("Read_FIFO_thread created\n");
 	}
 
-	/*sleep(3);
-	mem_prof.Add_all_process_to_profiling();
-	mem_prof.Start_stop_profiling_all_processes();*/
 	while (1) {
 
 		getchar();
 		mem_prof.Print_all_processes();
 		mem_prof.Print_alive_processes();
-		mem_prof.Print_profiled_processes();
-		/*getchar();
+
+		getchar();
 		mem_prof.Add_all_process_to_profiling();
 		cout << "Added all to profiled" << endl;
 		mem_prof.Start_stop_profiling_all_processes();
@@ -64,9 +61,9 @@ int main() {
 		mem_prof.Remove_all_process_from_profiling();
 		cout << "Removed all from profiled" << endl;
 		getchar();
-		mem_prof.Print_all_processes_shared_memory();*/
+		mem_prof.Print_all_processes_shared_memory();
 
-		//sleep(3);
+
 	}
 
 	return 0;
