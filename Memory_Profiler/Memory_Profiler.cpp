@@ -243,19 +243,21 @@ void Memory_Profiler::Print_all_processes_shared_memory() {
 	map<const pid_t, Process_handler>::iterator it;
 
 	for (it = Processes.begin(); it != Processes.end(); it++) {
-		for (int j=0; j < Processes[it->first].Get_shared_memory()->log_count; j++) {
+		if(Processes[it->first].Get_shared_memory() != NULL){
+			for (int j=0; j < Processes[it->first].Get_shared_memory()->log_count; j++) {
 
-			if(Processes[it->first].Get_shared_memory()->log_entry[j].valid == true){
-				cout << endl <<"Shared memory PID: " << it->first << endl;
-				cout <<"Shared_memory index: " << j << endl;
-				cout <<"Thread ID: " << Processes[it->first].Get_shared_memory()->log_entry[j].thread_id << endl;
-				cout <<"Call stack type: " << Processes[it->first].Get_shared_memory()->log_entry[j].type << endl;
-				cout <<"Address: " << Processes[it->first].Get_shared_memory()->log_entry[j].address << endl;
-				cout <<"Call stack size: " << Processes[it->first].Get_shared_memory()->log_entry[j].size << endl;
-				cout <<"call stack: " << endl;
+				if(Processes[it->first].Get_shared_memory()->log_entry[j].valid == true){
+					cout << endl <<"Shared memory PID: " << it->first << endl;
+					cout <<"Shared_memory index: " << j << endl;
+					cout <<"Thread ID: " << Processes[it->first].Get_shared_memory()->log_entry[j].thread_id << endl;
+					cout <<"Call stack type: " << Processes[it->first].Get_shared_memory()->log_entry[j].type << endl;
+					cout <<"Address: " << Processes[it->first].Get_shared_memory()->log_entry[j].address << endl;
+					cout <<"Call stack size: " << Processes[it->first].Get_shared_memory()->log_entry[j].size << endl;
+					cout <<"call stack: " << endl;
 
-				for(uint32_t i=0; i < Processes[it->first].Get_shared_memory()->log_entry[j].size;i++){
-					cout << Processes[it->first].Get_shared_memory()->log_entry[j].call_stack[i] << endl;
+					for(uint32_t i=0; i < Processes[it->first].Get_shared_memory()->log_entry[j].size;i++){
+						cout << Processes[it->first].Get_shared_memory()->log_entry[j].call_stack[i] << endl;
+					}
 				}
 			}
 		}
