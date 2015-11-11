@@ -23,11 +23,12 @@ Memory_Profiler::Memory_Profiler(string fifo_path) {
 			cout << "FIFO already exists" << endl;
 		} else {
 			cout << "Failed creating FIFO" << "errno: " << errno << endl;
+			return;
 		}
-		return;
 	}
+	else {
 	cout << "FIFO is created" << endl;
-
+	}
 	mem_prof_fifo = open(fifo_path.c_str(), O_RDONLY | O_NONBLOCK );
 }
 
@@ -37,7 +38,6 @@ Memory_Profiler::~Memory_Profiler() {
 	close(mem_prof_fifo);
 	unlink(fifo_path.c_str());
 	Processes.clear();
-
 }
 
 void Memory_Profiler::Print_all_processes() const {
