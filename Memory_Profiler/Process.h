@@ -12,6 +12,7 @@
 #include <semaphore.h>
 
 
+
 using namespace std;
 
 #define max_log_entry 1000
@@ -44,7 +45,9 @@ class Process_handler {
     int semaphore_shared_memory;
     sem_t* semaphore;
 
+
     void Init_semaphore();
+    void Parse_ELF();
 
     public:
 

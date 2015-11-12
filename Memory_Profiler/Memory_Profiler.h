@@ -3,6 +3,7 @@
 
 #include <map>
 #include "Process.h"
+#include <bfd.h>
 
 using namespace std;
 
@@ -11,6 +12,10 @@ class Memory_Profiler {
         map<pid_t const,Process_handler> Processes;
         string fifo_path;
         int mem_prof_fifo;
+        long storage_needed;
+        asymbol **symbol_table;
+        long number_of_symbols;
+        void Read_Symbol_map();
 
     public:
         Memory_Profiler();

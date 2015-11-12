@@ -6,6 +6,7 @@
 #include <map>
 #include <vector>
 #include <algorithm>
+#include <bfd.h>
 
 #include "Memory_Profiler.h"
 #include "Process.h"
@@ -30,6 +31,8 @@ Memory_Profiler::Memory_Profiler(string fifo_path) {
 	cout << "FIFO is created" << endl;
 	}
 	mem_prof_fifo = open(fifo_path.c_str(), O_RDONLY | O_NONBLOCK );
+
+	Read_Symbol_map();
 }
 
 Memory_Profiler::~Memory_Profiler() {
@@ -37,7 +40,57 @@ Memory_Profiler::~Memory_Profiler() {
 	cout << "Memory profiler destructor" << endl;
 	close(mem_prof_fifo);
 	unlink(fifo_path.c_str());
+	free(symbol_table);
 	Processes.clear();
+}
+
+void Memory_Profiler::Read_Symbol_map() {
+
+	bfd *tmp_bfd = NULL;                        //handler for libbfd
+
+    long i;
+
+	tmp_bfd = bfd_openr("/home/egezhus/Projects/MSc_thesis/Shared_library/Debug/libMemory_profiler_shared_library.so.1.0", NULL);
+    //tmp_bfd = bfd_openr("/lib/x86_64-linux-gnu/libpthread.so.0", NULL);
+
+    if (tmp_bfd == NULL) {
+	    printf ("Error openning file");
+		exit(-1);
+	}
+	//check if the file is in format
+	if (!bfd_check_format (tmp_bfd, bfd_object)) {
+		if (bfd_get_error () != bfd_error_file_ambiguously_recognized) {
+			printf("Incompatible formatn");
+			exit(-1);
+		}
+	}
+	cout << "Shared library symbol map" << endl;
+
+	storage_needed = bfd_get_symtab_upper_bound (tmp_bfd);
+
+	if (storage_needed < 0)
+	  return;
+
+	if (storage_needed == 0)
+	  return;
+
+	symbol_table = (asymbol**)malloc(storage_needed);
+	number_of_symbols = bfd_canonicalize_symtab (tmp_bfd, symbol_table);
+
+	if (number_of_symbols < 0)
+	  return;
+
+	for (i = 0; i < number_of_symbols; i++) {
+		if(symbol_table[i]->flags & BSF_FUNCTION){
+		cout << "name: " << symbol_table[i]->name << "  value: " << std::hex << symbol_table[i]->value << "  type: ";
+		if(symbol_table[i]->flags & BSF_LOCAL) cout << "BSF_LOCAL" << endl;
+		else if(symbol_table[i]->flags & BSF_GLOBAL) cout << "BSF_GLOBAL" << endl;
+		else cout<< endl;
+		cout << "section VMA: " << symbol_table[i]->section->vma << endl;
+		}
+	}
+
+
 }
 
 void Memory_Profiler::Print_all_processes() const {
