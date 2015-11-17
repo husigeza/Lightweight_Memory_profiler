@@ -19,6 +19,10 @@
 #include <string.h>
 #include <stdlib.h>
 
+
+#define _GNU_SOURCE         /* See feature_test_macros(7) */
+#include <dlfcn.h>
+
 #define fifo_path "/home/egezhus/mem_prof_fifo"
 #define max_log_entry 1000
 #define max_call_stack_depth 15
@@ -85,7 +89,21 @@ signal_callback_handler(int signum)
 	exit(signum);
 }
 
+
+typedef struct Dl_info_s{
+    const char *dli_fname;  /* Pathname of shared object that
+                               contains address */
+    void       *dli_fbase;  /* Address at which shared object
+                               is loaded */
+    const char *dli_sname;  /* Name of nearest symbol with address
+                               lower than addr */
+    void       *dli_saddr;  /* Exact address of symbol named
+                               in dli_sname */
+} Dl_info_t;
+
 void __attribute__ ((constructor)) init() {
+
+
 
 	printf("Init\n");
 
@@ -94,6 +112,8 @@ void __attribute__ ((constructor)) init() {
 	sprintf(PID_string, "%d", getpid());
 
 	printf("current process is: %s\n", PID_string);
+
+
 
 	if(sem_init(&enable_semaphore,0,1) == -1) printf("Error in enable_semaphore init, errno: %d\n",errno);
 	if(sem_init(&thread_semaphore,0,1) == -1) printf("Error in thread_semaphore init, errno: %d\n",errno);
@@ -142,6 +162,9 @@ void free(void* pointer) {
 
 void* malloc(size_t size) {
 
+	Dl_info_t info;
+	int i;
+
 	if (profiling_allowed()) {
 
 		set_profiling(false);
@@ -156,6 +179,13 @@ void* malloc(size_t size) {
 		printf("log_count %d\n",memory_profiler_struct->log_count);
 
 		trace_size = backtrace(memory_profiler_struct->log_entry[memory_profiler_struct->log_count].call_stack,max_call_stack_depth);
+
+		for(i= 0; i< trace_size; i++){
+		dladdr(memory_profiler_struct->log_entry[memory_profiler_struct->log_count].call_stack[i],&info);
+		printf("Name: %s, address: %lx\n",info.dli_sname,(uint64_t)info.dli_saddr);
+		}
+
+
 		memory_profiler_struct->log_entry[memory_profiler_struct->log_count].thread_id = pthread_self();
 		memory_profiler_struct->log_entry[memory_profiler_struct->log_count].type = 1;
 		memory_profiler_struct->log_entry[memory_profiler_struct->log_count].size = size;
@@ -163,6 +193,9 @@ void* malloc(size_t size) {
 	    printf("address: %lu\n",(uint64_t*)pointer);
 	    memory_profiler_struct->log_entry[memory_profiler_struct->log_count].valid = true;
 	    memory_profiler_struct->log_count++;
+
+
+
 
 		printf("Shared memory has been written\n");
 

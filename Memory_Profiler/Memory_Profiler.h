@@ -48,6 +48,7 @@ class Memory_Profiler {
         void Print_profiled_processes();
         void Print_profiled_process_shared_memory(const pid_t PID);
         void Print_all_processes_shared_memory();
+        void Print_process_symbol_table(pid_t PID);
 
 
 

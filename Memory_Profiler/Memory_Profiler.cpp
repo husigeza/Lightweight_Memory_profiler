@@ -50,8 +50,8 @@ void Memory_Profiler::Read_Symbol_map() {
 
     long i;
 
-	tmp_bfd = bfd_openr("/home/egezhus/Projects/MSc_thesis/Shared_library/Debug/libMemory_profiler_shared_library.so.1.0", NULL);
-    //tmp_bfd = bfd_openr("/lib/x86_64-linux-gnu/libpthread.so.0", NULL);
+	//tmp_bfd = bfd_openr("/home/egezhus/Projects/MSc_thesis/Shared_library/Debug/libMemory_profiler_shared_library.so.1.0", NULL);
+    tmp_bfd = bfd_openr("/lib/x86_64-linux-gnu/libc-2.19.so", 0);
 
     if (tmp_bfd == NULL) {
 	    printf ("Error openning file");
@@ -315,4 +315,16 @@ void Memory_Profiler::Print_all_processes_shared_memory() {
 			}
 		}
 	}
+}
+
+void Memory_Profiler::Print_process_symbol_table(pid_t PID){
+
+	map<const pid_t, Process_handler>::iterator it;
+
+	for (it = Processes.begin(); it != Processes.end(); it++) {
+
+
+
+	}
+
 }
