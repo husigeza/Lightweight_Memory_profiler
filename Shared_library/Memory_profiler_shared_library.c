@@ -24,8 +24,8 @@
 #include <dlfcn.h>
 
 #define fifo_path "/home/egezhus/mem_prof_fifo"
-#define max_log_entry 10000000
-#define max_call_stack_depth 15
+#define max_log_entry 10000
+#define max_call_stack_depth 100
 
 extern void *__libc_malloc(size_t size);
 extern void *__libc_free(void *);

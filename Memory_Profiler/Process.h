@@ -17,8 +17,8 @@
 
 using namespace std;
 
-#define max_log_entry 10000000
-#define max_call_stack_depth 15
+#define max_log_entry 10000
+#define max_call_stack_depth 100
 
 class memory_profiler_log_entry_t{
 
@@ -55,7 +55,29 @@ public:
 		    }
 
 		}
+
+	bool operator < (const symbol_table_entry_struct_t& entry) const
+	    {
+	        return (address < entry.address);
+	    }
+
+	bool operator > (const symbol_table_entry_struct_t& entry) const
+	    {
+	        return (address > entry.address);
+	    }
+
+	bool operator > (const uint64_t address) const
+		    {
+		        return (this->address > address);
+		    }
+
+	bool operator < (const uint64_t address) const
+		    {
+		        return (this->address < address);
+		    }
+
 };
+
 
 class memory_map_table_entry_struct_t {
 
@@ -74,6 +96,7 @@ public:
 	    }
 
 	}
+
 
 	uint64_t is_symbol_in_shared_lib(string &symbol_name){
 
@@ -102,8 +125,7 @@ class Process_handler {
 
     // Storing memory mappings of the shared libraries used by the customer program
     vector<memory_map_table_entry_struct_t> memory_map_table;
-    // Storing the symbols from the ELF with its proper virtual address
-    vector<symbol_table_entry_struct_t> function_symbol_table;
+
 
 
 
@@ -119,6 +141,11 @@ class Process_handler {
 
     uint64_t Get_symbol_address_from_ELF(string ELF_path, string symbol_name);
     bool Find_symbol_in_ELF(string ELF_path, string symbol_name);
+
+
+
+
+
 
 
     public:
@@ -144,7 +171,13 @@ class Process_handler {
         void Start_Stop_profiling();
 
         memory_profiler_struct_t* Get_shared_memory();
-        vector<asymbol>& Get_function_symbol_table();
+
+
+
+        // Storing the symbols from the ELF with its proper virtual address
+        vector<symbol_table_entry_struct_t> function_symbol_table;
+
+        vector<symbol_table_entry_struct_t>::iterator Find_function(uint64_t address);
 };
 
 

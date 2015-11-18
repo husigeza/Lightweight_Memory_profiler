@@ -10,6 +10,7 @@
 #include <regex.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <algorithm>
 
 #include "Process.h"
 
@@ -47,6 +48,8 @@ Process_handler::Process_handler(pid_t PID) {
 		cout << "Error creating the symbol table" << endl;
 	}
 	Init_semaphore();
+
+	cout << "sizeof memory_profiler_struct_t: "<< std::dec <<sizeof(memory_profiler_struct_t) << endl;
 }
 
 /*Process_handler::Process_handler(const Process_handler &obj) {
@@ -135,6 +138,18 @@ Process_handler::~Process_handler() {
 }
 
 /*
+ * Returns with the index of function in vector
+ */
+vector<symbol_table_entry_struct_t>::iterator Process_handler::Find_function(uint64_t address){
+
+	vector<symbol_table_entry_struct_t>::iterator it = lower_bound(function_symbol_table.begin(),function_symbol_table.end(),address);
+	return it;
+
+
+}
+
+
+/*
  * Need to free bfd manually after this function !!!
  */
 bfd* Process_handler::Open_ELF() {
@@ -202,6 +217,7 @@ bool Process_handler::Create_symbol_table() {
 		return false;
 	}
 
+	// Get the virtual addresses of the shared libs linked to the program
 	if(Read_virtual_memory_mapping() == false){
 		return false;
 	}
@@ -253,6 +269,15 @@ bool Process_handler::Create_symbol_table() {
 		}
 	}
 
+
+	//Sort the symbols based on address
+	sort(function_symbol_table.begin(),function_symbol_table.end());
+
+	for(unsigned int i = 0; i<function_symbol_table.size();i++ ){
+
+		cout << std::hex <<function_symbol_table[i].address <<"  " << function_symbol_table[i].name << endl;
+	}
+
 	// Free the symbol table allocated in
 	bfd_close(tmp_bfd);
 	free(symbol_table);
@@ -266,6 +291,7 @@ bool Process_handler::Read_virtual_memory_mapping() {
 	ifstream mapping("/proc/" + this->PID_string + "/maps");
 	string line;
 
+	size_t pos_x;
 	size_t pos_shared_lib;
 	size_t pos_end_address_start;
 	size_t pos_end_address_stop;
@@ -279,10 +305,15 @@ bool Process_handler::Read_virtual_memory_mapping() {
 			// Check /proc/PID/maps for the line formats
 			// Example of a line: 7f375e459000-7f375e614000 r-xp 00000000 08:01 398095                     /lib/x86_64-linux-gnu/libc-2.19.so
 
-			// TODO: read lines only with x (executable) permission, I assume symbols are only put here
-
 			// Absolute path of the shared lib starts with /
 			pos_shared_lib = line.find("/");
+
+			// Read lines only with x (executable) permission, I assume symbols are only put here
+			// If permission x is not enabled, skip this line (until the path of shared lib, x could be appear only 1 place: at permissions))
+			pos_x = line.find_first_of("x");
+			if(pos_shared_lib < pos_x) {
+				continue;
+			}
 
 			entry.shared_lib_path = line.substr(pos_shared_lib);
 

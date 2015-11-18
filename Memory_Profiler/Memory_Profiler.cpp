@@ -323,7 +323,8 @@ void Memory_Profiler::Print_all_processes_shared_memory() {
 					cout <<"call stack: " << endl;
 
 					for(uint32_t i=0; i < Processes[it->first].Get_shared_memory()->log_entry[j].size;i++){
-						cout << Processes[it->first].Get_shared_memory()->log_entry[j].call_stack[i] << endl;
+						cout << Processes[it->first].Get_shared_memory()->log_entry[j].call_stack[i]<< " --- " << endl;
+						//cout<< Processes[it->first].Find_function((uint64_t)Processes[it->first].Get_shared_memory()->log_entry[j].call_stack[i])->name<< endl;
 					}
 				}
 			}
