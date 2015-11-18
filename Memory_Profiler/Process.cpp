@@ -15,6 +15,8 @@
 
 using namespace std;
 
+#define memory_profiler_library "libMemory_profiler_shared_library.so"
+
 
 Process_handler::Process_handler() {
 
@@ -132,12 +134,18 @@ Process_handler::~Process_handler() {
 
 }
 
+/*
+ * Need to free bfd manually after this function !!!
+ */
 bfd* Process_handler::Open_ELF() {
 
 	return Open_ELF(elf_path);
 
 }
 
+/*
+ * Need to close bfd manually after this function !!!
+ */
 bfd* Process_handler::Open_ELF(string ELF_path){
 
 	bfd* tmp_bfd = bfd_openr(ELF_path.c_str(),NULL);
@@ -145,6 +153,7 @@ bfd* Process_handler::Open_ELF(string ELF_path){
 			printf("Error opening Process ELF file");
 			return NULL;
 		}
+
 		//check if the file is in format
 		if (!bfd_check_format(tmp_bfd, bfd_object)) {
 			if (bfd_get_error() != bfd_error_file_ambiguously_recognized) {
@@ -154,31 +163,41 @@ bfd* Process_handler::Open_ELF(string ELF_path){
 		}
 
 		return tmp_bfd;
+}
+
+/*
+ * Need to free symbol_table manually after this function !!!
+ */
+long Process_handler::Parse_symbol_table_from_ELF(bfd* bfd_ptr,asymbol ***symbol_table){
+
+	long storage_needed;
+	long number_of_symbols;
+
+	storage_needed = bfd_get_dynamic_symtab_upper_bound(bfd_ptr);
+	*symbol_table = (asymbol**) malloc(storage_needed);
+	number_of_symbols = bfd_canonicalize_dynamic_symtab(bfd_ptr, *symbol_table);
+	return number_of_symbols;
 
 }
 
 bool Process_handler::Create_symbol_table() {
 
 	bfd* tmp_bfd;
-	long storage_needed;
-	asymbol **symbol_table;
+	asymbol **symbol_table = 0;
 	long number_of_symbols;
+
 	symbol_table_entry_struct_t symbol_entry;
 
+	// TODO This needs to be rethinked, define a const for it or a find dynamic way
 	char program_path[1024];
 	int len;
-
-	int counter=0;
 
 	tmp_bfd = Open_ELF();
 	if (!tmp_bfd) {
 		return false;
 	}
 
-	storage_needed = bfd_get_dynamic_symtab_upper_bound(tmp_bfd);
-	symbol_table = (asymbol**) malloc(storage_needed);
-	number_of_symbols = bfd_canonicalize_dynamic_symtab(tmp_bfd, symbol_table);
-
+	number_of_symbols = Parse_symbol_table_from_ELF(tmp_bfd,&symbol_table);
 	if (number_of_symbols < 0) {
 		return false;
 	}
@@ -187,30 +206,28 @@ bool Process_handler::Create_symbol_table() {
 		return false;
 	}
 
+	// /proc/PID/exe is a sym link to the executable, read it with readlink because we need the full path of the executable
 	if ((len = readlink(elf_path.c_str(), program_path, sizeof(program_path)-1)) != -1)
 		program_path[len] = '\0';
 
 	for (int i = 0; i < number_of_symbols; i++) {
 		if (symbol_table[i]->flags & BSF_FUNCTION) {
-			string name(symbol_table[i]->name);
 
-			symbol_entry.name = name;
+			// Initialize name and address
+			symbol_entry.name = symbol_table[i]->name;
 			symbol_entry.address = 0;
 
-			if(symbol_entry.name == "_init"){
-				cout << "_init" << endl;
-			}
 
 			if (symbol_table[i]->value != 0) {
 				// Symbol is defined in the process, address is known from ELF
 				symbol_entry.address = symbol_table[i]->section->vma + symbol_table[i]->value;
 			} else {
-				// Symbol is not defined in the process, address is not known from ELF, need to get it from shared library
-				if (name == "malloc" || name == "free") {
-					counter++;
+				// Symbol is not defined, address is not known from ELF, need to get it from shared library
+				if (symbol_entry.name == "malloc" || symbol_entry.name == "free") {
+
 					// Get the address from memory_profiler_shared_library
-					string memory_profiler_library = "libMemory_profiler_shared_library.so";
 					for(unsigned int i = 0; i < memory_map_table.size(); i++){
+						//Find the entry of the memory_profiler_shared_library, read its VM base address, and find malloc/free address offset from it
 						if(memory_map_table[i].shared_lib_path.find(memory_profiler_library) !=  string::npos){
 							symbol_entry.address = memory_map_table[i].start_address + Get_symbol_address_from_ELF(memory_map_table[i].shared_lib_path,symbol_entry.name);
 							break;
@@ -220,7 +237,7 @@ bool Process_handler::Create_symbol_table() {
 				} else {
 					// Find the symbol from one of the dynamically linked shared library
 					for(unsigned int i = 0; i < memory_map_table.size(); i++){
-
+						// Do not check the program's own symbol table
 						if(memory_map_table[i].shared_lib_path.compare(program_path) !=0){
 							if(Find_symbol_in_ELF(memory_map_table[i].shared_lib_path,symbol_entry.name)){
 									symbol_entry.address = memory_map_table[i].start_address + Get_symbol_address_from_ELF(memory_map_table[i].shared_lib_path,symbol_entry.name);
@@ -231,17 +248,17 @@ bool Process_handler::Create_symbol_table() {
 				}
 			}
 
-
-			this->function_symbol_table.push_back(symbol_entry);
-			cout << "symbol name: " << symbol_entry.name << " symbol address: " << std::hex << symbol_entry.address << endl;
+			// Save the symbol with its absolute address in the vector
+			function_symbol_table.push_back(symbol_entry);
+			//cout << "symbol name: " << symbol_entry.name << " symbol address: " << std::hex << symbol_entry.address << endl;
 		}
 	}
-	cout << "counter: " << std::dec << counter << endl;
+
 	// Free the symbol table allocated in
 	bfd_close(tmp_bfd);
 	free(symbol_table);
-	return true;
 
+	return true;
 }
 
 bool Process_handler::Read_virtual_memory_mapping() {
@@ -258,32 +275,34 @@ bool Process_handler::Read_virtual_memory_mapping() {
 	memory_map_table_entry_struct_t entry;
 
 	while (getline(mapping, line)) {
+		try{
 
-			try{
+			// Check /proc/PID/maps for the line formats
+			// Example of a line: 7f375e459000-7f375e614000 r-xp 00000000 08:01 398095                     /lib/x86_64-linux-gnu/libc-2.19.so
 
-				pos_shared_lib = line.find("/");
+			// TODO: read lines only with x (executable) permission, I assume symbols are only put here
 
-				entry.shared_lib_path = line.substr(pos_shared_lib);
+			// Absolute path of the shared lib starts with /
+			pos_shared_lib = line.find("/");
 
-				pos_end_address_start = line.find_first_of("-");
-				pos_end_address_stop = line.find_first_of(" ");
+			entry.shared_lib_path = line.substr(pos_shared_lib);
 
-				entry.start_address = stoul(line.substr(0,pos_end_address_start).c_str(),NULL,16);
-				entry.end_address = stoul(line.substr(pos_end_address_start+1,pos_end_address_stop-pos_end_address_start).c_str(),NULL,16);
+			// First "string" is the starting address, after '-' char the closing address starts
+			pos_end_address_start = line.find_first_of("-");
+			// After closing address an empty character can be found
+			pos_end_address_stop = line.find_first_of(" ");
 
-				memory_map_table.push_back(entry);
+			// Convert the strings to numbers
+			entry.start_address = stoul(line.substr(0,pos_end_address_start).c_str(),NULL,16);
+			entry.end_address = stoul(line.substr(pos_end_address_start+1,pos_end_address_stop-pos_end_address_start).c_str(),NULL,16);
 
+			memory_map_table.push_back(entry);
 
-				/*cout << "start_address number: " << entry.start_address << endl;
-				cout << "end_address: " << entry.end_address << endl;
-				cout << "Shared library location: " << entry.shared_lib_path << endl << endl;*/
-			}
-			catch(exception &e){
-					//cout << "No shared lib" << endl;
-				// examine exception and return with false if necessary
-			}
+		}
+		catch(exception &e){
+			// TODO Analyze exception and return with false if necessary
+		}
 	}
-
 
 	return true;
 }
@@ -291,18 +310,22 @@ bool Process_handler::Read_virtual_memory_mapping() {
 uint64_t Process_handler::Get_symbol_address_from_ELF(string ELF_path,string symbol_name){
 
 	bfd* tmp_bfd;
-	long storage_needed;
 	asymbol **symbol_table;
 	long number_of_symbols;
 
 	uint64_t address;
 
-	tmp_bfd = Open_ELF(ELF_path);
+	tmp_bfd = Open_ELF();
+	if (!tmp_bfd) {
+		cout<< "Error parsing ELF in Get_symbol_address_from_ELF"<<endl;
+		return 0;
+	}
 
-	storage_needed = bfd_get_dynamic_symtab_upper_bound(tmp_bfd);
-	symbol_table = (asymbol**) malloc(storage_needed);
-	number_of_symbols = bfd_canonicalize_dynamic_symtab(tmp_bfd, symbol_table);
-
+	number_of_symbols = Parse_symbol_table_from_ELF(tmp_bfd,&symbol_table);
+	if (number_of_symbols < 0) {
+		cout<< "Error reading symbols from ELF in Parse_symbol_table_from_ELF"<<endl;
+		return 0;
+	}
 
 	for (int i = 0; i < number_of_symbols; i++) {
 			if (symbol_table[i]->flags & BSF_FUNCTION) {
@@ -318,14 +341,13 @@ uint64_t Process_handler::Get_symbol_address_from_ELF(string ELF_path,string sym
 
 	bfd_close(tmp_bfd);
 	free(symbol_table);
-	return address;
 
+	return address;
 }
 
 bool Process_handler::Find_symbol_in_ELF(string ELF_path, string symbol_name){
 
 	bfd* tmp_bfd;
-	long storage_needed;
 	asymbol **symbol_table;
 	long number_of_symbols;
 
@@ -334,16 +356,19 @@ bool Process_handler::Find_symbol_in_ELF(string ELF_path, string symbol_name){
 		return false;
 	}
 
-	storage_needed = bfd_get_dynamic_symtab_upper_bound(tmp_bfd);
-	symbol_table = (asymbol**) malloc(storage_needed);
-	number_of_symbols = bfd_canonicalize_dynamic_symtab(tmp_bfd, symbol_table);
+	number_of_symbols = Parse_symbol_table_from_ELF(tmp_bfd,&symbol_table);
+	if (number_of_symbols < 0) {
+		return false;
+	}
 
 	for (int i = 0; i < number_of_symbols; i++) {
 		if (symbol_table[i]->flags & BSF_FUNCTION) {
 			string name(symbol_table[i]->name);
 			// If a symbol with the same name is found we has to be sure it is not a symbol from a shared library linked to this shared lib
-			if(symbol_name.compare(name)==0 && symbol_table[i]->value > 0){
+			// In this case value == 0
+			if(symbol_name.compare(name) == 0 && symbol_table[i]->value > 0){
 				free(symbol_table);
+				bfd_close(tmp_bfd);
 				return true;
 			}
 		}
@@ -351,6 +376,7 @@ bool Process_handler::Find_symbol_in_ELF(string ELF_path, string symbol_name){
 
 	bfd_close(tmp_bfd);
 	free(symbol_table);
+
 	return false;
 }
 
