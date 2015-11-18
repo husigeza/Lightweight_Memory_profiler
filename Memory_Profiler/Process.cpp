@@ -217,7 +217,6 @@ bool Process_handler::Create_symbol_table() {
 			symbol_entry.name = symbol_table[i]->name;
 			symbol_entry.address = 0;
 
-
 			if (symbol_table[i]->value != 0) {
 				// Symbol is defined in the process, address is known from ELF
 				symbol_entry.address = symbol_table[i]->section->vma + symbol_table[i]->value;
@@ -313,9 +312,9 @@ uint64_t Process_handler::Get_symbol_address_from_ELF(string ELF_path,string sym
 	asymbol **symbol_table;
 	long number_of_symbols;
 
-	uint64_t address;
+	uint64_t address = 0;
 
-	tmp_bfd = Open_ELF();
+	tmp_bfd = Open_ELF(ELF_path);
 	if (!tmp_bfd) {
 		cout<< "Error parsing ELF in Get_symbol_address_from_ELF"<<endl;
 		return 0;
