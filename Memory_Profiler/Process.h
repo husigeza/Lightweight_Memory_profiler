@@ -17,7 +17,7 @@
 
 using namespace std;
 
-#define max_log_entry 1000
+#define max_log_entry 10000000
 #define max_call_stack_depth 15
 
 class memory_profiler_log_entry_t{

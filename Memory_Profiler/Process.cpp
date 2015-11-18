@@ -175,9 +175,9 @@ bool Process_handler::Create_symbol_table() {
 		return false;
 	}
 
-	storage_needed = bfd_get_symtab_upper_bound(tmp_bfd);
+	storage_needed = bfd_get_dynamic_symtab_upper_bound(tmp_bfd);
 	symbol_table = (asymbol**) malloc(storage_needed);
-	number_of_symbols = bfd_canonicalize_symtab(tmp_bfd, symbol_table);
+	number_of_symbols = bfd_canonicalize_dynamic_symtab(tmp_bfd, symbol_table);
 
 	if (number_of_symbols < 0) {
 		return false;
@@ -196,6 +196,10 @@ bool Process_handler::Create_symbol_table() {
 
 			symbol_entry.name = name;
 			symbol_entry.address = 0;
+
+			if(symbol_entry.name == "_init"){
+				cout << "_init" << endl;
+			}
 
 			if (symbol_table[i]->value != 0) {
 				// Symbol is defined in the process, address is known from ELF
@@ -234,6 +238,7 @@ bool Process_handler::Create_symbol_table() {
 	}
 	cout << "counter: " << std::dec << counter << endl;
 	// Free the symbol table allocated in
+	bfd_close(tmp_bfd);
 	free(symbol_table);
 	return true;
 
@@ -294,9 +299,9 @@ uint64_t Process_handler::Get_symbol_address_from_ELF(string ELF_path,string sym
 
 	tmp_bfd = Open_ELF(ELF_path);
 
-	storage_needed = bfd_get_symtab_upper_bound(tmp_bfd);
+	storage_needed = bfd_get_dynamic_symtab_upper_bound(tmp_bfd);
 	symbol_table = (asymbol**) malloc(storage_needed);
-	number_of_symbols = bfd_canonicalize_symtab(tmp_bfd, symbol_table);
+	number_of_symbols = bfd_canonicalize_dynamic_symtab(tmp_bfd, symbol_table);
 
 
 	for (int i = 0; i < number_of_symbols; i++) {
@@ -311,6 +316,7 @@ uint64_t Process_handler::Get_symbol_address_from_ELF(string ELF_path,string sym
 			}
 		}
 
+	bfd_close(tmp_bfd);
 	free(symbol_table);
 	return address;
 
@@ -328,9 +334,9 @@ bool Process_handler::Find_symbol_in_ELF(string ELF_path, string symbol_name){
 		return false;
 	}
 
-	storage_needed = bfd_get_symtab_upper_bound(tmp_bfd);
+	storage_needed = bfd_get_dynamic_symtab_upper_bound(tmp_bfd);
 	symbol_table = (asymbol**) malloc(storage_needed);
-	number_of_symbols = bfd_canonicalize_symtab(tmp_bfd, symbol_table);
+	number_of_symbols = bfd_canonicalize_dynamic_symtab(tmp_bfd, symbol_table);
 
 	for (int i = 0; i < number_of_symbols; i++) {
 		if (symbol_table[i]->flags & BSF_FUNCTION) {
@@ -342,6 +348,8 @@ bool Process_handler::Find_symbol_in_ELF(string ELF_path, string symbol_name){
 			}
 		}
 	}
+
+	bfd_close(tmp_bfd);
 	free(symbol_table);
 	return false;
 }

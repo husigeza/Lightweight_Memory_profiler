@@ -24,7 +24,7 @@
 #include <dlfcn.h>
 
 #define fifo_path "/home/egezhus/mem_prof_fifo"
-#define max_log_entry 1000
+#define max_log_entry 10000000
 #define max_call_stack_depth 15
 
 extern void *__libc_malloc(size_t size);
@@ -169,7 +169,7 @@ void* malloc(size_t size) {
 
 		set_profiling(false);
 
-		printf("This is from my malloc!\n");
+		//printf("This is from my malloc!\n");
 
 		void* pointer = __libc_malloc(size);
 
@@ -179,25 +179,14 @@ void* malloc(size_t size) {
 		printf("log_count %d\n",memory_profiler_struct->log_count);
 
 		trace_size = backtrace(memory_profiler_struct->log_entry[memory_profiler_struct->log_count].call_stack,max_call_stack_depth);
-
-		for(i= 0; i< trace_size; i++){
-		dladdr(memory_profiler_struct->log_entry[memory_profiler_struct->log_count].call_stack[i],&info);
-		printf("Name: %s, address: %lx\n",info.dli_sname,(uint64_t)info.dli_saddr);
-		}
-
-
 		memory_profiler_struct->log_entry[memory_profiler_struct->log_count].thread_id = pthread_self();
 		memory_profiler_struct->log_entry[memory_profiler_struct->log_count].type = 1;
 		memory_profiler_struct->log_entry[memory_profiler_struct->log_count].size = size;
 	    memory_profiler_struct->log_entry[memory_profiler_struct->log_count].address = (uint64_t*)pointer;
 	    printf("address: %lu\n",(uint64_t*)pointer);
 	    memory_profiler_struct->log_entry[memory_profiler_struct->log_count].valid = true;
+
 	    memory_profiler_struct->log_count++;
-
-
-
-
-		printf("Shared memory has been written\n");
 
 		if(sem_post(&thread_semaphore) == -1){
 			printf("Error in sem_post, errno: %d\n",errno);

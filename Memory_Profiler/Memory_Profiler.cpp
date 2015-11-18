@@ -32,7 +32,13 @@ Memory_Profiler::Memory_Profiler(string fifo_path) {
 	}
 	mem_prof_fifo = open(fifo_path.c_str(), O_RDONLY | O_NONBLOCK );
 
-	Read_Symbol_map();
+	/*Read_Symbol_map("/lib/x86_64-linux-gnu/librt-2.19.so");
+	Read_Symbol_map("/lib/x86_64-linux-gnu/libdl-2.19.so");
+	Read_Symbol_map("/lib/x86_64-linux-gnu/libc-2.19.so");
+	Read_Symbol_map("/lib/x86_64-linux-gnu/libpthread-2.19.so");
+	Read_Symbol_map("/lib/x86_64-linux-gnu/ld-2.19.so");
+
+	Read_Symbol_map("/home/egezhus/Projects/MSc_thesis/Shared_library/Debug/libMemory_profiler_shared_library.so.1.0");*/
 }
 
 Memory_Profiler::~Memory_Profiler() {
@@ -44,29 +50,30 @@ Memory_Profiler::~Memory_Profiler() {
 	Processes.clear();
 }
 
-void Memory_Profiler::Read_Symbol_map() {
+void Memory_Profiler::Read_Symbol_map(string path) {
 
 	bfd *tmp_bfd = NULL;                        //handler for libbfd
 
     long i;
 
 	//tmp_bfd = bfd_openr("/home/egezhus/Projects/MSc_thesis/Shared_library/Debug/libMemory_profiler_shared_library.so.1.0", NULL);
-    tmp_bfd = bfd_openr("/lib/x86_64-linux-gnu/libc-2.19.so", 0);
+    tmp_bfd = bfd_openr(path.c_str(), 0);
 
     if (tmp_bfd == NULL) {
-	    printf ("Error openning file");
+	    printf ("Error opening file");
 		exit(-1);
 	}
 	//check if the file is in format
 	if (!bfd_check_format (tmp_bfd, bfd_object)) {
 		if (bfd_get_error () != bfd_error_file_ambiguously_recognized) {
-			printf("Incompatible formatn");
+			printf("Incompatible format\n");
 			exit(-1);
 		}
 	}
-	cout << "Shared library symbol map" << endl;
 
-	storage_needed = bfd_get_symtab_upper_bound (tmp_bfd);
+
+	//storage_needed = bfd_get_symtab_upper_bound (tmp_bfd);
+	storage_needed = bfd_get_dynamic_symtab_upper_bound(tmp_bfd);
 
 	if (storage_needed < 0)
 	  return;
@@ -75,12 +82,15 @@ void Memory_Profiler::Read_Symbol_map() {
 	  return;
 
 	symbol_table = (asymbol**)malloc(storage_needed);
-	number_of_symbols = bfd_canonicalize_symtab (tmp_bfd, symbol_table);
+	//number_of_symbols = bfd_canonicalize_symtab (tmp_bfd, symbol_table);
+	number_of_symbols = bfd_canonicalize_dynamic_symtab(tmp_bfd, symbol_table);
+
+	cout << path << " symbol map" << " storage_needed: "<< storage_needed<<" Number of symbols: "<< number_of_symbols<< endl;
 
 	if (number_of_symbols < 0)
 	  return;
 
-	for (i = 0; i < number_of_symbols; i++) {
+	/*for (i = 0; i < number_of_symbols; i++) {
 		if(symbol_table[i]->flags & BSF_FUNCTION){
 		cout << "name: " << symbol_table[i]->name << "  value: " << std::hex << symbol_table[i]->value << "  type: ";
 		if(symbol_table[i]->flags & BSF_LOCAL) cout << "BSF_LOCAL" << endl;
@@ -88,7 +98,11 @@ void Memory_Profiler::Read_Symbol_map() {
 		else cout<< endl;
 		cout << "section VMA: " << symbol_table[i]->section->vma << endl;
 		}
-	}
+	}*/
+
+
+
+	bfd_close(tmp_bfd);
 
 
 }

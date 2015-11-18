@@ -15,7 +15,7 @@ class Memory_Profiler {
         long storage_needed;
         asymbol **symbol_table;
         long number_of_symbols;
-        void Read_Symbol_map();
+        void Read_Symbol_map(string path);
 
     public:
         Memory_Profiler();
