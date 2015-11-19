@@ -41,8 +41,6 @@ static char PID_string_sem[16];
 
 static int shared_memory;
 
-static int trace_size = 0;
-
 static int mem_prof_fifo;
 
 sem_t enable_semaphore;
@@ -56,7 +54,8 @@ static sem_t* memory_profiler_start_semaphore;
 typedef struct memory_profiler_log_entry_s{
 	pthread_t thread_id;
 	int type; //malloc = 1, free = 2
-	size_t size; //allocated bytes in case of malloc
+	size_t  size; // in case of malloc
+	int backtrace_length;
 	void *call_stack[max_call_stack_depth];
 	uint64_t address;
 	bool valid;
@@ -162,28 +161,25 @@ void free(void* pointer) {
 
 void* malloc(size_t size) {
 
-	Dl_info_t info;
-	int i;
-
 	if (profiling_allowed()) {
 
 		set_profiling(false);
 
-		//printf("This is from my malloc!\n");
+		printf("This is from my malloc!\n");
 
 		void* pointer = __libc_malloc(size);
 
 		//TODO: Make this faster for multiple thread, don't defend the whole structure
 		sem_wait(&thread_semaphore);
 
-		printf("log_count %d\n",memory_profiler_struct->log_count);
+		//printf("log_count %d\n",memory_profiler_struct->log_count);
 
-		trace_size = backtrace(memory_profiler_struct->log_entry[memory_profiler_struct->log_count].call_stack,max_call_stack_depth);
+		memory_profiler_struct->log_entry[memory_profiler_struct->log_count].backtrace_length = backtrace(memory_profiler_struct->log_entry[memory_profiler_struct->log_count].call_stack,max_call_stack_depth);
 		memory_profiler_struct->log_entry[memory_profiler_struct->log_count].thread_id = pthread_self();
 		memory_profiler_struct->log_entry[memory_profiler_struct->log_count].type = 1;
 		memory_profiler_struct->log_entry[memory_profiler_struct->log_count].size = size;
 	    memory_profiler_struct->log_entry[memory_profiler_struct->log_count].address = (uint64_t*)pointer;
-	    printf("address: %lu\n",(uint64_t*)pointer);
+	    //printf("address: %xl\n",(uint64_t*)pointer);
 	    memory_profiler_struct->log_entry[memory_profiler_struct->log_count].valid = true;
 
 	    memory_profiler_struct->log_count++;

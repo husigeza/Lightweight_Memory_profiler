@@ -32,13 +32,6 @@ Memory_Profiler::Memory_Profiler(string fifo_path) {
 	}
 	mem_prof_fifo = open(fifo_path.c_str(), O_RDONLY | O_NONBLOCK );
 
-	/*Read_Symbol_map("/lib/x86_64-linux-gnu/librt-2.19.so");
-	Read_Symbol_map("/lib/x86_64-linux-gnu/libdl-2.19.so");
-	Read_Symbol_map("/lib/x86_64-linux-gnu/libc-2.19.so");
-	Read_Symbol_map("/lib/x86_64-linux-gnu/libpthread-2.19.so");
-	Read_Symbol_map("/lib/x86_64-linux-gnu/ld-2.19.so");
-
-	Read_Symbol_map("/home/egezhus/Projects/MSc_thesis/Shared_library/Debug/libMemory_profiler_shared_library.so.1.0");*/
 }
 
 Memory_Profiler::~Memory_Profiler() {
@@ -46,66 +39,10 @@ Memory_Profiler::~Memory_Profiler() {
 	cout << "Memory profiler destructor" << endl;
 	close(mem_prof_fifo);
 	unlink(fifo_path.c_str());
-	free(symbol_table);
+
 	Processes.clear();
 }
 
-void Memory_Profiler::Read_Symbol_map(string path) {
-
-	bfd *tmp_bfd = NULL;                        //handler for libbfd
-
-    long i;
-
-	//tmp_bfd = bfd_openr("/home/egezhus/Projects/MSc_thesis/Shared_library/Debug/libMemory_profiler_shared_library.so.1.0", NULL);
-    tmp_bfd = bfd_openr(path.c_str(), 0);
-
-    if (tmp_bfd == NULL) {
-	    printf ("Error opening file");
-		exit(-1);
-	}
-	//check if the file is in format
-	if (!bfd_check_format (tmp_bfd, bfd_object)) {
-		if (bfd_get_error () != bfd_error_file_ambiguously_recognized) {
-			printf("Incompatible format\n");
-			exit(-1);
-		}
-	}
-
-
-	//storage_needed = bfd_get_symtab_upper_bound (tmp_bfd);
-	storage_needed = bfd_get_dynamic_symtab_upper_bound(tmp_bfd);
-
-	if (storage_needed < 0)
-	  return;
-
-	if (storage_needed == 0)
-	  return;
-
-	symbol_table = (asymbol**)malloc(storage_needed);
-	//number_of_symbols = bfd_canonicalize_symtab (tmp_bfd, symbol_table);
-	number_of_symbols = bfd_canonicalize_dynamic_symtab(tmp_bfd, symbol_table);
-
-	cout << path << " symbol map" << " storage_needed: "<< storage_needed<<" Number of symbols: "<< number_of_symbols<< endl;
-
-	if (number_of_symbols < 0)
-	  return;
-
-	/*for (i = 0; i < number_of_symbols; i++) {
-		if(symbol_table[i]->flags & BSF_FUNCTION){
-		cout << "name: " << symbol_table[i]->name << "  value: " << std::hex << symbol_table[i]->value << "  type: ";
-		if(symbol_table[i]->flags & BSF_LOCAL) cout << "BSF_LOCAL" << endl;
-		else if(symbol_table[i]->flags & BSF_GLOBAL) cout << "BSF_GLOBAL" << endl;
-		else cout<< endl;
-		cout << "section VMA: " << symbol_table[i]->section->vma << endl;
-		}
-	}*/
-
-
-
-	bfd_close(tmp_bfd);
-
-
-}
 
 void Memory_Profiler::Print_all_processes() const {
 
@@ -314,22 +251,34 @@ void Memory_Profiler::Print_all_processes_shared_memory() {
 			for (int j=0; j < Processes[it->first].Get_shared_memory()->log_count; j++) {
 
 				if(Processes[it->first].Get_shared_memory()->log_entry[j].valid == true){
-					cout << endl <<"Shared memory PID: " << it->first << endl;
+					cout << endl <<"Shared memory PID: " << std::dec << it->first << endl;
 					cout <<"Shared_memory index: " << j << endl;
 					cout <<"Thread ID: " << Processes[it->first].Get_shared_memory()->log_entry[j].thread_id << endl;
 					cout <<"Call stack type: " << Processes[it->first].Get_shared_memory()->log_entry[j].type << endl;
-					cout <<"Address: " << Processes[it->first].Get_shared_memory()->log_entry[j].address << endl;
-					cout <<"Call stack size: " << Processes[it->first].Get_shared_memory()->log_entry[j].size << endl;
+					cout <<"Address: " << std::hex << Processes[it->first].Get_shared_memory()->log_entry[j].address << endl;
+					cout <<"Allocated size: " << Processes[it->first].Get_shared_memory()->log_entry[j].size << endl;
+					cout <<"Call stack size: " << Processes[it->first].Get_shared_memory()->log_entry[j].backtrace_length << endl;
 					cout <<"call stack: " << endl;
 
-					for(uint32_t i=0; i < Processes[it->first].Get_shared_memory()->log_entry[j].size;i++){
-						cout << Processes[it->first].Get_shared_memory()->log_entry[j].call_stack[i]<< " --- " << endl;
-						//cout<< Processes[it->first].Find_function((uint64_t)Processes[it->first].Get_shared_memory()->log_entry[j].call_stack[i])->name<< endl;
+					for(int  k=0; k < Processes[it->first].Get_shared_memory()->log_entry[j].backtrace_length;k++){
+						cout << Processes[it->first].Get_shared_memory()->log_entry[j].call_stack[k]<< " --- ";
+						cout << Processes[it->first].Find_function((uint64_t&)Processes[it->first].Get_shared_memory()->log_entry[j].call_stack[k])->name<< endl;
 					}
 				}
 			}
 		}
 	}
+	/*for(auto process : Processes){
+		if(process.second.Get_shared_memory() != NULL) {
+			for(int j=0; j < process.second.Get_shared_memory()->log_count; j++){
+				if(process.second.Get_shared_memory()->log_entry[j].valid == true){
+					cout <<"Shared memory PID: " << process.first << endl;
+					cout <<"Address: " << process.second.Get_shared_memory()->log_entry[j].address << endl;
+				}
+			}
+		}
+	}*/
+
 }
 
 void Memory_Profiler::Print_process_symbol_table(pid_t PID){
@@ -339,7 +288,7 @@ void Memory_Profiler::Print_process_symbol_table(pid_t PID){
 	for (it = Processes.begin(); it != Processes.end(); it++) {
 
 
-
+		//TODO: complete this
 	}
 
 }

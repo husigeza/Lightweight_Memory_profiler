@@ -18,6 +18,22 @@ using namespace std;
 
 #define memory_profiler_library "libMemory_profiler_shared_library.so"
 
+bool operator == (const uint64_t &address, const symbol_table_entry_struct_t& entry){ return (address == entry.address);}
+bool operator != (const uint64_t &address, const symbol_table_entry_struct_t& entry){ return !(address == entry.address);}
+bool operator <  (const uint64_t &address, const symbol_table_entry_struct_t& entry){ return (address < entry.address);}
+bool operator >  (const uint64_t &address, const symbol_table_entry_struct_t& entry){ return !(address < entry.address);}
+bool operator <= (const uint64_t &address, const symbol_table_entry_struct_t& entry){ return (address < entry.address);}
+bool operator >= (const uint64_t &address, const symbol_table_entry_struct_t& entry){ return !(address < entry.address);}
+
+bool operator == (const symbol_table_entry_struct_t& entry, const uint64_t &address){return (entry.address == address);}
+bool operator != (const symbol_table_entry_struct_t& entry, const uint64_t &address){return !(entry.address == address);}
+bool operator <  (const symbol_table_entry_struct_t& entry, const uint64_t &address){return (entry.address < address);}
+bool operator >  (const symbol_table_entry_struct_t& entry, const uint64_t &address){return !(entry.address < address);}
+bool operator <= (const symbol_table_entry_struct_t& entry, const uint64_t &address){return (entry.address < address);}
+bool operator >= (const symbol_table_entry_struct_t& entry, const uint64_t &address){return (entry.address > address);}
+
+
+
 
 Process_handler::Process_handler() {
 
@@ -29,6 +45,7 @@ Process_handler::Process_handler() {
 	shared_memory = 0;
 	semaphore_shared_memory = 0;
 	semaphore = NULL;
+
 
 }
 
@@ -49,21 +66,23 @@ Process_handler::Process_handler(pid_t PID) {
 	}
 	Init_semaphore();
 
-	cout << "sizeof memory_profiler_struct_t: "<< std::dec <<sizeof(memory_profiler_struct_t) << endl;
 }
 
-/*Process_handler::Process_handler(const Process_handler &obj) {
+Process_handler::Process_handler(const Process_handler &obj){
 
- cout << "copy constructor" << endl;
+	PID = obj.PID;
+	PID_string = obj.PID_string;
+	profiled = obj.profiled;
+	alive = obj.alive;
+	memory_profiler_struct = obj.memory_profiler_struct;
+	shared_memory = obj.shared_memory;
+	semaphore_shared_memory = obj.semaphore_shared_memory;
+	semaphore = obj.semaphore;
+	elf_path = obj.elf_path;
+	memory_map_table = obj.memory_map_table;
+	function_symbol_table = obj.function_symbol_table;
 
- this->PID = obj.PID;
- this->profiled = obj.profiled;
- this->memory_profiler_struct = NULL;
- this->shared_memory = 0;
-
- //this->Init_shared_memory();
-
- }*/
+}
 
 Process_handler::Process_handler(Process_handler &&obj) {
 
@@ -78,6 +97,8 @@ Process_handler::Process_handler(Process_handler &&obj) {
 	semaphore_shared_memory = obj.semaphore_shared_memory;
 	semaphore = obj.semaphore;
 	elf_path = obj.elf_path;
+	memory_map_table = obj.memory_map_table;
+	function_symbol_table = obj.function_symbol_table;
 
 	obj.PID = 0;
 	obj.PID_string = "";
@@ -88,20 +109,13 @@ Process_handler::Process_handler(Process_handler &&obj) {
 	obj.semaphore_shared_memory = 0;
 	obj.semaphore = NULL;
 	obj.elf_path = "";
+	obj.memory_map_table.clear();
+	obj.function_symbol_table.clear();
 }
 
 Process_handler& Process_handler::operator=(Process_handler&& obj) {
 
 	if (this != &obj) {
-
-		PID = 0;
-		PID_string = "";
-		profiled = false;
-		alive = false;
-		delete memory_profiler_struct;
-		shared_memory = 0;
-		semaphore_shared_memory = 0;
-		delete semaphore;
 
 		PID = obj.PID;
 		PID_string = obj.PID_string;
@@ -112,6 +126,8 @@ Process_handler& Process_handler::operator=(Process_handler&& obj) {
 		semaphore_shared_memory = obj.semaphore_shared_memory;
 		semaphore = obj.semaphore;
 		elf_path = obj.elf_path;
+		memory_map_table = obj.memory_map_table;
+		function_symbol_table = obj.function_symbol_table;
 
 		obj.PID = 0;
 		obj.PID_string = "";
@@ -130,7 +146,9 @@ Process_handler::~Process_handler() {
 
 	cout << "Process destructor" << endl;
 
-	//delete memory_profiler_struct;
+	memory_map_table.clear();
+	function_symbol_table.clear();
+
 	munmap(semaphore, sizeof(sem_t));
 	munmap(memory_profiler_struct, sizeof(memory_profiler_log_entry_t));
 	shm_unlink(("/" + PID_string).c_str());
@@ -140,12 +158,13 @@ Process_handler::~Process_handler() {
 /*
  * Returns with the index of function in vector
  */
-vector<symbol_table_entry_struct_t>::iterator Process_handler::Find_function(uint64_t address){
+vector<symbol_table_entry_struct_t>::iterator Process_handler::Find_function(uint64_t &address){
 
 	vector<symbol_table_entry_struct_t>::iterator it = lower_bound(function_symbol_table.begin(),function_symbol_table.end(),address);
+	//vector<symbol_table_entry_struct_t>::iterator it = upper_bound(function_symbol_table.begin(),function_symbol_table.end(),address);
+	if(it == function_symbol_table.end()) it = it-1;
+
 	return it;
-
-
 }
 
 
@@ -155,7 +174,6 @@ vector<symbol_table_entry_struct_t>::iterator Process_handler::Find_function(uin
 bfd* Process_handler::Open_ELF() {
 
 	return Open_ELF(elf_path);
-
 }
 
 /*
@@ -192,7 +210,6 @@ long Process_handler::Parse_symbol_table_from_ELF(bfd* bfd_ptr,asymbol ***symbol
 	*symbol_table = (asymbol**) malloc(storage_needed);
 	number_of_symbols = bfd_canonicalize_dynamic_symtab(bfd_ptr, *symbol_table);
 	return number_of_symbols;
-
 }
 
 bool Process_handler::Create_symbol_table() {
@@ -235,7 +252,7 @@ bool Process_handler::Create_symbol_table() {
 
 			if (symbol_table[i]->value != 0) {
 				// Symbol is defined in the process, address is known from ELF
-				symbol_entry.address = symbol_table[i]->section->vma + symbol_table[i]->value;
+				symbol_entry.address = (uint64_t)(symbol_table[i]->section->vma + symbol_table[i]->value);
 			} else {
 				// Symbol is not defined, address is not known from ELF, need to get it from shared library
 				if (symbol_entry.name == "malloc" || symbol_entry.name == "free") {
@@ -244,7 +261,7 @@ bool Process_handler::Create_symbol_table() {
 					for(unsigned int i = 0; i < memory_map_table.size(); i++){
 						//Find the entry of the memory_profiler_shared_library, read its VM base address, and find malloc/free address offset from it
 						if(memory_map_table[i].shared_lib_path.find(memory_profiler_library) !=  string::npos){
-							symbol_entry.address = memory_map_table[i].start_address + Get_symbol_address_from_ELF(memory_map_table[i].shared_lib_path,symbol_entry.name);
+							symbol_entry.address = (uint64_t)(memory_map_table[i].start_address + Get_symbol_address_from_ELF(memory_map_table[i].shared_lib_path,symbol_entry.name));
 							break;
 						}
 					}
@@ -255,7 +272,7 @@ bool Process_handler::Create_symbol_table() {
 						// Do not check the program's own symbol table
 						if(memory_map_table[i].shared_lib_path.compare(program_path) !=0){
 							if(Find_symbol_in_ELF(memory_map_table[i].shared_lib_path,symbol_entry.name)){
-									symbol_entry.address = memory_map_table[i].start_address + Get_symbol_address_from_ELF(memory_map_table[i].shared_lib_path,symbol_entry.name);
+									symbol_entry.address = (uint64_t)(memory_map_table[i].start_address + Get_symbol_address_from_ELF(memory_map_table[i].shared_lib_path,symbol_entry.name));
 									break;
 							}
 						}
@@ -264,23 +281,27 @@ bool Process_handler::Create_symbol_table() {
 			}
 
 			// Save the symbol with its absolute address in the vector
-			function_symbol_table.push_back(symbol_entry);
+			function_symbol_table.emplace_back(symbol_entry);
+
 			//cout << "symbol name: " << symbol_entry.name << " symbol address: " << std::hex << symbol_entry.address << endl;
 		}
 	}
 
-
+	//cout << "address: " << &function_symbol_table << endl;
+	/*cout << "this: " << this << endl;
+	cout << "this->PID: " << std::dec<<this->PID << endl;*/
 	//Sort the symbols based on address
 	sort(function_symbol_table.begin(),function_symbol_table.end());
 
-	for(unsigned int i = 0; i<function_symbol_table.size();i++ ){
+	for(auto element : function_symbol_table){
 
-		cout << std::hex <<function_symbol_table[i].address <<"  " << function_symbol_table[i].name << endl;
+		cout << std::hex << element.address <<"  " << element.name << endl;
 	}
 
 	// Free the symbol table allocated in
 	bfd_close(tmp_bfd);
 	free(symbol_table);
+
 
 	return true;
 }
@@ -426,7 +447,7 @@ void Process_handler::Init_semaphore() {
 
 void Process_handler::Init_shared_memory() {
 
-	// If this is the first profiling of a rpocess create the shared memory, if the shared memory already exists (e.g: second profiling for a process), use it
+	// If this is the first profiling of a process create the shared memory, if the shared memory already exists (e.g: second profiling for a process), use it
 	this->shared_memory = shm_open(("/" + PID_string).c_str(),
 	O_CREAT | O_RDWR | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO);
 
