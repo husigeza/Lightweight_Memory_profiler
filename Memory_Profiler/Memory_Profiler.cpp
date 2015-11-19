@@ -39,7 +39,6 @@ Memory_Profiler::~Memory_Profiler() {
 	cout << "Memory profiler destructor" << endl;
 	close(mem_prof_fifo);
 	unlink(fifo_path.c_str());
-
 	Processes.clear();
 }
 
