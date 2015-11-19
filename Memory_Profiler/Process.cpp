@@ -18,19 +18,19 @@ using namespace std;
 
 #define memory_profiler_library "libMemory_profiler_shared_library.so"
 
-bool operator == (const uint64_t &address, const symbol_table_entry_struct_t& entry){ return (address == entry.address);}
-bool operator != (const uint64_t &address, const symbol_table_entry_struct_t& entry){ return !(address == entry.address);}
-bool operator <  (const uint64_t &address, const symbol_table_entry_struct_t& entry){ return (address < entry.address);}
-bool operator >  (const uint64_t &address, const symbol_table_entry_struct_t& entry){ return !(address < entry.address);}
-bool operator <= (const uint64_t &address, const symbol_table_entry_struct_t& entry){ return (address < entry.address);}
-bool operator >= (const uint64_t &address, const symbol_table_entry_struct_t& entry){ return !(address < entry.address);}
+bool operator == (const uint64_t &address, const symbol_table_entry_class& entry){ return (address == entry.address);}
+bool operator != (const uint64_t &address, const symbol_table_entry_class& entry){ return !(address == entry.address);}
+bool operator <  (const uint64_t &address, const symbol_table_entry_class& entry){ return (address < entry.address);}
+bool operator >  (const uint64_t &address, const symbol_table_entry_class& entry){ return !(address < entry.address);}
+bool operator <= (const uint64_t &address, const symbol_table_entry_class& entry){ return (address < entry.address);}
+bool operator >= (const uint64_t &address, const symbol_table_entry_class& entry){ return !(address < entry.address);}
 
-bool operator == (const symbol_table_entry_struct_t& entry, const uint64_t &address){return (entry.address == address);}
-bool operator != (const symbol_table_entry_struct_t& entry, const uint64_t &address){return !(entry.address == address);}
-bool operator <  (const symbol_table_entry_struct_t& entry, const uint64_t &address){return (entry.address < address);}
-bool operator >  (const symbol_table_entry_struct_t& entry, const uint64_t &address){return !(entry.address < address);}
-bool operator <= (const symbol_table_entry_struct_t& entry, const uint64_t &address){return (entry.address < address);}
-bool operator >= (const symbol_table_entry_struct_t& entry, const uint64_t &address){return (entry.address > address);}
+bool operator == (const symbol_table_entry_class& entry, const uint64_t &address){return (entry.address == address);}
+bool operator != (const symbol_table_entry_class& entry, const uint64_t &address){return !(entry.address == address);}
+bool operator <  (const symbol_table_entry_class& entry, const uint64_t &address){return (entry.address < address);}
+bool operator >  (const symbol_table_entry_class& entry, const uint64_t &address){return !(entry.address < address);}
+bool operator <= (const symbol_table_entry_class& entry, const uint64_t &address){return (entry.address < address);}
+bool operator >= (const symbol_table_entry_class& entry, const uint64_t &address){return (entry.address > address);}
 
 
 
@@ -158,10 +158,10 @@ Process_handler::~Process_handler() {
 /*
  * Returns with the index of function in vector
  */
-vector<symbol_table_entry_struct_t>::iterator Process_handler::Find_function(uint64_t &address){
+vector<symbol_table_entry_class>::iterator Process_handler::Find_function(uint64_t &address){
 
-	vector<symbol_table_entry_struct_t>::iterator it = lower_bound(function_symbol_table.begin(),function_symbol_table.end(),address);
-	//vector<symbol_table_entry_struct_t>::iterator it = upper_bound(function_symbol_table.begin(),function_symbol_table.end(),address);
+	vector<symbol_table_entry_class>::iterator it = lower_bound(function_symbol_table.begin(),function_symbol_table.end(),address);
+	//vector<symbol_table_entry_class>::iterator it = upper_bound(function_symbol_table.begin(),function_symbol_table.end(),address);
 	if(it == function_symbol_table.end()) it = it-1;
 
 	return it;
@@ -209,6 +209,7 @@ long Process_handler::Parse_symbol_table_from_ELF(bfd* bfd_ptr,asymbol ***symbol
 	storage_needed = bfd_get_dynamic_symtab_upper_bound(bfd_ptr);
 	*symbol_table = (asymbol**) malloc(storage_needed);
 	number_of_symbols = bfd_canonicalize_dynamic_symtab(bfd_ptr, *symbol_table);
+
 	return number_of_symbols;
 }
 
@@ -218,7 +219,7 @@ bool Process_handler::Create_symbol_table() {
 	asymbol **symbol_table = 0;
 	long number_of_symbols;
 
-	symbol_table_entry_struct_t symbol_entry;
+	symbol_table_entry_class symbol_entry;
 
 	// TODO This needs to be rethinked, define a const for it or a find dynamic way
 	char program_path[1024];
@@ -287,16 +288,13 @@ bool Process_handler::Create_symbol_table() {
 		}
 	}
 
-	//cout << "address: " << &function_symbol_table << endl;
-	/*cout << "this: " << this << endl;
-	cout << "this->PID: " << std::dec<<this->PID << endl;*/
 	//Sort the symbols based on address
 	sort(function_symbol_table.begin(),function_symbol_table.end());
 
-	for(auto element : function_symbol_table){
+	/*for(auto element : function_symbol_table){
 
 		cout << std::hex << element.address <<"  " << element.name << endl;
-	}
+	}*/
 
 	// Free the symbol table allocated in
 	bfd_close(tmp_bfd);
@@ -318,7 +316,7 @@ bool Process_handler::Read_virtual_memory_mapping() {
 	size_t pos_end_address_stop;
 
 
-	memory_map_table_entry_struct_t entry;
+	memory_map_table_entry_class entry;
 
 	while (getline(mapping, line)) {
 		try{

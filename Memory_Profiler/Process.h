@@ -40,28 +40,28 @@ public:
 	memory_profiler_log_entry_t log_entry[max_log_entry];
 };
 
-class symbol_table_entry_struct_t {
+class symbol_table_entry_class {
 
 public:
 	string name;
 	uint64_t address;
 
-	symbol_table_entry_struct_t() : name{""},address{0} {};
-	symbol_table_entry_struct_t(string name_p, uint64_t address_p): name{name_p},address{address_p} {};
+	symbol_table_entry_class() : name{""},address{0} {};
+	symbol_table_entry_class(string name_p, uint64_t address_p): name{name_p},address{address_p} {};
 
 
-	symbol_table_entry_struct_t(const symbol_table_entry_struct_t &obj){
+	symbol_table_entry_class(const symbol_table_entry_class &obj){
 		address = obj.address;
 		name = obj.name;
 	}
 
-	symbol_table_entry_struct_t& operator=(const symbol_table_entry_struct_t &obj)noexcept {
+	symbol_table_entry_class& operator=(const symbol_table_entry_class &obj)noexcept {
 		address = obj.address;
 		name = obj.name;
 		return *this;
 	}
 
-	symbol_table_entry_struct_t(symbol_table_entry_struct_t &&obj)noexcept{
+	symbol_table_entry_class(symbol_table_entry_class &&obj)noexcept{
 
 		if(this != &obj){
 			address = obj.address;
@@ -72,7 +72,7 @@ public:
 		}
 	}
 
-	symbol_table_entry_struct_t& operator=(symbol_table_entry_struct_t &&obj)noexcept{
+	symbol_table_entry_class& operator=(symbol_table_entry_class &&obj)noexcept{
 
 		if (this != &obj) {
 			name = obj.name;
@@ -92,30 +92,30 @@ public:
 		    else return false;
 	}
 	bool operator!=(const string& symbol_name) const {return(!(this->name == symbol_name));}
-	bool operator<(const symbol_table_entry_struct_t& entry) const {return (address < entry.address);}
-	bool operator>(const symbol_table_entry_struct_t& entry) const {return (!(address < entry.address));}
-	bool operator<=(const symbol_table_entry_struct_t& entry) const {return (address < entry.address);}
-	bool operator>=(const symbol_table_entry_struct_t& entry) const {return (!(address > entry.address));}
+	bool operator<(const symbol_table_entry_class& entry) const {return (address < entry.address);}
+	bool operator>(const symbol_table_entry_class& entry) const {return (!(address < entry.address));}
+	bool operator<=(const symbol_table_entry_class& entry) const {return (address < entry.address);}
+	bool operator>=(const symbol_table_entry_class& entry) const {return (!(address > entry.address));}
 
 
 };
 
 
-class memory_map_table_entry_struct_t {
+class memory_map_table_entry_class {
 
 public:
 	uint64_t start_address;
 	uint64_t end_address;
 	string shared_lib_path;
 
-	memory_map_table_entry_struct_t() : start_address{0},end_address{0},shared_lib_path{""} {};
-	memory_map_table_entry_struct_t(const memory_map_table_entry_struct_t &obj) {
+	memory_map_table_entry_class() : start_address{0},end_address{0},shared_lib_path{""} {};
+	memory_map_table_entry_class(const memory_map_table_entry_class &obj) {
 		start_address = obj.start_address;
 		end_address = obj.end_address;
 		shared_lib_path = obj.shared_lib_path;
 	}
 
-	memory_map_table_entry_struct_t& operator=(const memory_map_table_entry_struct_t &obj)noexcept{
+	memory_map_table_entry_class& operator=(const memory_map_table_entry_class &obj)noexcept{
 
 			start_address = obj.start_address;
 			end_address = obj.end_address;
@@ -124,7 +124,7 @@ public:
 			return *this;
 	}
 
-	memory_map_table_entry_struct_t(memory_map_table_entry_struct_t &&obj)noexcept{
+	memory_map_table_entry_class(memory_map_table_entry_class &&obj)noexcept{
 		if(this != &obj) {
 			start_address = obj.start_address;
 			end_address = obj.end_address;
@@ -135,7 +135,7 @@ public:
 			obj.shared_lib_path = "";
 		}
 	}
-	memory_map_table_entry_struct_t& operator=(memory_map_table_entry_struct_t &&obj)noexcept{
+	memory_map_table_entry_class& operator=(memory_map_table_entry_class &&obj)noexcept{
 		if(this != &obj) {
 			start_address = obj.start_address;
 			end_address = obj.end_address;
@@ -153,8 +153,8 @@ public:
 	    else return false;
 	}
 	bool operator!=(const string& shared_lib_path) const {return(!(this->shared_lib_path == shared_lib_path));}
-	bool operator<(const memory_map_table_entry_struct_t& entry) const {return (start_address < entry.start_address);}
-	bool operator>(const memory_map_table_entry_struct_t& entry) const {return (!(start_address < entry.start_address));}
+	bool operator<(const memory_map_table_entry_class& entry) const {return (start_address < entry.start_address);}
+	bool operator>(const memory_map_table_entry_class& entry) const {return (!(start_address < entry.start_address));}
 };
 
 
@@ -175,9 +175,9 @@ class Process_handler {
     string elf_path;
 
     // Storing memory mappings of the shared libraries used by the customer program
-    vector<memory_map_table_entry_struct_t> memory_map_table;
+    vector<memory_map_table_entry_class> memory_map_table;
     // Storing the symbols from the ELF with its proper virtual address
-	vector<symbol_table_entry_struct_t> function_symbol_table;
+	vector<symbol_table_entry_class> function_symbol_table;
 
     void Init_semaphore();
 
@@ -217,7 +217,7 @@ class Process_handler {
 
         memory_profiler_struct_t* Get_shared_memory();
 
-        vector<symbol_table_entry_struct_t>::iterator Find_function(uint64_t &address);
+        vector<symbol_table_entry_class>::iterator Find_function(uint64_t &address);
 };
 
 
