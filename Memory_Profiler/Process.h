@@ -184,6 +184,7 @@ class Process_handler {
     bfd* Open_ELF();
     bfd* Open_ELF(string ELF_path);
 
+    long Parse_dynamic_symbol_table_from_ELF(bfd* bfd_ptr,asymbol ***symbol_table);
     long Parse_symbol_table_from_ELF(bfd* bfd_ptr,asymbol ***symbol_table);
 
     bool Create_symbol_table();

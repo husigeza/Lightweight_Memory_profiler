@@ -161,8 +161,8 @@ Process_handler::~Process_handler() {
 vector<symbol_table_entry_class>::iterator Process_handler::Find_function(uint64_t &address){
 
 	vector<symbol_table_entry_class>::iterator it = lower_bound(function_symbol_table.begin(),function_symbol_table.end(),address);
-	//vector<symbol_table_entry_class>::iterator it = upper_bound(function_symbol_table.begin(),function_symbol_table.end(),address);
-	if(it == function_symbol_table.end()) it = it-1;
+
+	if(!(it == function_symbol_table.begin())) it = it-1;
 
 	return it;
 }
@@ -198,10 +198,23 @@ bfd* Process_handler::Open_ELF(string ELF_path){
 		return tmp_bfd;
 }
 
+
+long Process_handler::Parse_symbol_table_from_ELF(bfd* bfd_ptr,asymbol ***symbol_table){
+
+	long storage_needed;
+	long number_of_symbols;
+
+	storage_needed = bfd_get_symtab_upper_bound(bfd_ptr);
+	*symbol_table = (asymbol**) malloc(storage_needed);
+	number_of_symbols = bfd_canonicalize_symtab(bfd_ptr, *symbol_table);
+
+	return number_of_symbols;
+}
+
 /*
  * Need to free symbol_table manually after this function !!!
  */
-long Process_handler::Parse_symbol_table_from_ELF(bfd* bfd_ptr,asymbol ***symbol_table){
+long Process_handler::Parse_dynamic_symbol_table_from_ELF(bfd* bfd_ptr,asymbol ***symbol_table){
 
 	long storage_needed;
 	long number_of_symbols;
@@ -212,6 +225,8 @@ long Process_handler::Parse_symbol_table_from_ELF(bfd* bfd_ptr,asymbol ***symbol
 
 	return number_of_symbols;
 }
+
+
 
 bool Process_handler::Create_symbol_table() {
 
@@ -231,6 +246,7 @@ bool Process_handler::Create_symbol_table() {
 	}
 
 	number_of_symbols = Parse_symbol_table_from_ELF(tmp_bfd,&symbol_table);
+	//number_of_symbols = Parse_dynamic_symbol_table_from_ELF(tmp_bfd,&symbol_table);
 	if (number_of_symbols < 0) {
 		return false;
 	}
@@ -249,6 +265,11 @@ bool Process_handler::Create_symbol_table() {
 
 			// Initialize name and address
 			symbol_entry.name = symbol_table[i]->name;
+
+			if(symbol_entry.name == "puts@@GLIBC_2.2.5"){
+				cout << "puts@@GLIBC_2.2.5" << endl;
+			}
+
 			symbol_entry.address = 0;
 
 			if (symbol_table[i]->value != 0) {
@@ -272,8 +293,15 @@ bool Process_handler::Create_symbol_table() {
 					for(unsigned int i = 0; i < memory_map_table.size(); i++){
 						// Do not check the program's own symbol table
 						if(memory_map_table[i].shared_lib_path.compare(program_path) !=0){
-							if(Find_symbol_in_ELF(memory_map_table[i].shared_lib_path,symbol_entry.name)){
-									symbol_entry.address = (uint64_t)(memory_map_table[i].start_address + Get_symbol_address_from_ELF(memory_map_table[i].shared_lib_path,symbol_entry.name));
+
+							// Reading the symbols from .symtab contains @@LIB string in their name referring to the shared library
+							// Reading symbols from .dynsym only contains symbol name without @@LIB substring, need to strip it
+							// TODO: readelf -s somehow reads dynamic section with symbols containing the @@LIB substring
+							size_t posisition = symbol_entry.name.find_first_of("@");
+							string stripped_func_name = symbol_entry.name.substr(0,posisition);
+
+							if(Find_symbol_in_ELF(memory_map_table[i].shared_lib_path,stripped_func_name)){
+									symbol_entry.address = (uint64_t)(memory_map_table[i].start_address + Get_symbol_address_from_ELF(memory_map_table[i].shared_lib_path,stripped_func_name));
 									break;
 							}
 						}
@@ -283,18 +311,16 @@ bool Process_handler::Create_symbol_table() {
 
 			// Save the symbol with its absolute address in the vector
 			function_symbol_table.emplace_back(symbol_entry);
-
-			//cout << "symbol name: " << symbol_entry.name << " symbol address: " << std::hex << symbol_entry.address << endl;
 		}
 	}
 
 	//Sort the symbols based on address
 	sort(function_symbol_table.begin(),function_symbol_table.end());
 
-	/*for(auto element : function_symbol_table){
+	for(auto element : function_symbol_table){
 
 		cout << std::hex << element.address <<"  " << element.name << endl;
-	}*/
+	}
 
 	// Free the symbol table allocated in
 	bfd_close(tmp_bfd);
@@ -370,11 +396,13 @@ uint64_t Process_handler::Get_symbol_address_from_ELF(string ELF_path,string sym
 		return 0;
 	}
 
-	number_of_symbols = Parse_symbol_table_from_ELF(tmp_bfd,&symbol_table);
-	if (number_of_symbols < 0) {
-		cout<< "Error reading symbols from ELF in Parse_symbol_table_from_ELF"<<endl;
-		return 0;
-	}
+	number_of_symbols = Parse_dynamic_symbol_table_from_ELF(tmp_bfd,&symbol_table);
+			if (number_of_symbols < 0) {
+				cout<< "Error reading symbols from ELF in Parse_symbol_table_from_ELF"<<endl;
+				return 0;
+			}
+
+			//SEC_DEBUGGING
 
 	for (int i = 0; i < number_of_symbols; i++) {
 			if (symbol_table[i]->flags & BSF_FUNCTION) {
@@ -405,7 +433,7 @@ bool Process_handler::Find_symbol_in_ELF(string ELF_path, string symbol_name){
 		return false;
 	}
 
-	number_of_symbols = Parse_symbol_table_from_ELF(tmp_bfd,&symbol_table);
+	number_of_symbols = Parse_dynamic_symbol_table_from_ELF(tmp_bfd,&symbol_table);
 	if (number_of_symbols < 0) {
 		return false;
 	}
