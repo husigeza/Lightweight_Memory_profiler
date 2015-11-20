@@ -234,12 +234,12 @@ void Memory_Profiler::Print_all_processes_shared_memory() {
 
 				if(Processes[it->first].Get_shared_memory()->log_entry[j].valid == true){
 					cout << endl <<"Shared memory PID: " << std::dec << it->first << endl;
-					cout <<"Shared_memory index: " << j << endl;
+					cout <<"Shared_memory index: " << std::dec << j << endl;
 					cout <<"Thread ID: " << Processes[it->first].Get_shared_memory()->log_entry[j].thread_id << endl;
 					cout <<"Call stack type: " << Processes[it->first].Get_shared_memory()->log_entry[j].type << endl;
 					cout <<"Address: " << std::hex << Processes[it->first].Get_shared_memory()->log_entry[j].address << endl;
-					cout <<"Allocated size: " << Processes[it->first].Get_shared_memory()->log_entry[j].size << endl;
-					cout <<"Call stack size: " << Processes[it->first].Get_shared_memory()->log_entry[j].backtrace_length << endl;
+					cout <<"Allocated size: " << std::dec << Processes[it->first].Get_shared_memory()->log_entry[j].size << endl;
+					cout <<"Call stack size: " << std::dec << Processes[it->first].Get_shared_memory()->log_entry[j].backtrace_length << endl;
 					cout <<"call stack: " << endl;
 
 					for(int  k=0; k < Processes[it->first].Get_shared_memory()->log_entry[j].backtrace_length;k++){
