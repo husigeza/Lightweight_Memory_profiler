@@ -12,7 +12,8 @@
 #include <semaphore.h>
 #include <vector>
 #include <bfd.h>
-
+#include "memory_map.h"
+#include "symbol_table.h"
 
 
 using namespace std;
@@ -20,9 +21,11 @@ using namespace std;
 #define max_log_entry 10000
 #define max_call_stack_depth 100
 
-class memory_profiler_log_entry_t{
+class memory_profiler_sm_object_log_entry_class{
 
 public:
+	memory_profiler_sm_object_log_entry_class() : thread_id{0},type{0}, size{0},backtrace_length{0},call_stack{nullptr},address{0},valid{false}{};
+
 	pthread_t thread_id;
 	int type; //malloc = 1, free = 2
 	size_t  size; // in case of malloc
@@ -32,130 +35,13 @@ public:
 	bool valid;
 };
 
-//TODO Rename the classes from struct to class
-class memory_profiler_struct_t {
+class memory_profiler_sm_object_class {
 
 public:
 	int log_count;
-	memory_profiler_log_entry_t log_entry[max_log_entry];
+	memory_profiler_sm_object_log_entry_class log_entry[max_log_entry];
 };
 
-class symbol_table_entry_struct_t {
-
-public:
-	string name;
-	uint64_t address;
-
-	symbol_table_entry_struct_t() : name{""},address{0} {};
-	symbol_table_entry_struct_t(string name_p, uint64_t address_p): name{name_p},address{address_p} {};
-
-
-	symbol_table_entry_struct_t(const symbol_table_entry_struct_t &obj){
-		address = obj.address;
-		name = obj.name;
-	}
-
-	symbol_table_entry_struct_t& operator=(const symbol_table_entry_struct_t &obj)noexcept {
-		address = obj.address;
-		name = obj.name;
-		return *this;
-	}
-
-	symbol_table_entry_struct_t(symbol_table_entry_struct_t &&obj)noexcept{
-
-		if(this != &obj){
-			address = obj.address;
-			name = obj.name;
-
-			obj.address = 0;
-			obj.name = "";
-		}
-	}
-
-	symbol_table_entry_struct_t& operator=(symbol_table_entry_struct_t &&obj)noexcept{
-
-		if (this != &obj) {
-			name = obj.name;
-			address = obj.address;
-
-			obj.name = "";
-			obj.address = 0;
-		}
-		return *this;
-	}
-
-
-
-
-	bool operator==(const string& symbol_name) const {
-		    if(this->name.compare(symbol_name) == 0)return true;
-		    else return false;
-	}
-	bool operator!=(const string& symbol_name) const {return(!(this->name == symbol_name));}
-	bool operator<(const symbol_table_entry_struct_t& entry) const {return (address < entry.address);}
-	bool operator>(const symbol_table_entry_struct_t& entry) const {return (!(address < entry.address));}
-	bool operator<=(const symbol_table_entry_struct_t& entry) const {return (address < entry.address);}
-	bool operator>=(const symbol_table_entry_struct_t& entry) const {return (!(address > entry.address));}
-
-
-};
-
-
-class memory_map_table_entry_struct_t {
-
-public:
-	uint64_t start_address;
-	uint64_t end_address;
-	string shared_lib_path;
-
-	memory_map_table_entry_struct_t() : start_address{0},end_address{0},shared_lib_path{""} {};
-	memory_map_table_entry_struct_t(const memory_map_table_entry_struct_t &obj) {
-		start_address = obj.start_address;
-		end_address = obj.end_address;
-		shared_lib_path = obj.shared_lib_path;
-	}
-
-	memory_map_table_entry_struct_t& operator=(const memory_map_table_entry_struct_t &obj)noexcept{
-
-			start_address = obj.start_address;
-			end_address = obj.end_address;
-			shared_lib_path = obj.shared_lib_path;
-
-			return *this;
-	}
-
-	memory_map_table_entry_struct_t(memory_map_table_entry_struct_t &&obj)noexcept{
-		if(this != &obj) {
-			start_address = obj.start_address;
-			end_address = obj.end_address;
-			shared_lib_path = obj.shared_lib_path;
-
-			obj.start_address = 0;
-			obj.end_address = 0;
-			obj.shared_lib_path = "";
-		}
-	}
-	memory_map_table_entry_struct_t& operator=(memory_map_table_entry_struct_t &&obj)noexcept{
-		if(this != &obj) {
-			start_address = obj.start_address;
-			end_address = obj.end_address;
-			shared_lib_path = obj.shared_lib_path;
-
-			obj.start_address = 0;
-			obj.end_address = 0;
-			obj.shared_lib_path = "";
-		}
-		return *this;
-	}
-
-	bool operator==(const string& shared_lib_path) const {
-	    if(this->shared_lib_path.compare(shared_lib_path) == 0)return true;
-	    else return false;
-	}
-	bool operator!=(const string& shared_lib_path) const {return(!(this->shared_lib_path == shared_lib_path));}
-	bool operator<(const memory_map_table_entry_struct_t& entry) const {return (start_address < entry.start_address);}
-	bool operator>(const memory_map_table_entry_struct_t& entry) const {return (!(start_address < entry.start_address));}
-};
 
 
 class Process_handler {
@@ -167,7 +53,7 @@ class Process_handler {
     bool alive;
 
     int shared_memory;
-    memory_profiler_struct_t *memory_profiler_struct;
+    memory_profiler_sm_object_class *memory_profiler_struct;
 
     int semaphore_shared_memory;
     sem_t* semaphore;
@@ -175,15 +61,16 @@ class Process_handler {
     string elf_path;
 
     // Storing memory mappings of the shared libraries used by the customer program
-    vector<memory_map_table_entry_struct_t> memory_map_table;
+    vector<memory_map_table_entry_class> memory_map_table;
     // Storing the symbols from the ELF with its proper virtual address
-	vector<symbol_table_entry_struct_t> function_symbol_table;
+	vector<symbol_table_entry_class> function_symbol_table;
 
     void Init_semaphore();
 
     bfd* Open_ELF();
     bfd* Open_ELF(string ELF_path);
 
+    long Parse_dynamic_symbol_table_from_ELF(bfd* bfd_ptr,asymbol ***symbol_table);
     long Parse_symbol_table_from_ELF(bfd* bfd_ptr,asymbol ***symbol_table);
 
     bool Create_symbol_table();
@@ -198,9 +85,10 @@ class Process_handler {
     	Process_handler();
         Process_handler(pid_t PID);
         ~Process_handler();
-        Process_handler(const Process_handler &obj);
-        Process_handler(Process_handler &&obj);
-        Process_handler& operator=(Process_handler &&obj);
+        Process_handler(const Process_handler &obj)noexcept;
+        Process_handler& operator=(const Process_handler &obj)noexcept;
+        Process_handler(Process_handler &&obj)noexcept;
+        Process_handler& operator=(Process_handler &&obj)noexcept;
 
         void Init_shared_memory();
 
@@ -212,12 +100,11 @@ class Process_handler {
         void Set_alive(bool value){this->alive = value;};
 		bool Get_alive(){return alive;};
 
-        void Send_signal();
         void Start_Stop_profiling();
 
-        memory_profiler_struct_t* Get_shared_memory();
+        memory_profiler_sm_object_class* Get_shared_memory();
 
-        vector<symbol_table_entry_struct_t>::iterator Find_function(uint64_t &address);
+        vector<symbol_table_entry_class>::iterator Find_function(uint64_t &address);
 };
 
 

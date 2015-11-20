@@ -48,7 +48,7 @@ void Memory_Profiler::Print_all_processes() const {
 	cout << "Printing all processes" << endl;
 	for (auto& element : Processes) {
 
-		cout << "PID: " << element.first << endl;
+		cout << "PID: " << std::dec << element.first << endl;
 	}
 	cout << "Number of processes: " << Processes.size() << endl;
 }
@@ -61,7 +61,7 @@ void Memory_Profiler::Print_alive_processes() {
 
 	for (it = Processes.begin(); it != Processes.end(); it++) {
 		if(Get_process_alive_flag(it->first)){
-			cout << "PID: " << it->first << endl;
+			cout << "PID: " << std::dec << it->first << endl;
 		}
 
 	}
@@ -162,23 +162,6 @@ void Memory_Profiler::Start_stop_profiling_all_processes(){
 	}
 }
 
-inline void Memory_Profiler::Send_signal_to_process(const pid_t PID) {
-
-	Processes[PID].Send_signal();
-
-}
-
-void Memory_Profiler::Send_signal_to_all_processes() {
-
-	map<const pid_t, Process_handler>::iterator it;
-
-	for (it = Processes.begin(); it != Processes.end(); it++) {
-
-		if (it->second.Get_profiled() == true) {
-			Send_signal_to_process(it->first);
-		}
-	}
-}
 
 void Memory_Profiler::Read_FIFO() {
 
@@ -219,7 +202,7 @@ void Memory_Profiler::Read_FIFO() {
 void Memory_Profiler::Print_profiled_process_shared_memory(const pid_t PID) {
 
 	if (Processes[PID].Get_profiled() == true) {
-		memory_profiler_struct_t *shared_memory = Processes[PID].Get_shared_memory();
+		memory_profiler_sm_object_class *shared_memory = Processes[PID].Get_shared_memory();
 
 		for (int j=0; j < shared_memory->log_count; j++) {
 

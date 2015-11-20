@@ -31,9 +31,6 @@ class Memory_Profiler {
         void Remove_process_from_profiling(const pid_t PID);
         void Remove_all_process_from_profiling();
 
-        void Send_signal_to_process(const pid_t PID);
-        void Send_signal_to_all_processes();
-
         void Start_stop_profiling(const pid_t PID);
         void Start_stop_profiling_all_processes();
 
