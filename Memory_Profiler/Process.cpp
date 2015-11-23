@@ -246,6 +246,11 @@ bool Process_handler::Create_symbol_table() {
 
 	symbol_table_entry_class symbol_entry;
 
+	// Counts malloc and free, if both is found in symtab section of the ELF, counter == 2, otherwise
+	// malloc or/and free does not explicitly called from the program, so they are not located in symtab section
+	// In this case get the address of malloc and free from memory_profiler_shared library
+	uint8_t counter=0;
+
 	// TODO This needs to be rethinked, define a const for it or a find dynamic way
 	char program_path[1024];
 	int len;
@@ -270,7 +275,35 @@ bool Process_handler::Create_symbol_table() {
 	if ((len = readlink(elf_path.c_str(), program_path, sizeof(program_path)-1)) != -1)
 		program_path[len] = '\0';
 
+
+	// Get malloc and free from memory_profiler_shared_library
+	// Initialize name and address
+	symbol_entry.name = "malloc";
+	symbol_entry.address = 0;
+	for(unsigned int i = 0; i < memory_map_table.size(); i++){
+		//Find the entry of the memory_profiler_shared_library, read its VM base address, and find malloc/free address offset from it
+		if(memory_map_table[i].shared_lib_path.find(memory_profiler_library) !=  string::npos){
+			symbol_entry.address = (uint64_t)(memory_map_table[i].start_address + Get_symbol_address_from_ELF(memory_map_table[i].shared_lib_path,symbol_entry.name));
+			break;
+		}
+	}
+	// Save the symbol with its absolute address in the vector
+	function_symbol_table.emplace_back(symbol_entry);
+
+	symbol_entry.name = "free";
+	symbol_entry.address = 0;
+	for(unsigned int i = 0; i < memory_map_table.size(); i++){
+			//Find the entry of the memory_profiler_shared_library, read its VM base address, and find malloc/free address offset from it
+			if(memory_map_table[i].shared_lib_path.find(memory_profiler_library) !=  string::npos){
+				symbol_entry.address = (uint64_t)(memory_map_table[i].start_address + Get_symbol_address_from_ELF(memory_map_table[i].shared_lib_path,symbol_entry.name));
+				break;
+			}
+	}
+	// Save the symbol with its absolute address in the vector
+	function_symbol_table.emplace_back(symbol_entry);
+
 	for (int i = 0; i < number_of_symbols; i++) {
+		cout << "symbol_table[i]->name: " << symbol_table[i]->name << endl;
 		if (symbol_table[i]->flags & BSF_FUNCTION) {
 
 			// Initialize name and address
@@ -280,18 +313,13 @@ bool Process_handler::Create_symbol_table() {
 			if (symbol_table[i]->value != 0) {
 				// Symbol is defined in the process, address is known from ELF
 				symbol_entry.address = (uint64_t)(symbol_table[i]->section->vma + symbol_table[i]->value);
+				// Save the symbol with its absolute address in the vector
+				function_symbol_table.emplace_back(symbol_entry);
 			} else {
-				// Symbol is not defined, address is not known from ELF, need to get it from shared library
+				// Malloc and free has been already saved
 				if (symbol_entry.name == "malloc" || symbol_entry.name == "free") {
 
-					// Get the address from memory_profiler_shared_library
-					for(unsigned int i = 0; i < memory_map_table.size(); i++){
-						//Find the entry of the memory_profiler_shared_library, read its VM base address, and find malloc/free address offset from it
-						if(memory_map_table[i].shared_lib_path.find(memory_profiler_library) !=  string::npos){
-							symbol_entry.address = (uint64_t)(memory_map_table[i].start_address + Get_symbol_address_from_ELF(memory_map_table[i].shared_lib_path,symbol_entry.name));
-							break;
-						}
-					}
+					continue;
 
 				} else {
 					// Find the symbol from one of the dynamically linked shared library
@@ -307,25 +335,24 @@ bool Process_handler::Create_symbol_table() {
 
 							if(Find_symbol_in_ELF(memory_map_table[i].shared_lib_path,stripped_func_name)){
 									symbol_entry.address = (uint64_t)(memory_map_table[i].start_address + Get_symbol_address_from_ELF(memory_map_table[i].shared_lib_path,stripped_func_name));
+									// Save the symbol with its absolute address in the vector
+									function_symbol_table.emplace_back(symbol_entry);
 									break;
 							}
 						}
 					}
 				}
 			}
-
-			// Save the symbol with its absolute address in the vector
-			function_symbol_table.emplace_back(symbol_entry);
 		}
 	}
 
 	//Sort the symbols based on address
 	sort(function_symbol_table.begin(),function_symbol_table.end());
 
-	/*for(auto element : function_symbol_table){
+	for(auto element : function_symbol_table){
 
 		cout << std::hex << element.address <<"  " << element.name << endl;
-	}*/
+	}
 
 	// Free the symbol table allocated in
 	bfd_close(tmp_bfd);
