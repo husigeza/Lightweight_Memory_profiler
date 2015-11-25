@@ -16,7 +16,8 @@
 
 using namespace std;
 
-#define memory_profiler_library "libMemory_profiler_shared_library.so"
+#define Memory_profiler_shared_library "libMemory_profiler_shared_library.so"
+#define Memory_profiler_IMM_shared_library "libMemory_profiler_IMM_shared_library.so"
 
 
 Process_handler::Process_handler() {
@@ -39,13 +40,25 @@ Process_handler::Process_handler(pid_t PID) {
 
 	this->PID = PID;
 	PID_string = to_string(PID);
-	profiled = false;
 	alive = true;
+	profiled = false;
 	memory_profiler_struct = nullptr;
 	shared_memory = 0;
 	semaphore_shared_memory = 0;
 	semaphore = nullptr;
 	elf_path = "/proc/" + this->PID_string + "/exe";
+
+	// If the profiled process compiled with START_PROF_IMM flag, that means it starts putting data into shared memory immediately after startup
+	// In this case we have to set the profiled flag of the process true
+	// Check whether the process starts profiling at the beginning with checking the existence of the corresponding shared memory area
+	shared_memory = shm_open(("/" + PID_string).c_str(),  O_RDWR , S_IRWXU | S_IRWXG | S_IRWXO);
+	if (shared_memory >= 0){
+		// If it exists, map it
+		if(Init_shared_memory(shared_memory) == true){
+			profiled = true;
+		}
+	}
+
 
 	if (!Create_symbol_table()) {
 		cout << "Error creating the symbol table" << endl;
@@ -236,6 +249,19 @@ long Process_handler::Parse_dynamic_symbol_table_from_ELF(bfd* bfd_ptr,asymbol *
 	return number_of_symbols;
 }
 
+string Process_handler::Find_memory_profiler_library_name(){
+
+	for(auto elem : memory_map_table){
+		if(elem.shared_lib_path.find(Memory_profiler_shared_library) != string::npos){
+			return Memory_profiler_shared_library;
+		}
+		else if(elem.shared_lib_path.find(Memory_profiler_IMM_shared_library) != string::npos){
+			 return Memory_profiler_IMM_shared_library;
+		}
+	}
+	return "";
+}
+
 
 
 bool Process_handler::Create_symbol_table() {
@@ -246,12 +272,7 @@ bool Process_handler::Create_symbol_table() {
 
 	symbol_table_entry_class symbol_entry;
 
-	// Counts malloc and free, if both is found in symtab section of the ELF, counter == 2, otherwise
-	// malloc or/and free does not explicitly called from the program, so they are not located in symtab section
-	// In this case get the address of malloc and free from memory_profiler_shared library
-	uint8_t counter=0;
-
-	// TODO This needs to be rethinked, define a const for it or a find dynamic way
+	// TODO This needs to be rethinked, define a const (linux MAX_PATH?) for it or a find dynamic way
 	char program_path[1024];
 	int len;
 
@@ -261,7 +282,7 @@ bool Process_handler::Create_symbol_table() {
 	}
 
 	number_of_symbols = Parse_symbol_table_from_ELF(tmp_bfd,&symbol_table);
-	//number_of_symbols = Parse_dynamic_symbol_table_from_ELF(tmp_bfd,&symbol_table);
+
 	if (number_of_symbols < 0) {
 		return false;
 	}
@@ -271,12 +292,14 @@ bool Process_handler::Create_symbol_table() {
 		return false;
 	}
 
+	string memory_profiler_library = Find_memory_profiler_library_name();
+
 	// /proc/PID/exe is a sym link to the executable, read it with readlink because we need the full path of the executable
 	if ((len = readlink(elf_path.c_str(), program_path, sizeof(program_path)-1)) != -1)
 		program_path[len] = '\0';
 
 
-	// Get malloc and free from memory_profiler_shared_library
+	// Get malloc from memory_profiler_shared_library
 	// Initialize name and address
 	symbol_entry.name = "malloc";
 	symbol_entry.address = 0;
@@ -290,6 +313,8 @@ bool Process_handler::Create_symbol_table() {
 	// Save the symbol with its absolute address in the vector
 	function_symbol_table.emplace_back(symbol_entry);
 
+	// Get free from memory_profiler_shared_library
+	// Initialize name and address
 	symbol_entry.name = "free";
 	symbol_entry.address = 0;
 	for(unsigned int i = 0; i < memory_map_table.size(); i++){
@@ -302,8 +327,9 @@ bool Process_handler::Create_symbol_table() {
 	// Save the symbol with its absolute address in the vector
 	function_symbol_table.emplace_back(symbol_entry);
 
+
 	for (int i = 0; i < number_of_symbols; i++) {
-		cout << "symbol_table[i]->name: " << symbol_table[i]->name << endl;
+
 		if (symbol_table[i]->flags & BSF_FUNCTION) {
 
 			// Initialize name and address
@@ -349,10 +375,10 @@ bool Process_handler::Create_symbol_table() {
 	//Sort the symbols based on address
 	sort(function_symbol_table.begin(),function_symbol_table.end());
 
-	for(auto element : function_symbol_table){
+	/*for(auto element : function_symbol_table){
 
 		cout << std::hex << element.address <<"  " << element.name << endl;
-	}
+	}*/
 
 	// Free the symbol table allocated in
 	bfd_close(tmp_bfd);
@@ -490,43 +516,78 @@ bool Process_handler::Find_symbol_in_ELF(string ELF_path, string symbol_name){
 
 void Process_handler::Init_semaphore() {
 
-	this->semaphore_shared_memory = shm_open(
+	semaphore_shared_memory = shm_open(
 			("/" + PID_string + "_start_sem").c_str(), O_RDWR,
 			S_IRWXU | S_IRWXG | S_IRWXO);
-	if (semaphore_shared_memory < 0)
-		printf("Error while opening semaphore shared memory:%d \n", errno);
+	if (semaphore_shared_memory < 0) cout << "Error while opening semaphore shared memory: " << errno << endl;
 
-	this->semaphore = (sem_t*) mmap(NULL, sizeof(sem_t), PROT_WRITE, MAP_SHARED,
+	semaphore = (sem_t*) mmap(NULL, sizeof(sem_t), PROT_WRITE, MAP_SHARED,
 			semaphore_shared_memory, 0);
-	if (semaphore == MAP_FAILED)
-		printf("Failed mapping the semaphore shared memory: %d \n", errno);
+	if (semaphore == MAP_FAILED) cout << "Failed mapping the semaphore shared memory: " << errno << endl;
 }
 
-void Process_handler::Init_shared_memory() {
+bool Process_handler::Init_shared_memory() {
 
-	// If this is the first profiling of a process create the shared memory, if the shared memory already exists (e.g: second profiling for a process), use it
-	this->shared_memory = shm_open(("/" + PID_string).c_str(),
-	O_CREAT | O_RDWR | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO);
+	// If this is the first profiling of a process create the shared memory, if the shared memory already exists just open it
+	shared_memory = shm_open(("/" + PID_string).c_str(), O_CREAT | O_RDWR | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO);
 
 	if (shared_memory < 0) {
 		if (errno == EEXIST) {
-			return;
-		} else
+			// Just map the shared memory if it exists (Process may already have created it, or it has been profiled before)
+			memory_profiler_struct = (memory_profiler_sm_object_class*) mmap(
+					NULL,
+					sizeof(memory_profiler_sm_object_class),
+					PROT_READ,
+					MAP_SHARED,
+					shared_memory,
+					0);
+
+			if (memory_profiler_struct == MAP_FAILED) {
+				cout << "Failed mapping the shared memory: " << errno << endl;
+				return false;
+			}
+		} else {
 			printf("Error while creating shared memory:%d \n", errno);
+			return false;
+		}
 	} else {
-		// Map the shared memory if it has not existed before
+		// Truncate and map the shared memory if it has not existed before
 		int err = ftruncate(shared_memory, sizeof(memory_profiler_sm_object_class));
-		if (err < 0)
-			printf("Error while truncating shared memory: %d \n", errno);
+		if (err < 0){
+			cout << "Error while truncating shared memory: " << errno << endl;
+			return false;
+		}
 
-		this->memory_profiler_struct = (memory_profiler_sm_object_class*) mmap(NULL,
-				sizeof(memory_profiler_sm_object_class), PROT_READ, MAP_SHARED,
-				this->shared_memory, 0);
-		if (memory_profiler_struct == MAP_FAILED)
-			printf("Failed mapping the shared memory: %d \n", errno);
-
+		memory_profiler_struct = (memory_profiler_sm_object_class*) mmap(
+					NULL,
+					sizeof(memory_profiler_sm_object_class),
+					PROT_READ,
+					MAP_SHARED,
+					shared_memory,
+					0);
+		if (memory_profiler_struct == MAP_FAILED) {
+			cout << "Failed mapping the shared memory: " << errno << endl;
+			return false;
+		}
 	}
+	return true;
 
+}
+
+bool Process_handler::Init_shared_memory(int descriptor) {
+
+	memory_profiler_struct = (memory_profiler_sm_object_class*) mmap(
+						NULL,
+						sizeof(memory_profiler_sm_object_class),
+						PROT_READ,
+						MAP_SHARED,
+						descriptor,
+						0);
+	if (memory_profiler_struct == MAP_FAILED) {
+		cout << "Failed mapping the shared memory: " << errno << endl;
+		return false;
+	}
+	return true;
 }
 
 

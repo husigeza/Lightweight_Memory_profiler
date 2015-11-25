@@ -8,6 +8,9 @@ void* Hearthbeat(void *arg);
 bool profiling_allowed(void);
 void set_profiling(bool value);
 
+bool Creating_shared_memory();
+bool Opening_shared_memory();
+
 
 
 #endif // MEMORY_PROFILER_SHARED_LIBRARY_H_INCLUDED

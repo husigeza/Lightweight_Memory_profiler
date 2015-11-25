@@ -95,8 +95,12 @@ void Memory_Profiler::Add_process_to_profiling(const pid_t PID) {
 	//Shared memory is initialized here because before starting the first profiling we want to
 	//prevent to system to create unnecessary shared memories, e.g: if this would be in constructor
 	//lots of unused shared memories were existing before the first profiling
-	Processes[PID].Init_shared_memory();
-	Processes[PID].Set_profiled(true);
+	if(Processes[PID].Init_shared_memory() == true){
+		Processes[PID].Set_profiled(true);
+	}
+	else {
+		cout << "Shared memory init unsuccessful" << endl;
+	}
 }
 
 void Memory_Profiler::Add_all_process_to_profiling() {

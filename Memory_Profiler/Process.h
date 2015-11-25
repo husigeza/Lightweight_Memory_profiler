@@ -75,6 +75,7 @@ class Process_handler {
 
     bool Create_symbol_table();
     bool Read_virtual_memory_mapping();
+    string Find_memory_profiler_library_name();
 
     uint64_t Get_symbol_address_from_ELF(string ELF_path, string symbol_name);
     bool Find_symbol_in_ELF(string ELF_path, string symbol_name);
@@ -90,7 +91,8 @@ class Process_handler {
         Process_handler(Process_handler &&obj)noexcept;
         Process_handler& operator=(Process_handler &&obj)noexcept;
 
-        void Init_shared_memory();
+        bool Init_shared_memory();
+        bool Init_shared_memory(int descriptor);
 
         pid_t GetPID(){return PID;};
 

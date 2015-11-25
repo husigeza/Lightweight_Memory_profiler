@@ -49,6 +49,7 @@ int main() {
 		getchar();
 		mem_prof.Print_all_processes();
 		mem_prof.Print_alive_processes();
+		mem_prof.Print_profiled_processes();
 
 		getchar();
 		mem_prof.Add_all_process_to_profiling();
