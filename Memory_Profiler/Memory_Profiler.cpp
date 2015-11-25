@@ -92,14 +92,20 @@ bool Memory_Profiler::Add_Process_to_list(const pid_t PID) {
 }
 void Memory_Profiler::Add_process_to_profiling(const pid_t PID) {
 
-	//Shared memory is initialized here because before starting the first profiling we want to
-	//prevent to system to create unnecessary shared memories, e.g: if this would be in constructor
-	//lots of unused shared memories were existing before the first profiling
-	if(Processes[PID].Init_shared_memory() == true){
+	//Shared memory is initialized here (if it has not been initialized before) because before starting the first profiling we want to
+	//prevent the system to create unnecessary shared memories
+
+	//TODO: It would be better (faster) to get the reference of the Process object, and check the values. With this methods it is searched again and again from the map
+	if(Get_process_alive_flag(PID) == true){
+		if(Get_process_shared_memory_initilized_flag(PID) == false){
+			if(Processes[PID].Init_shared_memory() == false){
+				cout << "Shared memory init unsuccessful" << endl;
+			}
+		}
 		Processes[PID].Set_profiled(true);
 	}
-	else {
-		cout << "Shared memory init unsuccessful" << endl;
+	else{
+		cout << "Process " << PID << " is not alive!" << endl;
 	}
 }
 
@@ -121,6 +127,11 @@ void Memory_Profiler::Set_process_alive_flag(const pid_t PID, bool value){
 bool Memory_Profiler::Get_process_alive_flag(const pid_t PID){
 
 	return Processes[PID].Get_alive();
+}
+
+bool Memory_Profiler::Get_process_shared_memory_initilized_flag(const pid_t PID){
+
+	return Processes[PID].Is_shared_memory_initialized();
 }
 
 void Memory_Profiler::Remove_process_from_profiling(const pid_t PID){

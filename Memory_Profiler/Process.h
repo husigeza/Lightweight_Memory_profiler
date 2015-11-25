@@ -53,6 +53,7 @@ class Process_handler {
     bool alive;
 
     int shared_memory;
+    bool shared_memory_initialized;
     memory_profiler_sm_object_class *memory_profiler_struct;
 
     int semaphore_shared_memory;
@@ -92,7 +93,6 @@ class Process_handler {
         Process_handler& operator=(Process_handler &&obj)noexcept;
 
         bool Init_shared_memory();
-        bool Init_shared_memory(int descriptor);
 
         pid_t GetPID(){return PID;};
 
@@ -105,6 +105,7 @@ class Process_handler {
         void Start_Stop_profiling();
 
         memory_profiler_sm_object_class* Get_shared_memory();
+        bool Is_shared_memory_initialized(){return shared_memory_initialized;};
 
         vector<symbol_table_entry_class>::iterator Find_function(uint64_t &address);
 };

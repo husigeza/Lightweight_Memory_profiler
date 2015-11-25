@@ -27,7 +27,7 @@
 #define max_log_entry 10000
 #define max_call_stack_depth 100
 
-//#define START_PROF_IMM
+#define START_PROF_IMM
 
 
 extern void *__libc_malloc(size_t size);
@@ -93,18 +93,6 @@ signal_callback_handler(int signum)
 	exit(signum);
 }
 
-
-typedef struct Dl_info_s{
-    const char *dli_fname;  /* Pathname of shared object that
-                               contains address */
-    void       *dli_fbase;  /* Address at which shared object
-                               is loaded */
-    const char *dli_sname;  /* Name of nearest symbol with address
-                               lower than addr */
-    void       *dli_saddr;  /* Exact address of symbol named
-                               in dli_sname */
-} Dl_info_t;
-
 void __attribute__ ((constructor)) init() {
 
 
@@ -114,6 +102,7 @@ void __attribute__ ((constructor)) init() {
 	signal(SIGINT, signal_callback_handler);
 
 	sprintf(PID_string, "%d", getpid());
+	sprintf(PID_string_shared_mem, "/%d", getpid());
 
 	printf("current process is: %s\n", PID_string);
 
@@ -138,7 +127,7 @@ void __attribute__ ((constructor)) init() {
 
 #ifdef START_PROF_IMM
 
-	if(Creating_shared_memory() == false ) {
+	if(Create_shared_memory() == false ) {
 		printf("Error in creating shared memory for profiling!\n");
 	}
 	else{
@@ -157,6 +146,7 @@ void __attribute__ ((constructor)) init() {
 void __attribute__ ((destructor)) finit(){
 
 	printf("Closing shared lib\n");
+	shm_unlink(PID_string_shared_mem);
 	munmap(memory_profiler_struct, sizeof(memory_profiler_struct_t));
 	sem_destroy(&thread_semaphore);
 	shm_unlink(PID_string_sem);
@@ -242,11 +232,10 @@ void* malloc(size_t size) {
 }
 
 
-bool Creating_shared_memory(){
+bool Create_shared_memory(){
 
 	printf("creating shared memory for profiling\n");
 
-	sprintf(PID_string_shared_mem, "/%d", getpid());
 	shared_memory = shm_open(PID_string_shared_mem, O_CREAT | O_RDWR | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO);
 	if (shared_memory < 0) {
 		printf("Error while opening shared memory:%d \n", errno);
@@ -267,11 +256,10 @@ bool Creating_shared_memory(){
 	return true;
 }
 
-bool Opening_shared_memory(){
+bool Open_shared_memory(){
 
 	printf("Opening shared memory for profiling\n");
 
-	sprintf(PID_string_shared_mem, "/%d", getpid());
 	shared_memory = shm_open(PID_string_shared_mem, O_RDWR , S_IRWXU | S_IRWXG | S_IRWXO);
 	if (shared_memory < 0) {
 		printf("Error while opening shared memory:%d \n", errno);
@@ -294,10 +282,12 @@ void* Memory_profiler_start_thread(void *arg){
 
 		if (profiling_allowed() == false) {
 
-			if(Opening_shared_memory() == false){
+			if(Open_shared_memory() == false){
 				printf("Failed to open shared memory!\n");
 			}
-			set_profiling(true);
+			else{
+				set_profiling(true);
+			}
 
 		} else {
 			printf("closing shared memory for profiling\n");

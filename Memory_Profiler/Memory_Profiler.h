@@ -28,6 +28,8 @@ class Memory_Profiler {
         void Set_process_alive_flag(const pid_t PID, bool value);
         bool Get_process_alive_flag(const pid_t PID);
 
+        bool Get_process_shared_memory_initilized_flag(const pid_t PID);
+
         void Remove_process_from_profiling(const pid_t PID);
         void Remove_all_process_from_profiling();
 
