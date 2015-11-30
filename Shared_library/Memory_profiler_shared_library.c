@@ -24,10 +24,10 @@
 #include <dlfcn.h>
 
 #define fifo_path "/home/egezhus/mem_prof_fifo"
-#define max_log_entry 10000
+
 #define max_call_stack_depth 100
 
-#define START_PROF_IMM
+//#define START_PROF_IMM
 
 
 extern void *__libc_malloc(size_t size);
@@ -68,8 +68,8 @@ typedef struct memory_profiler_log_entry_s{
 
 
 typedef struct memory_profiler_struct_s {
-	int log_count;
-	memory_profiler_log_entry_t log_entry[max_log_entry];
+	long unsigned int log_count;
+	memory_profiler_log_entry_t log_entry[1];
 } memory_profiler_struct_t;
 
 static memory_profiler_struct_t *memory_profiler_struct;
@@ -166,7 +166,19 @@ void free(void* pointer) {
 			//TODO: Make this faster for multiple thread, don't defend the whole structure
 			sem_wait(&thread_semaphore);
 
-			printf("log_count %d\n",memory_profiler_struct->log_count);
+			printf("log_count %lu\n",memory_profiler_struct->log_count);
+
+			long unsigned int new_size = sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count + 1) * sizeof(memory_profiler_log_entry_t);
+
+			int err = ftruncate(shared_memory, new_size);
+			if (err < 0) {
+				printf("Error while truncating shared memory: %d\n", errno);
+			}
+
+			memory_profiler_struct = (memory_profiler_struct_t*)mmap(NULL, new_size, PROT_WRITE, MAP_SHARED , shared_memory, 0);
+			if (memory_profiler_struct == MAP_FAILED) {
+				printf("Failed mapping the shared memory: %d \n", errno);
+			}
 
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].backtrace_length = backtrace(memory_profiler_struct->log_entry[memory_profiler_struct->log_count].call_stack,max_call_stack_depth);
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].thread_id = pthread_self();
@@ -201,13 +213,24 @@ void* malloc(size_t size) {
 
 		printf("This is from my malloc!\n");
 
-
 		//TODO: Make this faster for multiple thread, don't defend the whole structure
 		sem_wait(&thread_semaphore);
 
 		void* pointer = __libc_malloc(size);
 
-		printf("log_count %d\n",memory_profiler_struct->log_count);
+		printf("log_count %lu\n",memory_profiler_struct->log_count);
+
+		long unsigned int new_size = sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count + 1) * sizeof(memory_profiler_log_entry_t);
+
+		int err = ftruncate(shared_memory, new_size);
+		if (err < 0) {
+			printf("Error while truncating shared memory: %d\n", errno);
+		}
+		memory_profiler_struct = (memory_profiler_struct_t*)mmap(NULL, new_size, PROT_WRITE, MAP_SHARED , shared_memory, 0);
+		if (memory_profiler_struct == MAP_FAILED) {
+			printf("Failed mapping the shared memory: %d \n", errno);
+		}
+
 
 		memory_profiler_struct->log_entry[memory_profiler_struct->log_count].backtrace_length = backtrace(memory_profiler_struct->log_entry[memory_profiler_struct->log_count].call_stack,max_call_stack_depth);
 		memory_profiler_struct->log_entry[memory_profiler_struct->log_count].thread_id = pthread_self();
@@ -253,6 +276,7 @@ bool Create_shared_memory(){
 		printf("Failed mapping the shared memory: %d \n", errno);
 		return false;
 	}
+
 	return true;
 }
 

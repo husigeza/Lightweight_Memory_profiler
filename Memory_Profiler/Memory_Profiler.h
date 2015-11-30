@@ -2,10 +2,11 @@
 #define MEMORY_PROFILER_H_INCLUDED
 
 #include <map>
-#include "Process.h"
 #include <bfd.h>
 
-using namespace std;
+#include "Process.h"
+
+//using namespace std;
 
 class Memory_Profiler {
 
@@ -35,6 +36,9 @@ class Memory_Profiler {
 
         void Start_stop_profiling(const pid_t PID);
         void Start_stop_profiling_all_processes();
+
+        bool Remap_process_shared_memory(const pid_t PID);
+        void Remap_all_process_shared_memory();
 
         void Read_FIFO();
 

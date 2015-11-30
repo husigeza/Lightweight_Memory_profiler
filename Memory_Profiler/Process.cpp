@@ -82,6 +82,7 @@ Process_handler::Process_handler(const Process_handler &obj)noexcept{
 	elf_path = obj.elf_path;
 	memory_map_table = obj.memory_map_table;
 	function_symbol_table = obj.function_symbol_table;
+	shared_memory_initialized = obj.shared_memory_initialized;
 
 }
 
@@ -99,6 +100,7 @@ Process_handler& Process_handler::operator=(const Process_handler &obj)noexcept{
 			elf_path = obj.elf_path;
 			memory_map_table = obj.memory_map_table;
 			function_symbol_table = obj.function_symbol_table;
+			shared_memory_initialized = obj.shared_memory_initialized;
 		}
 		return *this;
 
@@ -119,6 +121,7 @@ Process_handler::Process_handler(Process_handler &&obj)noexcept{
 	elf_path = obj.elf_path;
 	memory_map_table = obj.memory_map_table;
 	function_symbol_table = obj.function_symbol_table;
+	shared_memory_initialized = obj.shared_memory_initialized;
 
 	obj.PID = 0;
 	obj.PID_string = "";
@@ -131,6 +134,7 @@ Process_handler::Process_handler(Process_handler &&obj)noexcept{
 	obj.elf_path = "";
 	obj.memory_map_table.clear();
 	obj.function_symbol_table.clear();
+	obj.shared_memory_initialized = false;
 }
 
 Process_handler& Process_handler::operator=(Process_handler&& obj)noexcept{
@@ -148,6 +152,7 @@ Process_handler& Process_handler::operator=(Process_handler&& obj)noexcept{
 		elf_path = obj.elf_path;
 		memory_map_table = obj.memory_map_table;
 		function_symbol_table = obj.function_symbol_table;
+		shared_memory_initialized = obj.shared_memory_initialized;
 
 		obj.PID = 0;
 		obj.PID_string = "";
@@ -160,6 +165,7 @@ Process_handler& Process_handler::operator=(Process_handler&& obj)noexcept{
 		obj.elf_path = "";
 		obj.function_symbol_table.clear();
 		obj.memory_map_table.clear();
+		obj.shared_memory_initialized = false;
 	}
 	return *this;
 }
@@ -576,10 +582,30 @@ bool Process_handler::Init_shared_memory() {
 
 }
 
+bool Process_handler::Remap_shared_memory(){
+
+	unsigned long log_count = memory_profiler_struct->log_count;
+	memory_profiler_struct = (memory_profiler_sm_object_class*) mmap(
+							NULL,
+							sizeof(memory_profiler_sm_object_class) + log_count*sizeof(memory_profiler_sm_object_log_entry_class),
+							PROT_READ,
+							MAP_SHARED,
+							shared_memory,
+							0);
+	if (memory_profiler_struct == MAP_FAILED) {
+		cout << "Failed re-mapping the shared memory: " << errno << endl;
+		return false;
+	}
+
+	return true;
+
+}
+
 
 void Process_handler::Start_Stop_profiling() {
 
 	sem_post(semaphore);
+	Remap_shared_memory();
 
 }
 

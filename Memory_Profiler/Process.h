@@ -12,13 +12,13 @@
 #include <semaphore.h>
 #include <vector>
 #include <bfd.h>
+
 #include "memory_map.h"
 #include "symbol_table.h"
 
 
 using namespace std;
 
-#define max_log_entry 10000
 #define max_call_stack_depth 100
 
 class memory_profiler_sm_object_log_entry_class{
@@ -38,8 +38,15 @@ public:
 class memory_profiler_sm_object_class {
 
 public:
-	int log_count;
-	memory_profiler_sm_object_log_entry_class log_entry[max_log_entry];
+
+	/*memory_profiler_sm_object_class(const memory_profiler_sm_object_class &obj)noexcept;
+	memory_profiler_sm_object_class& operator=(const memory_profiler_sm_object_class &obj)noexcept;
+
+	memory_profiler_sm_object_class(memory_profiler_sm_object_class &&obj)noexcept;
+	memory_profiler_sm_object_class& operator=(memory_profiler_sm_object_class &&obj)noexcept;*/
+
+	long unsigned int log_count;
+	memory_profiler_sm_object_log_entry_class log_entry[1];
 };
 
 
@@ -87,12 +94,12 @@ class Process_handler {
     	Process_handler();
         Process_handler(pid_t PID);
         ~Process_handler();
+
         Process_handler(const Process_handler &obj)noexcept;
         Process_handler& operator=(const Process_handler &obj)noexcept;
+
         Process_handler(Process_handler &&obj)noexcept;
         Process_handler& operator=(Process_handler &&obj)noexcept;
-
-        bool Init_shared_memory();
 
         pid_t GetPID(){return PID;};
 
@@ -103,6 +110,9 @@ class Process_handler {
 		bool Get_alive(){return alive;};
 
         void Start_Stop_profiling();
+
+        bool Init_shared_memory();
+        bool Remap_shared_memory();
 
         memory_profiler_sm_object_class* Get_shared_memory();
         bool Is_shared_memory_initialized(){return shared_memory_initialized;};

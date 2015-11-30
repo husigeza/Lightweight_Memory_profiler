@@ -59,8 +59,11 @@ int main() {
 		getchar();
 		mem_prof.Start_stop_profiling_all_processes();
 		cout << "Signal sent" << endl;
-		/*mem_prof.Remove_all_process_from_profiling();
-		cout << "Removed all from profiled" << endl;*/
+		getchar();
+		mem_prof.Remove_all_process_from_profiling();
+		cout << "Removed all from profiled" << endl;
+		mem_prof.Remap_all_process_shared_memory();
+		cout << "Remapped shared memories" << endl;
 		getchar();
 		mem_prof.Print_all_processes_shared_memory();
 
