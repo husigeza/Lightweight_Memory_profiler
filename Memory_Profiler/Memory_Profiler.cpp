@@ -46,6 +46,7 @@ bool Memory_Profiler::Add_Process_to_list(const pid_t PID) {
 
 	if (Processes.find(PID) == Processes.end()) {
 		Processes.insert(pair<const pid_t,Process_handler> (PID,Process_handler(PID)));
+		cout << "Process added, PID: " << PID << endl;
 		return true;
 	} else {
 		return false;

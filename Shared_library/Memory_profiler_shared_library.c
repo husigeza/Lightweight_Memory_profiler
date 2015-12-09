@@ -146,13 +146,11 @@ void __attribute__ ((constructor)) init() {
 void __attribute__ ((destructor)) finit(){
 
 	printf("Closing shared lib\n");
-	shm_unlink(PID_string_shared_mem);
-	munmap(memory_profiler_struct, sizeof(memory_profiler_struct_t));
+	//shm_unlink(PID_string_shared_mem);
+	//munmap(memory_profiler_struct, sizeof(memory_profiler_struct_t));
 	sem_destroy(&thread_semaphore);
-	shm_unlink(PID_string_sem);
+	//shm_unlink(PID_string_sem);
 	close(mem_prof_fifo);
-
-
 }
 
 void free(void* pointer) {
@@ -166,15 +164,12 @@ void free(void* pointer) {
 			//TODO: Make this faster for multiple thread, don't defend the whole structure
 			sem_wait(&thread_semaphore);
 
-			printf("log_count %lu\n",memory_profiler_struct->log_count);
-
 			long unsigned int new_size = sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count + 1) * sizeof(memory_profiler_log_entry_t);
 
 			int err = ftruncate(shared_memory, new_size);
 			if (err < 0) {
 				printf("Error while truncating shared memory: %d\n", errno);
 			}
-
 			memory_profiler_struct = (memory_profiler_struct_t*)mmap(NULL, new_size, PROT_WRITE, MAP_SHARED , shared_memory, 0);
 			if (memory_profiler_struct == MAP_FAILED) {
 				printf("Failed mapping the shared memory: %d \n", errno);
@@ -218,8 +213,6 @@ void* malloc(size_t size) {
 
 		void* pointer = __libc_malloc(size);
 
-		printf("log_count %lu\n",memory_profiler_struct->log_count);
-
 		long unsigned int new_size = sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count + 1) * sizeof(memory_profiler_log_entry_t);
 
 		int err = ftruncate(shared_memory, new_size);
@@ -230,7 +223,6 @@ void* malloc(size_t size) {
 		if (memory_profiler_struct == MAP_FAILED) {
 			printf("Failed mapping the shared memory: %d \n", errno);
 		}
-
 
 		memory_profiler_struct->log_entry[memory_profiler_struct->log_count].backtrace_length = backtrace(memory_profiler_struct->log_entry[memory_profiler_struct->log_count].call_stack,max_call_stack_depth);
 		memory_profiler_struct->log_entry[memory_profiler_struct->log_count].thread_id = pthread_self();
@@ -246,8 +238,6 @@ void* malloc(size_t size) {
 			printf("Error in sem_post, errno: %d\n",errno);
 		}
 
-		//set_profiling(true);
-
 		return pointer;
 	}
 
@@ -257,11 +247,11 @@ void* malloc(size_t size) {
 
 bool Create_shared_memory(){
 
-	printf("creating shared memory for profiling\n");
+	printf("Creating shared memory for profiling\n");
 
 	shared_memory = shm_open(PID_string_shared_mem, O_CREAT | O_RDWR | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO);
 	if (shared_memory < 0) {
-		printf("Error while opening shared memory:%d \n", errno);
+		printf("Error while creating the shared memory:%d \n", errno);
 		return false;
 	}
 

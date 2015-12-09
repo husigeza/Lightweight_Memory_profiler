@@ -60,8 +60,8 @@ int main() {
 		mem_prof.Start_stop_profiling_all_processes();
 		cout << "Signal sent" << endl;
 		getchar();
-		mem_prof.Remove_all_process_from_profiling();
-		cout << "Removed all from profiled" << endl;
+		/*mem_prof.Remove_all_process_from_profiling();
+		cout << "Removed all from profiled" << endl;*/
 		mem_prof.Remap_all_process_shared_memory();
 		cout << "Remapped shared memories" << endl;
 		getchar();

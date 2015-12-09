@@ -31,12 +31,11 @@ Process_handler::Process_handler() {
 	semaphore_shared_memory = 0;
 	semaphore = nullptr;
 	elf_path = "";
+	shared_memory_initialized = false;
 
 }
 
 Process_handler::Process_handler(pid_t PID) {
-
-	cout << "constructor" << endl;
 
 	this->PID = PID;
 	PID_string = to_string(PID);
@@ -47,18 +46,33 @@ Process_handler::Process_handler(pid_t PID) {
 	semaphore_shared_memory = 0;
 	semaphore = nullptr;
 	elf_path = "/proc/" + this->PID_string + "/exe";
+	shared_memory_initialized = false;
 
 	// If the profiled process compiled with START_PROF_IMM flag, that means it starts putting data into shared memory immediately after startup
-	// In this case we have to set the profiled flag of the process true
+	// In this case we have to map the memory area, set the profiled and initialized flags of the process true
 	// Check whether the process starts profiling at the beginning with checking the existence of the corresponding shared memory area
 	shared_memory = shm_open(("/" + PID_string).c_str(),  O_RDWR , S_IRWXU | S_IRWXG | S_IRWXO);
 	if (shared_memory >= 0){
-		// If it exists, map it
-		if(Init_shared_memory() == true){
+		cout << "Constructor, shared memory exists, shared memory handler: " << shared_memory /*<<" errno: " <<errno*/ << endl;
+
+		// Map the shared memory because it exists
+		memory_profiler_struct = (memory_profiler_sm_object_class*) mmap(
+								NULL,
+								sizeof(memory_profiler_sm_object_class),
+								PROT_READ,
+								MAP_SHARED,
+								shared_memory,
+								0);
+		if (memory_profiler_struct != MAP_FAILED) {
+			// Shared memory initalized by the profiled process
+			shared_memory_initialized = true;
+			// If shared memory is already initialized until this point it means the process is being profiled at the moment
 			profiled = true;
 		}
 	}
-
+	else {
+		cout << "Constructor, shared memory not exist, shared memory handler: " << shared_memory /*<< " errno: " <<errno*/ <<endl;
+	}
 
 	if (!Create_symbol_table()) {
 		cout << "Error creating the symbol table" << endl;
@@ -68,8 +82,6 @@ Process_handler::Process_handler(pid_t PID) {
 }
 
 Process_handler::Process_handler(const Process_handler &obj)noexcept{
-
-	cout << "copy constructor" << endl;
 
 	PID = obj.PID;
 	PID_string = obj.PID_string;
@@ -107,8 +119,6 @@ Process_handler& Process_handler::operator=(const Process_handler &obj)noexcept{
 }
 
 Process_handler::Process_handler(Process_handler &&obj)noexcept{
-
-	cout << "move constructor" << endl;
 
 	PID = obj.PID;
 	PID_string = obj.PID_string;
@@ -172,8 +182,6 @@ Process_handler& Process_handler::operator=(Process_handler&& obj)noexcept{
 
 Process_handler::~Process_handler() {
 
-	cout << "Process destructor" << endl;
-
 	memory_map_table.clear();
 	function_symbol_table.clear();
 
@@ -181,10 +189,9 @@ Process_handler::~Process_handler() {
 	munmap(memory_profiler_struct, sizeof(memory_profiler_sm_object_log_entry_class));
 
 	shm_unlink(("/" + PID_string).c_str());
-
 }
 
-/*
+/**
  * Returns with the index of function in vector
  */
 vector<symbol_table_entry_class>::iterator Process_handler::Find_function(uint64_t &address){
@@ -212,14 +219,14 @@ bfd* Process_handler::Open_ELF(string ELF_path){
 
 	bfd* tmp_bfd = bfd_openr(ELF_path.c_str(),NULL);
 		if (tmp_bfd == NULL) {
-			printf("Error opening Process ELF file");
+			cout << "Error opening Process's ELF file: " << ELF_path << endl;
 			return NULL;
 		}
 
 		//check if the file is in format
 		if (!bfd_check_format(tmp_bfd, bfd_object)) {
 			if (bfd_get_error() != bfd_error_file_ambiguously_recognized) {
-				//printf("Incompatible format\n");
+				cout << "Incompatible FILE format, not an ELF: " << ELF_path<< endl;
 				return NULL;
 			}
 		}
@@ -535,59 +542,55 @@ void Process_handler::Init_semaphore() {
 bool Process_handler::Init_shared_memory() {
 
 	// If this is the first profiling of a process create the shared memory, if the shared memory already exists just open it
-	shared_memory = shm_open(("/" + PID_string).c_str(), O_CREAT | O_RDWR /*| O_EXCL*/, S_IRWXU | S_IRWXG | S_IRWXO);
+	shared_memory = shm_open(("/" + PID_string).c_str(), O_CREAT | O_RDWR | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO);
 
 	if (shared_memory < 0) {
-			cout << "Error while creating shared memory!" << errno << endl;
-			return false;
-	} else {
-		if (errno == EEXIST) {
-			// Just map the shared memory if it exists (Process may already have created it, or it has been profiled before)
-			memory_profiler_struct = (memory_profiler_sm_object_class*) mmap(
-					NULL,
-					sizeof(memory_profiler_sm_object_class),
-					PROT_READ,
-					MAP_SHARED,
-					shared_memory,
-					0);
-
-			if (memory_profiler_struct == MAP_FAILED) {
-				cout << "Failed mapping the shared memory: " << errno << endl;
-				return false;
-			}
+		cout << "Error while creating shared memory! errno: " << errno << endl;
+		if (errno == EEXIST){
+			cout << "Shared memory already exists, do not re-create it!" << errno << endl;
 		}
-		else{
-			// Truncate and map the shared memory if it has not existed before
-			int err = ftruncate(shared_memory, sizeof(memory_profiler_sm_object_class));
-			if (err < 0){
-				cout << "Error while truncating shared memory: " << errno << endl;
-				return false;
-			}
-
-			memory_profiler_struct = (memory_profiler_sm_object_class*) mmap(
-						NULL,
-						sizeof(memory_profiler_sm_object_class),
-						PROT_READ,
-						MAP_SHARED,
-						shared_memory,
-						0);
-			if (memory_profiler_struct == MAP_FAILED) {
-				cout << "Failed mapping the shared memory: " << errno << endl;
-				return false;
-			}
-		}
+		return false;
 	}
+
+	// Truncate and map the shared memory if it has not existed before
+	cout << "Creating shared memory, ID: " << "/" + PID_string << endl;
+	int err = ftruncate(shared_memory, sizeof(memory_profiler_sm_object_class));
+	if (err < 0){
+		cout << "Error while truncating shared memory: " << errno << endl;
+		return false;
+	}
+
+	memory_profiler_struct = (memory_profiler_sm_object_class*) mmap(
+				NULL,
+				sizeof(memory_profiler_sm_object_class),
+				PROT_READ,
+				MAP_SHARED,
+				shared_memory,
+				0);
+	if (memory_profiler_struct == MAP_FAILED) {
+		cout << "Failed mapping the shared memory: " << errno << endl;
+		return false;
+	}
+
 	shared_memory_initialized = true;
 	return true;
-
 }
 
 bool Process_handler::Remap_shared_memory(){
 
+	if(shared_memory_initialized == false){
+		cout<<"Shared memory has not been initialized yet, cannot remap it!" << endl;
+		return false;
+	}
+
 	unsigned long log_count = memory_profiler_struct->log_count;
-	memory_profiler_struct = (memory_profiler_sm_object_class*) mmap(
+	unsigned long new_size = sizeof(memory_profiler_sm_object_class) + log_count*sizeof(memory_profiler_sm_object_log_entry_class);
+	cout << "size of shared memory: "<< new_size << endl;
+
+
+	this->memory_profiler_struct = (memory_profiler_sm_object_class*) mmap(
 							NULL,
-							sizeof(memory_profiler_sm_object_class) + log_count*sizeof(memory_profiler_sm_object_log_entry_class),
+							new_size,
 							PROT_READ,
 							MAP_SHARED,
 							shared_memory,
@@ -601,12 +604,9 @@ bool Process_handler::Remap_shared_memory(){
 
 }
 
-
 void Process_handler::Start_Stop_profiling() {
 
 	sem_post(semaphore);
-	Remap_shared_memory();
-
 }
 
 memory_profiler_sm_object_class* Process_handler::Get_shared_memory() {
