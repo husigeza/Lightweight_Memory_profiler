@@ -54,6 +54,19 @@ bool Memory_Profiler::Add_Process_to_list(const pid_t PID) {
 	}
 
 }
+
+bool Memory_Profiler::Add_Process_to_list(const pid_t PID, const string EXE_path){
+
+	if (Processes.find(PID) == Processes.end()) {
+			Processes.insert(pair<const pid_t,Process_handler> (PID,Process_handler(PID,EXE_path)));
+			cout << "Process added: "<< PID << endl;
+			return true;
+	} else {
+			return false;
+			//cout<< "Process is already added to process list: " << PID << endl;
+	}
+}
+
 void Memory_Profiler::Add_process_to_profiling(const pid_t PID) {
 
 	//Shared memory is initialized here (if it has not been initialized before) because before starting the first profiling we want to
@@ -139,7 +152,10 @@ void Memory_Profiler::Start_stop_profiling_all_processes(){
 
 bool Memory_Profiler::Remap_process_shared_memory(const pid_t PID){
 
-	return Processes[PID].Remap_shared_memory();
+	if(Processes[PID].Get_profiled()){
+		return Processes[PID].Remap_shared_memory();
+	}
+	else return false;
 
 }
 
@@ -154,28 +170,40 @@ void Memory_Profiler::Remap_all_process_shared_memory(){
 
 	for (it = Processes.begin(); it != Processes.end(); it++) {
 			if(it->second.Remap_shared_memory() == false){
-				cout << "Failed remapping process " << it->first << "shared memory" << endl;
+				cout << "Failed remapping process's " << it->first << " shared memory" << endl;
 			}
 		}
 
  }
 
 
+struct FIFO_struct_s{
+	char PID_string[6];
+	// TODO CHange this to max path size on Linux
+	char Binary_location[1024];
+};
+
+
 void Memory_Profiler::Read_FIFO() {
 
 	vector<pid_t> alive_processes;
+	struct FIFO_struct_s FIFO_struct;
 	pid_t pid;
-	char buffer[6];
-	size_t buff_size = 6;
+	string PID;
+	string EXE_path;
+	size_t buff_size = sizeof(FIFO_struct.PID_string);
+
 	int res;
 	map<const pid_t, Process_handler>::iterator it;
 
-	if (mem_prof_fifo != -1) {
-		while ((res = read(mem_prof_fifo, &buffer, sizeof(buffer))) != 0) {
 
+	if (mem_prof_fifo != -1) {
+		while ((res = read(mem_prof_fifo, &FIFO_struct, sizeof(FIFO_struct))) != 0) {
 			if (res > 0) {
-				pid = stoi(buffer, &buff_size);
-				Add_Process_to_list(pid);
+
+				EXE_path = FIFO_struct.Binary_location;
+				pid = stoi(FIFO_struct.PID_string, &buff_size);
+				Add_Process_to_list(pid,EXE_path);
 				alive_processes.push_back(pid);
 
 			} else {

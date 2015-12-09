@@ -93,6 +93,7 @@ class Process_handler {
 
     	Process_handler();
         Process_handler(pid_t PID);
+        Process_handler(pid_t PID, string EXE_path);
         ~Process_handler();
 
         Process_handler(const Process_handler &obj)noexcept;

@@ -27,7 +27,7 @@
 
 #define max_call_stack_depth 100
 
-//#define START_PROF_IMM
+#define START_PROF_IMM
 
 
 extern void *__libc_malloc(size_t size);
@@ -38,7 +38,16 @@ static pthread_t memory_profiler_start_thread_id;
 
 static bool enable = false;
 
-static char PID_string[6];
+
+struct FIFO_struct_s{
+	char PID_string[6];
+	// TODO CHange this to max path size on Linux
+	char Binary_location[1024];
+};
+
+struct FIFO_struct_s FIFO_struct;
+
+//static char PID_string[6];
 static char PID_string_shared_mem[7];
 static char PID_string_sem[16];
 
@@ -86,7 +95,7 @@ signal_callback_handler(int signum)
 	munmap(memory_profiler_start_semaphore, sizeof(sem_t));
 
 	shm_unlink(PID_string_sem);
-	//shm_unlink(PID_string_shared_mem);
+	shm_unlink(PID_string_shared_mem);
 	printf("Caught signal %d\n",signum);
 
 	// Terminate program
@@ -95,16 +104,24 @@ signal_callback_handler(int signum)
 
 void __attribute__ ((constructor)) init() {
 
-
+	// TODO Change this to max path size on Linux
+	char symlink_to_exe[1024];
+	int len;
 
 	printf("Init\n");
 
 	signal(SIGINT, signal_callback_handler);
 
-	sprintf(PID_string, "%d", getpid());
-	sprintf(PID_string_shared_mem, "/%d", getpid());
+	sprintf(FIFO_struct.PID_string, "%d", getpid());
+	printf("current process is: %s\n", FIFO_struct.PID_string);
 
-	printf("current process is: %s\n", PID_string);
+	// /proc/PID/exe is a sym link to the executable, read it with readlink because we need the full path of the executable
+	sprintf(symlink_to_exe,"/proc/%d/exe",getpid());
+	if ((len = readlink(symlink_to_exe, FIFO_struct.Binary_location, sizeof(FIFO_struct.Binary_location)-1)) != -1){
+		FIFO_struct.Binary_location[len] = '\0';
+	}
+
+	sprintf(PID_string_shared_mem, "/%d", getpid());
 
 	if(sem_init(&enable_semaphore,0,1) == -1) printf("Error in enable_semaphore init, errno: %d\n",errno);
 	if(sem_init(&thread_semaphore,0,1) == -1) printf("Error in thread_semaphore init, errno: %d\n",errno);
@@ -133,6 +150,21 @@ void __attribute__ ((constructor)) init() {
 	else{
 		set_profiling(true);
 	}
+
+	/*If profiling is needed from the beginning, create the FIFO and write the first entry to it
+	 * In this case, the program execution will wait for the memory profiler process to become alive
+	 * If it is already alive it continue running immediately.
+	 * */
+	if (mkfifo(fifo_path, 0666) == -1) {
+
+			if (errno == EEXIST) {
+				printf("FIFO already exists\n");
+			} else {
+				printf("Failed creating FIFO\n errno:%d \n",errno);
+			}
+	}
+	Write_fifo();
+
 #endif
 
 	err = pthread_create(&memory_profiler_start_thread_id, NULL, &Memory_profiler_start_thread, NULL);
@@ -160,6 +192,7 @@ void free(void* pointer) {
 			//set_profiling(false);
 
 			printf("This is from my free!\n");
+
 
 			//TODO: Make this faster for multiple thread, don't defend the whole structure
 			sem_wait(&thread_semaphore);
@@ -219,11 +252,11 @@ void* malloc(size_t size) {
 		if (err < 0) {
 			printf("Error while truncating shared memory: %d\n", errno);
 		}
+
 		memory_profiler_struct = (memory_profiler_struct_t*)mmap(NULL, new_size, PROT_WRITE, MAP_SHARED , shared_memory, 0);
 		if (memory_profiler_struct == MAP_FAILED) {
 			printf("Failed mapping the shared memory: %d \n", errno);
 		}
-
 		memory_profiler_struct->log_entry[memory_profiler_struct->log_count].backtrace_length = backtrace(memory_profiler_struct->log_entry[memory_profiler_struct->log_count].call_stack,max_call_stack_depth);
 		memory_profiler_struct->log_entry[memory_profiler_struct->log_count].thread_id = pthread_self();
 		memory_profiler_struct->log_entry[memory_profiler_struct->log_count].type = malloc_func;
@@ -301,6 +334,7 @@ void* Memory_profiler_start_thread(void *arg){
 			}
 			else{
 				set_profiling(true);
+				printf("Opening shared memory successful\n");
 			}
 
 		} else {
@@ -311,25 +345,26 @@ void* Memory_profiler_start_thread(void *arg){
 	}
 }
 
-void* Hearthbeat(void *arg) {
+void Write_fifo(){
+	mem_prof_fifo = open(fifo_path, O_WRONLY);
+	if (mem_prof_fifo != -1) {
 
+		if (write(mem_prof_fifo, &FIFO_struct, sizeof(struct FIFO_struct_s)) == -1) {
+
+			printf("Failed writing the FIFO\n");
+		}
+
+		close(mem_prof_fifo);
+	} else {
+		printf("Failed opening the FIFO, errno: %d\n", errno);
+	}
+}
+
+void* Hearthbeat(void *arg) {
 
 	while (true) {
 
-		mem_prof_fifo = open(fifo_path, O_WRONLY);
-
-		if (mem_prof_fifo != -1) {
-
-			if (write(mem_prof_fifo, &PID_string, sizeof(PID_string)) == -1) {
-
-				printf("Failed writing the FIFO\n");
-			}
-
-			close(mem_prof_fifo);
-		} else {
-			printf("Failed opening the FIFO, errno: %d\n", errno);
-		}
-
+		Write_fifo();
 
 		sleep(1);
 	}

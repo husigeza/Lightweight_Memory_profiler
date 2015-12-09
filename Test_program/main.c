@@ -72,6 +72,10 @@ int main()
     	sleep(1);
    }
 
+	/*int *pointer = (int*)malloc(sizeof(int));
+	printf("pointer %xl\n",pointer);
+	free(pointer);*/
+
     return 0;
 }
 

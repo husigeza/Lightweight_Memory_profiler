@@ -48,7 +48,6 @@ Process_handler::Process_handler(pid_t PID) {
 	elf_path = "/proc/" + this->PID_string + "/exe";
 	shared_memory_initialized = false;
 
-	// If the profiled process compiled with START_PROF_IMM flag, that means it starts putting data into shared memory immediately after startup
 	// In this case we have to map the memory area, set the profiled and initialized flags of the process true
 	// Check whether the process starts profiling at the beginning with checking the existence of the corresponding shared memory area
 	shared_memory = shm_open(("/" + PID_string).c_str(),  O_RDWR , S_IRWXU | S_IRWXG | S_IRWXO);
@@ -77,12 +76,57 @@ Process_handler::Process_handler(pid_t PID) {
 	if (!Create_symbol_table()) {
 		cout << "Error creating the symbol table" << endl;
 	}
+
 	Init_semaphore();
 
 }
 
-Process_handler::Process_handler(const Process_handler &obj)noexcept{
+Process_handler::Process_handler(pid_t PID, string EXE_path){
 
+	this->PID = PID;
+	PID_string = to_string(PID);
+	alive = true;
+	profiled = false;
+	memory_profiler_struct = nullptr;
+	shared_memory = 0;
+	semaphore_shared_memory = 0;
+	semaphore = nullptr;
+	elf_path = EXE_path;
+
+	// In this case we have to map the memory area, set the profiled and initialized flags of the process true
+		// Check whether the process starts profiling at the beginning with checking the existence of the corresponding shared memory area
+		shared_memory = shm_open(("/" + PID_string).c_str(),  O_RDWR , S_IRWXU | S_IRWXG | S_IRWXO);
+		if (shared_memory >= 0){
+			cout << "Constructor, shared memory exists, shared memory handler: " << shared_memory /*<<" errno: " <<errno*/ << endl;
+
+			// Map the shared memory because it exists
+			memory_profiler_struct = (memory_profiler_sm_object_class*) mmap(
+									NULL,
+									sizeof(memory_profiler_sm_object_class),
+									PROT_READ,
+									MAP_SHARED,
+									shared_memory,
+									0);
+			if (memory_profiler_struct != MAP_FAILED) {
+				// Shared memory initalized by the profiled process
+				shared_memory_initialized = true;
+				// If shared memory is already initialized until this point it means the process is being profiled at the moment
+				profiled = true;
+			}
+		}
+		else {
+			cout << "Constructor, shared memory not exist, shared memory handler: " << shared_memory /*<< " errno: " <<errno*/ <<endl;
+		}
+
+		if (!Create_symbol_table()) {
+			cout << "Error creating the symbol table" << endl;
+		}
+
+		Init_semaphore();
+
+}
+
+Process_handler::Process_handler(const Process_handler &obj)noexcept{
 	PID = obj.PID;
 	PID_string = obj.PID_string;
 	profiled = obj.profiled;
@@ -530,12 +574,10 @@ bool Process_handler::Find_symbol_in_ELF(string ELF_path, string symbol_name){
 void Process_handler::Init_semaphore() {
 
 	semaphore_shared_memory = shm_open(
-			("/" + PID_string + "_start_sem").c_str(), O_RDWR,
-			S_IRWXU | S_IRWXG | S_IRWXO);
+			("/" + PID_string + "_start_sem").c_str(), O_RDWR, S_IRWXU | S_IRWXG | S_IRWXO);
 	if (semaphore_shared_memory < 0) cout << "Error while opening semaphore shared memory: " << errno << endl;
 
-	semaphore = (sem_t*) mmap(NULL, sizeof(sem_t), PROT_WRITE, MAP_SHARED,
-			semaphore_shared_memory, 0);
+	semaphore = (sem_t*) mmap(NULL, sizeof(sem_t), PROT_WRITE, MAP_SHARED, semaphore_shared_memory, 0);
 	if (semaphore == MAP_FAILED) cout << "Failed mapping the semaphore shared memory: " << errno << endl;
 }
 

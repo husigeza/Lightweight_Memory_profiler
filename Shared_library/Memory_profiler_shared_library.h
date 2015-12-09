@@ -7,6 +7,7 @@ void* Memory_profiler_start_thread(void *arg);
 void* Hearthbeat(void *arg);
 bool profiling_allowed(void);
 void set_profiling(bool value);
+void Write_fifo();
 
 bool Create_shared_memory();
 bool Open_shared_memory();

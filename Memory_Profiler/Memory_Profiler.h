@@ -20,6 +20,7 @@ class Memory_Profiler {
         ~Memory_Profiler();
 
         bool Add_Process_to_list(const pid_t PID);
+        bool Add_Process_to_list(const pid_t PID, const string EXE_path);
 
         void Add_process_to_profiling(const pid_t PID);
         void Add_all_process_to_profiling();
