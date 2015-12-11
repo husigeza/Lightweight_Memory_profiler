@@ -23,7 +23,8 @@
 #define _GNU_SOURCE         /* See feature_test_macros(7) */
 #include <dlfcn.h>
 
-#define fifo_path "/home/egezhus/mem_prof_fifo"
+//#define fifo_path "/home/egezhus/mem_prof_fifo"
+#define fifo_path "/dev/mem_prof_fifo"
 
 #define max_call_stack_depth 100
 

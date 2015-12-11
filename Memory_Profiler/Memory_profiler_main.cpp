@@ -6,7 +6,8 @@
 
 #include <signal.h>
 
-#define path_to_FIFO "/home/egezhus/mem_prof_fifo"
+//#define path_to_FIFO "/home/egezhus/mem_prof_fifo"
+#define path_to_FIFO "/dev/mem_prof_fifo"
 
 using namespace std;
 
