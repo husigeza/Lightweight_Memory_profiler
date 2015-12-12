@@ -2,9 +2,9 @@
 all: libMemory_profiler_IMM_shared_library.so.1.0 libMemory_profiler_shared_library.so.1.0
 
 #sources
-sources = Memory_profiler_shared_library.c
+sources = ../Memory_profiler_shared_library.c
 #headers
-headers = Memory_profiler_shared_library.h
+headers = ../Memory_profiler_shared_library.h
 #object files
 object = Memory_profiler_shared_library.o
 object_IMM = Memory_profiler_IMM_shared_library.o
@@ -54,6 +54,6 @@ clean:
 
 	 
 
-.PHONY: all clean dependents install
+.PHONY: all clean install
 .SECONDARY:
 

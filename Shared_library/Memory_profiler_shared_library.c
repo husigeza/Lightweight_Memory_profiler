@@ -167,6 +167,8 @@ void free(void* pointer) {
 
 			long unsigned int new_size = sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count + 1) * sizeof(memory_profiler_log_entry_t);
 
+			munmap(memory_profiler_struct, sizeof(memory_profiler_struct_t)+(memory_profiler_struct->log_count) * sizeof(memory_profiler_log_entry_t));
+
 			int err = ftruncate(shared_memory, new_size);
 			if (err < 0) {
 				printf("Error while truncating shared memory: %d\n", errno);
@@ -180,8 +182,8 @@ void free(void* pointer) {
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].thread_id = pthread_self();
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].type = free_func;
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].size = 0;
-		    memory_profiler_struct->log_entry[memory_profiler_struct->log_count].address = (uint64_t*)pointer;
-		    //printf("address: %xl\n",(uint64_t*)pointer);
+		    memory_profiler_struct->log_entry[memory_profiler_struct->log_count].address = /*(uint64_t*)*/pointer;
+		    //printf("address: %lx\n",/*(uint64_t*)*/pointer);
 		    memory_profiler_struct->log_entry[memory_profiler_struct->log_count].valid = true;
 
 		    memory_profiler_struct->log_count++;
@@ -215,6 +217,9 @@ void* malloc(size_t size) {
 		void* pointer = __libc_malloc(size);
 
 		long unsigned int new_size = sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count + 1) * sizeof(memory_profiler_log_entry_t);
+
+		munmap(memory_profiler_struct, sizeof(memory_profiler_struct_t)+(memory_profiler_struct->log_count) * sizeof(memory_profiler_log_entry_t));
+
 
 		int err = ftruncate(shared_memory, new_size);
 		if (err < 0) {

@@ -23,6 +23,7 @@ class Memory_Profiler {
 
         void Add_process_to_profiling(const pid_t PID);
         void Add_all_process_to_profiling();
+
         map<const pid_t,Process_handler>& Get_profiled_processes_list();
         map<const pid_t,Process_handler>& Get_all_processes_list();
 
@@ -42,15 +43,15 @@ class Memory_Profiler {
 
         void Read_FIFO();
 
+        void Analyze_process(const pid_t PID);
+        void Analyze_all_process();
+
         void Print_all_processes()const;
         void Print_alive_processes();
         void Print_profiled_processes();
         void Print_profiled_process_shared_memory(const pid_t PID);
         void Print_all_processes_shared_memory();
         void Print_process_symbol_table(pid_t PID);
-
-
-
 };
 
 #endif // MEMORY_PROFILER_H_INCLUDED

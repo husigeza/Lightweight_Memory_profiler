@@ -53,11 +53,11 @@ int main() {
 		mem_prof.Print_profiled_processes();
 
 		getchar();
-		mem_prof.Add_all_process_to_profiling();
+		/*mem_prof.Add_all_process_to_profiling();
 		cout << "Added all to profiled" << endl;
 		mem_prof.Start_stop_profiling_all_processes();
 		cout << "Signal sent" << endl;
-		getchar();
+		getchar();*/
 		mem_prof.Start_stop_profiling_all_processes();
 		cout << "Signal sent" << endl;
 		getchar();
@@ -66,7 +66,8 @@ int main() {
 		mem_prof.Remap_all_process_shared_memory();
 		cout << "Remapped shared memories" << endl;
 		getchar();
-		mem_prof.Print_all_processes_shared_memory();
+		//mem_prof.Print_all_processes_shared_memory();
+		mem_prof.Analyze_all_process();
 
 
 	}
