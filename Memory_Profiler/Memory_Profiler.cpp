@@ -248,7 +248,8 @@ void Memory_Profiler::Analyze_process(const pid_t PID){
 		}
 	}
 
-	cout << "Total memory allocated: " << std::dec << total_memory_allocated << " bytes" << endl;
+	cout << endl << "PID: " << PID << endl;
+	cout <<"Total memory allocated: " << std::dec << total_memory_allocated << " bytes" << endl;
 	cout << "Total memory freed: " << std::dec << total_memory_freed << " bytes" << endl;
 	cout << "Total memory leaked yet: " << std::dec << total_memory_leaked << " bytes" << endl;
 	cout << "Total number of mallocs: " << std::dec << malloc_counter << endl;

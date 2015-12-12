@@ -66,7 +66,7 @@ int main() {
 		mem_prof.Remap_all_process_shared_memory();
 		cout << "Remapped shared memories" << endl;
 		getchar();
-		//mem_prof.Print_all_processes_shared_memory();
+		mem_prof.Print_all_processes_shared_memory();
 		mem_prof.Analyze_all_process();
 
 

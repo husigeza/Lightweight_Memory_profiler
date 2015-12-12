@@ -583,6 +583,9 @@ bool Process_handler::Remap_shared_memory(){
 		return false;
 	}
 
+	// Unmap it first to prevent too much mapping
+	munmap(memory_profiler_struct, sizeof(memory_profiler_sm_object_class)+(memory_profiler_struct->log_count) * sizeof(memory_profiler_sm_object_log_entry_class));
+
 	unsigned long log_count = memory_profiler_struct->log_count;
 	unsigned long new_size = sizeof(memory_profiler_sm_object_class) + log_count*sizeof(memory_profiler_sm_object_log_entry_class);
 	cout << "size of shared memory: "<< new_size << endl;
