@@ -5,7 +5,7 @@
  *      Author: egezhus
  */
 
-#include "memory_map.h"
+#include "Memory_Profiler_memory_map.h"
 
 
 memory_map_table_entry_class::memory_map_table_entry_class(const memory_map_table_entry_class &obj)noexcept{

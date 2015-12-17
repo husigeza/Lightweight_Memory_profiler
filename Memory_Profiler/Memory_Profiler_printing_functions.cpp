@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "Memory_Profiler.h"
+#include "Memory_Profiler_class.h"
 
 using namespace std;
 

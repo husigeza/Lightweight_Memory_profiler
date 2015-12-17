@@ -4,7 +4,7 @@
 #include <map>
 #include <bfd.h>
 
-#include "Process.h"
+#include "Memory_Profiler_process.h"
 
 //using namespace std;
 

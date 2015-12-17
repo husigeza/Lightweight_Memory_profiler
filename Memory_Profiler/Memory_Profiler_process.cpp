@@ -1,3 +1,5 @@
+#include "Memory_Profiler_process.h"
+
 #include <iostream>
 #include <sys/mman.h>
 #include <fcntl.h>
@@ -12,7 +14,6 @@
 #include <unistd.h>
 #include <algorithm>
 
-#include "Process.h"
 
 using namespace std;
 
@@ -584,7 +585,12 @@ bool Process_handler::Remap_shared_memory(){
 	}
 
 	// Unmap it first to prevent too much mapping
-	munmap(memory_profiler_struct, sizeof(memory_profiler_sm_object_class)+(memory_profiler_struct->log_count) * sizeof(memory_profiler_sm_object_log_entry_class));
+	/*int err = munmap(memory_profiler_struct, sizeof(memory_profiler_sm_object_class)+(memory_profiler_struct->log_count) * sizeof(memory_profiler_sm_object_log_entry_class));
+	if(err < 0){
+		cout << "Failed unmapping it first, errno: " << errno << endl;
+		return false;
+	}*/
+
 
 	unsigned long log_count = memory_profiler_struct->log_count;
 	unsigned long new_size = sizeof(memory_profiler_sm_object_class) + log_count*sizeof(memory_profiler_sm_object_log_entry_class);

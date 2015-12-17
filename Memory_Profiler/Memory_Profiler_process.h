@@ -5,16 +5,16 @@
  *      Author: egezhus
  */
 
-#ifndef PROCESS_H_
-#define PROCESS_H_
+#ifndef MEMORY_PROFILER_PROCESS_H_
+#define MEMORY_PROFILER_PROCESS_H_
 
 #include <stdint.h>
 #include <semaphore.h>
 #include <vector>
 #include <bfd.h>
 
-#include "memory_map.h"
-#include "symbol_table.h"
+#include "Memory_Profiler_memory_map.h"
+#include "Memory_Profiler_symbol_table.h"
 
 
 using namespace std;
@@ -122,4 +122,4 @@ class Process_handler {
 
 
 
-#endif /* PROCESS_H_ */
+#endif /* MEMORY_PROFILER_PROCESS_H_ */

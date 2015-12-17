@@ -5,8 +5,8 @@
  *      Author: egezhus
  */
 
-#ifndef MEMORY_MAP_H_
-#define MEMORY_MAP_H_
+#ifndef MEMORY_PROFILER_MEMORY_MAP_H_
+#define MEMORY_PROFILER_MEMORY_MAP_H_
 
 #include <string>
 #include <stdint.h>
@@ -39,4 +39,4 @@ public:
 };
 
 
-#endif /* MEMORY_MAP_H_ */
+#endif /* MEMORY_PROFILER_MEMORY_MAP_H_ */

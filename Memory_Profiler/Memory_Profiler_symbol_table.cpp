@@ -4,7 +4,7 @@
  *  Created on: Nov 20, 2015
  *      Author: egezhus
  */
-#include "symbol_table.h"
+#include "Memory_Profiler_symbol_table.h"
 
 
 symbol_table_entry_class::symbol_table_entry_class(const symbol_table_entry_class &obj)noexcept{

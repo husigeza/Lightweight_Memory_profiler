@@ -1,4 +1,4 @@
-#include "Memory_profiler_shared_library.h"
+#include "Memory_Profiler_shared_library.h"
 
 #include <stdio.h>
 #include <signal.h>

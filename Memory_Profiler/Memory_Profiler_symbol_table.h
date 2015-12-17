@@ -5,8 +5,8 @@
  *      Author: egezhus
  */
 
-#ifndef SYMBOL_TABLE_H_
-#define SYMBOL_TABLE_H_
+#ifndef MEMORY_PROFILER_SYMBOL_TABLE_H_
+#define MEMORY_PROFILER_SYMBOL_TABLE_H_
 
 #include <string>
 #include <stdint.h>
@@ -55,4 +55,4 @@ bool operator >  (const symbol_table_entry_class& entry, const uint64_t &address
 bool operator <= (const symbol_table_entry_class& entry, const uint64_t &address);
 bool operator >= (const symbol_table_entry_class& entry, const uint64_t &address);
 
-#endif /* SYMBOL_TABLE_H_ */
+#endif /* MEMORY_PROFILER_SYMBOL_TABLE_H_ */
