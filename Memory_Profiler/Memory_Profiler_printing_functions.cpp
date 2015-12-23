@@ -4,14 +4,20 @@
 
 using namespace std;
 
-void Memory_Profiler::Print_all_processes() const {
+void Memory_Profiler::Print_all_processes() {
 
 	cout << "Printing all processes" << endl;
-	for (auto& element : Processes) {
+	/*for (auto& element : Processes) {
 
 		cout << "PID: " << std::dec << element.first << endl;
 	}
-	cout << "Number of processes: " << Processes.size() << endl;
+	cout << "Number of processes: " << Processes.size() << endl;*/
+
+	map<const pid_t, Process_handler>::iterator it;
+
+	for (it = Processes.begin(); it != Processes.end(); it++) {
+		cout << "PID: " << std::dec << it->first << endl;
+	}
 }
 
 void Memory_Profiler::Print_alive_processes() {
@@ -32,11 +38,20 @@ void Memory_Profiler::Print_alive_processes() {
 void Memory_Profiler::Print_profiled_processes() {
 
 	cout << "Printing profiled" << endl;
-	for (auto& element : Processes) {
+	/*for (auto& element : Processes) {
 
 		if (element.second.Get_profiled() == true) {
 			cout << element.first << endl;
 		}
+	}*/
+
+	map<const pid_t, Process_handler>::iterator it;
+
+	for (it = Processes.begin(); it != Processes.end(); it++) {
+		if(it->second.Get_profiled() == true){
+			cout << "PID: " << std::dec << it->first << endl;
+		}
+
 	}
 }
 

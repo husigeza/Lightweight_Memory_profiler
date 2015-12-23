@@ -25,5 +25,3 @@ all: Test_program Test_program_IMM
 clean: 
 	rm Test_Program Test_Program_IMM
 	@echo ' '
-
-

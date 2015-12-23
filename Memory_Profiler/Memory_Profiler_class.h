@@ -2,7 +2,6 @@
 #define MEMORY_PROFILER_H_INCLUDED
 
 #include <map>
-#include <bfd.h>
 
 #include "Memory_Profiler_process.h"
 
@@ -35,6 +34,10 @@ class Memory_Profiler {
         void Remove_process_from_profiling(const pid_t PID);
         void Remove_all_process_from_profiling();
 
+        void Delete_process_shared_memory(const pid_t PID);
+
+
+
         void Start_stop_profiling(const pid_t PID);
         void Start_stop_profiling_all_processes();
 
@@ -46,7 +49,7 @@ class Memory_Profiler {
         void Analyze_process(const pid_t PID);
         void Analyze_all_process();
 
-        void Print_all_processes()const;
+        void Print_all_processes();
         void Print_alive_processes();
         void Print_profiled_processes();
         void Print_profiled_process_shared_memory(const pid_t PID);

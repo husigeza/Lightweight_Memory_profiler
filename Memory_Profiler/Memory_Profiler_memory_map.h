@@ -20,14 +20,22 @@ public:
 	uint64_t end_address;
 	string shared_lib_path;
 
-	memory_map_table_entry_class() : start_address{0},end_address{0},shared_lib_path{""} {};
-	memory_map_table_entry_class(uint64_t start_address_p,uint64_t end_address_p,string shared_lib_path_p) : start_address{start_address_p},end_address{end_address_p},shared_lib_path{shared_lib_path_p} {};
+	memory_map_table_entry_class() {
+		start_address = 0;
+		end_address = 0;
+		shared_lib_path ="";
+	}
+	memory_map_table_entry_class(uint64_t start_address_p,uint64_t end_address_p,string shared_lib_path_p) {
+		start_address = start_address_p;
+		end_address = end_address_p;
+		shared_lib_path = shared_lib_path_p;
+	}
 
-	memory_map_table_entry_class(const memory_map_table_entry_class &obj)noexcept;
-	memory_map_table_entry_class& operator=(const memory_map_table_entry_class &obj)noexcept;
+	memory_map_table_entry_class(const memory_map_table_entry_class &obj);
+	memory_map_table_entry_class& operator=(const memory_map_table_entry_class &obj);
 
-	memory_map_table_entry_class(memory_map_table_entry_class &&obj)noexcept;
-	memory_map_table_entry_class& operator=(memory_map_table_entry_class &&obj)noexcept;
+	//memory_map_table_entry_class(memory_map_table_entry_class &&obj);
+	//memory_map_table_entry_class& operator=(memory_map_table_entry_class &&obj);
 
 	bool operator==(const string& shared_lib_path) const {
 	    if(this->shared_lib_path.compare(shared_lib_path) == 0)return true;

@@ -45,12 +45,13 @@ install:
 	ln -sf /usr/local/lib/libMemory_Profiler_shared_library.so.1.0 /usr/local/lib/libMemory_Profiler_shared_library.so.1
 	ln -sf /usr/local/lib/libMemory_Profiler_IMM_shared_library.so.1.0 /usr/local/lib/libMemory_Profiler_IMM_shared_library.so.1
 			
-	ln -sf /usr/local/lib/libMemory_Profiler_IMM_shared_library.so.1.0 /usr/local/lib/libMemory_Profiler_IMM_shared_library.so
 	ln -sf /usr/local/lib/libMemory_Profiler_shared_library.so.1.0 /usr/local/lib/libMemory_Profiler_shared_library.so
+	ln -sf /usr/local/lib/libMemory_Profiler_IMM_shared_library.so.1.0 /usr/local/lib/libMemory_Profiler_IMM_shared_library.so
+	
 	ldconfig
 
 clean:
-	 rm -f *.o *.so.*
+	 rm -f *.o *.so.* *.d
 
 	 
 

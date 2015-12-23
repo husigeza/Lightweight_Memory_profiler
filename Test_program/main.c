@@ -16,6 +16,7 @@ void dummy_malloc_1(int *pointer, int *i){
 	*i += 1;
 
 	pointer = (int *)malloc(sizeof(int));
+	printf("dummy_malloc_1 pointer: 0x%lx \n",(unsigned long)pointer);
 }
 
 void dummy_malloc_2(int *pointer, int *i){
@@ -23,16 +24,19 @@ void dummy_malloc_2(int *pointer, int *i){
 	*i += 1;
 
 	pointer = (int *)malloc(sizeof(int));
+	printf("dummy_malloc_2 pointer: 0x%lx \n",(unsigned long)pointer);
 }
 
 void* Thread_1(void *arg)
 {
-    int *pointer = NULL;
+	int *pointer = NULL;
     int i;
 
     while(1) {
         printf("Thread %d \n",(int*)arg);
-        dummy_malloc_1(pointer,&i);
+        //dummy_malloc_1(pointer,&i);
+        pointer = (int*)malloc(sizeof(int));
+        printf("pointer: 0x%lx \n",(unsigned long)pointer);
         free(pointer);
         sleep(1);
     }
@@ -48,8 +52,9 @@ void* Thread_2(void *arg)
 
     while(1) {
         printf("Thread %d \n",(int*)arg);
-        dummy_malloc_2(pointer,&i);
-        free(pointer);
+        pointer = (int*)malloc(sizeof(int));
+        //printf("pointer after dummy_malloc_2: 0x%lx \n",(unsigned long)pointer);
+        //free(pointer);
         sleep(1);
     }
 

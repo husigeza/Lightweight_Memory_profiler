@@ -6,31 +6,36 @@
 #include <unistd.h>
 #include <errno.h>
 #include <signal.h>
-#include <bfd.h>
 #include <fstream>
 #include <sstream>
 #include <regex.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <algorithm>
+#include <string>
+
+#include <inttypes.h>
+
+
+
 
 
 using namespace std;
 
-#define Memory_profiler_shared_library "libMemory_profiler_shared_library.so"
-#define Memory_profiler_IMM_shared_library "libMemory_profiler_IMM_shared_library.so"
+//#define Memory_profiler_shared_library "libMemory_Profiler_shared_library.so"
+//#define Memory_profiler_IMM_shared_library "libMemory_Profiler_IMM_shared_library.so"
 
 
 Process_handler::Process_handler() {
 
 	PID = 0;
 	PID_string = "";
-	profiled = false;
 	alive = false;
-	memory_profiler_struct = nullptr;
+	profiled = false;
+	memory_profiler_struct = 0;
 	shared_memory = 0;
 	semaphore_shared_memory = 0;
-	semaphore = nullptr;
+	semaphore = 0;
 	elf_path = "";
 	shared_memory_initialized = false;
 
@@ -39,13 +44,14 @@ Process_handler::Process_handler() {
 Process_handler::Process_handler(pid_t PID) {
 
 	this->PID = PID;
-	PID_string = to_string(PID);
+	//PID_string = to_string(PID);
+	PID_string = SSTR(PID);
 	alive = true;
 	profiled = false;
-	memory_profiler_struct = nullptr;
+	memory_profiler_struct = 0;
 	shared_memory = 0;
 	semaphore_shared_memory = 0;
-	semaphore = nullptr;
+	semaphore = 0;
 	elf_path = "/proc/" + this->PID_string + "/exe";
 	shared_memory_initialized = false;
 
@@ -78,28 +84,37 @@ Process_handler::Process_handler(pid_t PID) {
 	if (!Create_symbol_table()) {
 		cout << "Error creating the symbol table" << endl;
 	}
+
 	Init_semaphore();
+
 
 }
 
-Process_handler::Process_handler(const Process_handler &obj)noexcept{
+Process_handler::Process_handler(const Process_handler &obj){
 
 	PID = obj.PID;
 	PID_string = obj.PID_string;
+
 	profiled = obj.profiled;
 	alive = obj.alive;
+
 	memory_profiler_struct = obj.memory_profiler_struct;
+
 	shared_memory = obj.shared_memory;
+	shared_memory_initialized = obj.shared_memory_initialized;
+
 	semaphore_shared_memory = obj.semaphore_shared_memory;
 	semaphore = obj.semaphore;
+
 	elf_path = obj.elf_path;
+
+
 	memory_map_table = obj.memory_map_table;
 	function_symbol_table = obj.function_symbol_table;
-	shared_memory_initialized = obj.shared_memory_initialized;
 
 }
 
-Process_handler& Process_handler::operator=(const Process_handler &obj)noexcept{
+Process_handler& Process_handler::operator=(const Process_handler &obj){
 	if (this != &obj) {
 
 			PID = obj.PID;
@@ -118,8 +133,8 @@ Process_handler& Process_handler::operator=(const Process_handler &obj)noexcept{
 		return *this;
 
 }
-
-Process_handler::Process_handler(Process_handler &&obj)noexcept{
+/*
+Process_handler::Process_handler(Process_handler &&obj){
 
 	PID = obj.PID;
 	PID_string = obj.PID_string;
@@ -138,17 +153,17 @@ Process_handler::Process_handler(Process_handler &&obj)noexcept{
 	obj.PID_string = "";
 	obj.profiled = false;
 	obj.alive = false;
-	obj.memory_profiler_struct = nullptr;
+	obj.memory_profiler_struct = 0;
 	obj.shared_memory = 0;
 	obj.semaphore_shared_memory = 0;
-	obj.semaphore = nullptr;
+	obj.semaphore = 0;
 	obj.elf_path = "";
 	obj.memory_map_table.clear();
 	obj.function_symbol_table.clear();
 	obj.shared_memory_initialized = false;
 }
-
-Process_handler& Process_handler::operator=(Process_handler&& obj)noexcept{
+*/
+/*Process_handler& Process_handler::operator=(Process_handler&& obj){
 
 	if (this != &obj) {
 
@@ -169,10 +184,10 @@ Process_handler& Process_handler::operator=(Process_handler&& obj)noexcept{
 		obj.PID_string = "";
 		obj.profiled = false;
 		obj.alive = false;
-		obj.memory_profiler_struct = nullptr;
+		obj.memory_profiler_struct = 0;
 		obj.shared_memory = 0;
 		obj.semaphore_shared_memory = 0;
-		obj.semaphore = nullptr;
+		obj.semaphore = 0;
 		obj.elf_path = "";
 		obj.function_symbol_table.clear();
 		obj.memory_map_table.clear();
@@ -180,8 +195,20 @@ Process_handler& Process_handler::operator=(Process_handler&& obj)noexcept{
 	}
 	return *this;
 }
+*/
 
 Process_handler::~Process_handler() {
+
+	memory_map_table.clear();
+	function_symbol_table.clear();
+
+	//munmap(semaphore, sizeof(sem_t));
+	//munmap(memory_profiler_struct, sizeof(memory_profiler_sm_object_log_entry_class));
+
+	//shm_unlink(("/" + PID_string).c_str());
+}
+
+void Process_handler::Process_delete(){
 
 	memory_map_table.clear();
 	function_symbol_table.clear();
@@ -192,10 +219,11 @@ Process_handler::~Process_handler() {
 	shm_unlink(("/" + PID_string).c_str());
 }
 
+
 /**
  * Returns with the index of function in vector
  */
-vector<symbol_table_entry_class>::iterator Process_handler::Find_function(uint64_t &address){
+vector<symbol_table_entry_class>::iterator Process_handler::Find_function(uint64_t address){
 
 	vector<symbol_table_entry_class>::iterator it = lower_bound(function_symbol_table.begin(),function_symbol_table.end(),address);
 
@@ -265,11 +293,25 @@ long Process_handler::Parse_dynamic_symbol_table_from_ELF(bfd* bfd_ptr,asymbol *
 
 string Process_handler::Find_memory_profiler_library_name(){
 
-	for(auto elem : memory_map_table){
+	/*for(auto elem : memory_map_table){
 		if(elem.shared_lib_path.find(Memory_profiler_shared_library) != string::npos){
 			return Memory_profiler_shared_library;
 		}
 		else if(elem.shared_lib_path.find(Memory_profiler_IMM_shared_library) != string::npos){
+			 return Memory_profiler_IMM_shared_library;
+		}
+	}
+	return "";*/
+
+	vector<memory_map_table_entry_class>::iterator it;
+	string Memory_profiler_shared_library = "libMemory_Profiler_shared_library.so";
+	string Memory_profiler_IMM_shared_library = "libMemory_Profiler_IMM_shared_library.so";
+
+	for (it = memory_map_table.begin(); it != memory_map_table.end(); it++) {
+		if(it->shared_lib_path.find(Memory_profiler_shared_library) != string::npos){
+			return Memory_profiler_shared_library;
+		}
+		else if(it->shared_lib_path.find(Memory_profiler_IMM_shared_library) != string::npos){
 			 return Memory_profiler_IMM_shared_library;
 		}
 	}
@@ -306,6 +348,7 @@ bool Process_handler::Create_symbol_table() {
 		return false;
 	}
 
+
 	string memory_profiler_library = Find_memory_profiler_library_name();
 
 	// /proc/PID/exe is a sym link to the executable, read it with readlink because we need the full path of the executable
@@ -318,6 +361,7 @@ bool Process_handler::Create_symbol_table() {
 	symbol_entry.name = "malloc";
 	symbol_entry.address = 0;
 	for(unsigned int i = 0; i < memory_map_table.size(); i++){
+
 		//Find the entry of the memory_profiler_shared_library, read its VM base address, and find malloc/free address offset from it
 		if(memory_map_table[i].shared_lib_path.find(memory_profiler_library) !=  string::npos){
 			symbol_entry.address = (uint64_t)(memory_map_table[i].start_address + Get_symbol_address_from_ELF(memory_map_table[i].shared_lib_path,symbol_entry.name));
@@ -325,7 +369,8 @@ bool Process_handler::Create_symbol_table() {
 		}
 	}
 	// Save the symbol with its absolute address in the vector
-	function_symbol_table.emplace_back(symbol_entry);
+	//function_symbol_table.emplace_back(symbol_entry);
+	function_symbol_table.push_back(symbol_entry);
 
 	// Get free from memory_profiler_shared_library
 	// Initialize name and address
@@ -339,7 +384,8 @@ bool Process_handler::Create_symbol_table() {
 			}
 	}
 	// Save the symbol with its absolute address in the vector
-	function_symbol_table.emplace_back(symbol_entry);
+	//function_symbol_table.emplace_back(symbol_entry);
+	function_symbol_table.push_back(symbol_entry);
 
 
 	for (int i = 0; i < number_of_symbols; i++) {
@@ -354,7 +400,8 @@ bool Process_handler::Create_symbol_table() {
 				// Symbol is defined in the process, address is known from ELF
 				symbol_entry.address = (uint64_t)(symbol_table[i]->section->vma + symbol_table[i]->value);
 				// Save the symbol with its absolute address in the vector
-				function_symbol_table.emplace_back(symbol_entry);
+				//function_symbol_table.emplace_back(symbol_entry);
+				function_symbol_table.push_back(symbol_entry);
 			} else {
 				// Malloc and free has been already saved
 				if (symbol_entry.name == "malloc" || symbol_entry.name == "free") {
@@ -376,7 +423,8 @@ bool Process_handler::Create_symbol_table() {
 							if(Find_symbol_in_ELF(memory_map_table[i].shared_lib_path,stripped_func_name)){
 									symbol_entry.address = (uint64_t)(memory_map_table[i].start_address + Get_symbol_address_from_ELF(memory_map_table[i].shared_lib_path,stripped_func_name));
 									// Save the symbol with its absolute address in the vector
-									function_symbol_table.emplace_back(symbol_entry);
+									//function_symbol_table.emplace_back(symbol_entry);
+									function_symbol_table.push_back(symbol_entry);
 									break;
 							}
 						}
@@ -389,10 +437,12 @@ bool Process_handler::Create_symbol_table() {
 	//Sort the symbols based on address
 	sort(function_symbol_table.begin(),function_symbol_table.end());
 
-	/*for(auto element : function_symbol_table){
+	vector<symbol_table_entry_class>::iterator it;
 
-		cout << std::hex << element.address <<"  " << element.name << endl;
-	}*/
+		for (it = function_symbol_table.begin(); it != function_symbol_table.end(); it++){
+
+		cout << std::hex << it->address <<"  " << it->name << endl;
+	}
 
 	// Free the symbol table allocated in
 	bfd_close(tmp_bfd);
@@ -404,8 +454,7 @@ bool Process_handler::Create_symbol_table() {
 
 bool Process_handler::Read_virtual_memory_mapping() {
 
-
-	ifstream mapping("/proc/" + this->PID_string + "/maps");
+	ifstream mapping(("/proc/" + this->PID_string + "/maps").c_str(), std::ifstream::in);
 	string line;
 
 	size_t pos_x;
@@ -415,6 +464,7 @@ bool Process_handler::Read_virtual_memory_mapping() {
 
 
 	memory_map_table_entry_class entry;
+
 
 	while (getline(mapping, line)) {
 		try{
@@ -440,8 +490,9 @@ bool Process_handler::Read_virtual_memory_mapping() {
 			pos_end_address_stop = line.find_first_of(" ");
 
 			// Convert the strings to numbers
-			entry.start_address = stoul(line.substr(0,pos_end_address_start).c_str(),NULL,16);
-			entry.end_address = stoul(line.substr(pos_end_address_start+1,pos_end_address_stop-pos_end_address_start).c_str(),NULL,16);
+			char * endptr;
+			entry.start_address = strtoumax(line.substr(0,pos_end_address_start).c_str(),&endptr,16);
+			entry.end_address = strtoumax(line.substr(pos_end_address_start+1,pos_end_address_stop-pos_end_address_start).c_str(),&endptr,16);
 
 			memory_map_table.push_back(entry);
 
@@ -538,6 +589,7 @@ void Process_handler::Init_semaphore() {
 	semaphore = (sem_t*) mmap(NULL, sizeof(sem_t), PROT_WRITE, MAP_SHARED,
 			semaphore_shared_memory, 0);
 	if (semaphore == MAP_FAILED) cout << "Failed mapping the semaphore shared memory: " << errno << endl;
+
 }
 
 bool Process_handler::Init_shared_memory() {
