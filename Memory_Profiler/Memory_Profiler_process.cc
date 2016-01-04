@@ -396,7 +396,7 @@ bool Process_handler::Create_symbol_table() {
 			symbol_entry.name = symbol_table[i]->name;
 			symbol_entry.address = 0;
 
-			if (symbol_table[i]->value != 0) {
+			if (symbol_table[i]->value != 0 && symbol_table[i]->section->vma != 0) {
 				// Symbol is defined in the process, address is known from ELF
 				symbol_entry.address = (uint64_t)(symbol_table[i]->section->vma + symbol_table[i]->value);
 				// Save the symbol with its absolute address in the vector

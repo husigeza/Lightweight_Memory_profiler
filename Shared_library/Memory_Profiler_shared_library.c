@@ -51,10 +51,24 @@ static char PID_string_sem[16];
 static int shared_memory;
 static int mem_prof_fifo;
 
+/**
+ * Semaphore for defending the global variable starting/stopping the profiling
+ */
 sem_t enable_semaphore;
+
+/**
+ * Semaphore for defending the shared memory writing between threads
+ */
 sem_t thread_semaphore;
 
+/**
+ * File handler of shared semaphore for starting/stopping the profiling
+ */
 static int semaphore_shared_memory;
+
+/**
+ * Starting/stopping profiling
+ */
 static sem_t* memory_profiler_start_semaphore;
 
 
