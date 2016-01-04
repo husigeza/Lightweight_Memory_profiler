@@ -47,7 +47,7 @@ static int shared_memory;
 static int mem_prof_fifo;
 
 sem_t enable_semaphore;
-//sem_t thread_semaphore;
+sem_t thread_semaphore;
 
 static int semaphore_shared_memory;
 static sem_t* memory_profiler_start_semaphore;
@@ -96,12 +96,10 @@ signal_callback_handler(int signum)
 
 void __attribute__ ((constructor)) init() {
 
-
-
 	printf("Init\n");
 	
 	if(sem_init(&enable_semaphore,0,1) == -1) printf("Error in enable_semaphore init, errno: %d\n",errno);
-	//if(sem_init(&thread_semaphore,0,1) == -1) printf("Error in thread_semaphore init, errno: %d\n",errno);
+	if(sem_init(&thread_semaphore,0,1) == -1) printf("Error in thread_semaphore init, errno: %d\n",errno);
 
 	signal(SIGINT, signal_callback_handler);
 
@@ -109,8 +107,6 @@ void __attribute__ ((constructor)) init() {
 	sprintf(PID_string_shared_mem, "/%d", getpid());
 
 	printf("current process is: %s\n", PID_string);
-
-
 
 	sprintf(PID_string_sem, "%d_start_sem", getpid());
 	semaphore_shared_memory = shm_open(PID_string_sem, O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
@@ -160,12 +156,10 @@ void free(void* pointer) {
 
 	if (profiling_allowed()) {
 
-			//set_profiling(false);
-
 			printf("This is from my free!\n");
 
 			//TODO: Make this faster for multiple thread, don't defend the whole structure
-			//sem_wait(&thread_semaphore);
+			sem_wait(&thread_semaphore);
 
 			long unsigned int new_size = sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count + 1) * sizeof(memory_profiler_log_entry_t);
 
@@ -192,12 +186,10 @@ void free(void* pointer) {
 
 		    __libc_free(pointer);
 
-			/*if(sem_post(&thread_semaphore) == -1){
+			if(sem_post(&thread_semaphore) == -1){
 				printf("Error in sem_post, errno: %d\n",errno);
-			}*/
+			}
 			return;
-
-			//set_profiling(true);
 		}
 
 	__libc_free(pointer);
@@ -209,12 +201,10 @@ void* malloc(size_t size) {
 
 	if (profiling_allowed()) {
 
-		//set_profiling(false);
-
 		printf("This is from my malloc!\n");
 
 		//TODO: Make this faster for multiple thread, don't defend the whole structure
-		//sem_wait(&thread_semaphore);
+		sem_wait(&thread_semaphore);
 
 		void* pointer = __libc_malloc(size);
 
@@ -242,9 +232,9 @@ void* malloc(size_t size) {
 
 	    memory_profiler_struct->log_count++;
 
-		/*if(sem_post(&thread_semaphore) == -1){
+		if(sem_post(&thread_semaphore) == -1){
 			printf("Error in sem_post, errno: %d\n",errno);
-		}*/
+		}
 
 		return pointer;
 	}

@@ -54,7 +54,7 @@ void* Thread_2(void *arg)
         printf("Thread %d \n",(int*)arg);
         pointer = (int*)malloc(sizeof(int));
         //printf("pointer after dummy_malloc_2: 0x%lx \n",(unsigned long)pointer);
-        //free(pointer);
+        free(pointer);
         sleep(1);
     }
 

@@ -12,26 +12,26 @@ object_IMM = Memory_Profiler_IMM_shared_library.o
 # Rules
 Memory_Profiler_IMM_shared_library.o : $(sources) $(headers)
 	@echo 'Building target: $@'
-	gcc -O0 -w -c -fPIC $(sources) -DSTART_PROF_IMM -o Memory_Profiler_IMM_shared_library.o
+	gcc-4.4 -O0 -w -c -fPIC $(sources) -DSTART_PROF_IMM -o Memory_Profiler_IMM_shared_library.o
 	@echo 'Finished building target: $@'
 	@echo ' '
 	
 Memory_Profiler_shared_library.o : $(sources) $(headers)
 	@echo 'Building target: $@'
-	gcc -O0 -w -c -fPIC $(sources)
+	gcc-4.4 -O0 -w -c -fPIC $(sources)
 	@echo 'Finished building target: $@' -o Memory_Profiler_shared_library.o
 	@echo ' '
 	
 libMemory_Profiler_IMM_shared_library.so.1.0 : $(object_IMM)
 	@echo 'Building target: $@'
-	gcc -O0 -Wall -rdynamic -shared -Wl,-soname=libMemory_Profiler_IMM_shared_library.so.1 -o libMemory_Profiler_IMM_shared_library.so.1.0 $(object_IMM) -lc -ldl -lrt -lpthread
+	gcc-4.4 -O0 -Wall -rdynamic -shared -Wl,-soname=libMemory_Profiler_IMM_shared_library.so.1 -o libMemory_Profiler_IMM_shared_library.so.1.0 $(object_IMM) -lc -ldl -lrt -lpthread
 	@echo 'Finished building target: $@'
 	@echo ' '
 	
 libMemory_Profiler_shared_library.so.1.0 : $(object)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -O0 -Wall -rdynamic -shared -Wl,-soname=libMemory_Profiler_shared_library.so.1 -o libMemory_Profiler_shared_library.so.1.0 $(object) -lc -ldl -lrt -lpthread
+	gcc-4.4 -O0 -Wall -rdynamic -shared -Wl,-soname=libMemory_Profiler_shared_library.so.1 -o libMemory_Profiler_shared_library.so.1.0 $(object) -lc -ldl -lrt -lpthread
 	@echo 'Finished building target: $@'
 	@echo ' '
 
