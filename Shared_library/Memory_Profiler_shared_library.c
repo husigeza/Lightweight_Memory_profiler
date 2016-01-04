@@ -37,7 +37,11 @@ extern void *__libc_free(void *);
 static pthread_t hearthbeat_thread_id;
 static pthread_t memory_profiler_start_thread_id;
 
+// If another shared lib during init phase wants to call malloc/free before this shared lib has been initialized
+// the execution stops at the semaphore reading, because they have not been initialized.
+// init_done variable shows whether the semaphores have been initialized or not
 static bool init_done = false;
+
 static bool enable = false;
 
 static char PID_string[6];
