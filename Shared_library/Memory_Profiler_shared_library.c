@@ -37,6 +37,7 @@ extern void *__libc_free(void *);
 static pthread_t hearthbeat_thread_id;
 static pthread_t memory_profiler_start_thread_id;
 
+static bool init_done = false;
 static bool enable = false;
 
 static char PID_string[6];
@@ -51,6 +52,8 @@ sem_t thread_semaphore;
 
 static int semaphore_shared_memory;
 static sem_t* memory_profiler_start_semaphore;
+
+
 
 enum {
 	malloc_func = 1,
@@ -100,6 +103,8 @@ void __attribute__ ((constructor)) init() {
 	
 	if(sem_init(&enable_semaphore,0,1) == -1) printf("Error in enable_semaphore init, errno: %d\n",errno);
 	if(sem_init(&thread_semaphore,0,1) == -1) printf("Error in thread_semaphore init, errno: %d\n",errno);
+
+	init_done = true;
 
 	signal(SIGINT, signal_callback_handler);
 
@@ -154,11 +159,13 @@ void __attribute__ ((destructor)) finit(){
 
 void free(void* pointer) {
 
+	if(init_done){
 	if (profiling_allowed()) {
 
 			printf("This is from my free!\n");
 
 			//TODO: Make this faster for multiple thread, don't defend the whole structure
+			if(init_done)
 			sem_wait(&thread_semaphore);
 
 			long unsigned int new_size = sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count + 1) * sizeof(memory_profiler_log_entry_t);
@@ -191,6 +198,7 @@ void free(void* pointer) {
 			}
 			return;
 		}
+	}
 
 	__libc_free(pointer);
 	return;
@@ -199,11 +207,13 @@ void free(void* pointer) {
 
 void* malloc(size_t size) {
 
+	if(init_done){
 	if (profiling_allowed()) {
 
 		printf("This is from my malloc!\n");
 
 		//TODO: Make this faster for multiple thread, don't defend the whole structure
+		if(init_done)
 		sem_wait(&thread_semaphore);
 
 		void* pointer = __libc_malloc(size);
@@ -237,6 +247,7 @@ void* malloc(size_t size) {
 		}
 
 		return pointer;
+	}
 	}
 
 	return __libc_malloc(size);
