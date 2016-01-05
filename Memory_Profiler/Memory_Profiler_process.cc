@@ -388,15 +388,19 @@ bool Process_handler::Create_symbol_table() {
 	function_symbol_table.push_back(symbol_entry);
 
 
-	for (int i = 0; i < number_of_symbols; i++) {
+	symbol_info *sym_inf = (symbol_info*)malloc(sizeof(symbol_info));
 
+	for (int i = 0; i < number_of_symbols; i++) {
 		if (symbol_table[i]->flags & BSF_FUNCTION) {
+
+			bfd_symbol_info(symbol_table[i],sym_inf);
 
 			// Initialize name and address
 			symbol_entry.name = symbol_table[i]->name;
 			symbol_entry.address = 0;
 
-			if (symbol_table[i]->value != 0 && symbol_table[i]->section->vma != 0) {
+			//if (symbol_table[i]->value != 0 && symbol_table[i]->section->vma != 0) {
+			if(ret->type == 't' || ret->type == 'T'){
 				// Symbol is defined in the process, address is known from ELF
 				symbol_entry.address = (uint64_t)(symbol_table[i]->section->vma + symbol_table[i]->value);
 				// Save the symbol with its absolute address in the vector
@@ -433,6 +437,8 @@ bool Process_handler::Create_symbol_table() {
 			}
 		}
 	}
+
+	free(sym_inf);
 
 	//Sort the symbols based on address
 	sort(function_symbol_table.begin(),function_symbol_table.end());
