@@ -12,9 +12,11 @@ void __attribute__ ((constructor)) init324() {
 
 int func5(){
 	int *ptr = (int*)malloc(i*sizeof(int));
-	//free (ptr);
-	printf("i: %d\n",i);
+	free (ptr);
+	//printf("i: %d\n",i);
+
 	i++;
+
 	return i;
 }
 
