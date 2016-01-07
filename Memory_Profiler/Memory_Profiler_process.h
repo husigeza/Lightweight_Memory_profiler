@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <semaphore.h>
 #include <vector>
+#include <map>
 
 //#include "/project/builds/rbnlinux/build_env/ppc_devboard-3.0.0.5/export/sysroot/fsl_8544ds-glibc_std/sysroot/usr/include/bfd.h"
 #include <bfd.h>
@@ -43,7 +44,6 @@ public:
 		type = 0;
 		size = 0 ;
 		backtrace_length = 0;
-		//call_stack = (void *)0;
 		address = 0;
 		valid = false;
 	}
@@ -52,18 +52,14 @@ public:
 class memory_profiler_sm_object_class {
 
 public:
-
-	/*memory_profiler_sm_object_class(const memory_profiler_sm_object_class &obj);
-	memory_profiler_sm_object_class& operator=(const memory_profiler_sm_object_class &obj);
-
-	memory_profiler_sm_object_class(memory_profiler_sm_object_class &&obj);
-	memory_profiler_sm_object_class& operator=(memory_profiler_sm_object_class &&obj);*/
-
 	long unsigned int log_count;
 	memory_profiler_sm_object_log_entry_class log_entry[1];
 };
 
-
+struct memory_map_table_entry_class_comp {
+  bool operator() (const memory_map_table_entry_class & memory_map_A, const memory_map_table_entry_class & memory_map_B) const
+  {return memory_map_A.end_address < memory_map_B.end_address;}
+};
 
 class Process_handler {
 
@@ -82,12 +78,14 @@ class Process_handler {
 
     string elf_path;
 
+    // This container stores the local symbols and symbols from shared libraries
+    map<memory_map_table_entry_class const,vector<symbol_table_entry_class>, memory_map_table_entry_class_comp> all_function_symbol_table;
+
     // Storing memory mappings of the shared libraries used by the customer program
     vector<memory_map_table_entry_class> memory_map_table;
+
     // Storing the symbols from the ELF with its proper virtual address
 	vector<symbol_table_entry_class> function_symbol_table;
-
-
 
     bfd* Open_ELF();
     bfd* Open_ELF(string ELF_path);
@@ -95,15 +93,11 @@ class Process_handler {
     long Parse_dynamic_symbol_table_from_ELF(bfd* bfd_ptr,asymbol ***symbol_table);
     long Parse_symbol_table_from_ELF(bfd* bfd_ptr,asymbol ***symbol_table);
 
+    bool Get_defined_symbols(asymbol ***symbol_table_param,long number_of_symbols,vector<symbol_table_entry_class> &tmp_function_symbol_table,unsigned long VMA_start_address);
     bool Create_symbol_table();
     bool Read_virtual_memory_mapping();
-    string Find_memory_profiler_library_name();
-
-    uint64_t Get_symbol_address_from_ELF(string ELF_path, string symbol_name);
-    bool Find_symbol_in_ELF(string ELF_path, string symbol_name);
 
     void Init_semaphore();
-
 
     public:
 
@@ -115,9 +109,6 @@ class Process_handler {
 
         Process_handler(const Process_handler &obj);
         Process_handler& operator=(const Process_handler &obj);
-
-        /*Process_handler(Process_handler &&obj);
-        Process_handler& operator=(Process_handler &&obj);*/
 
         pid_t GetPID(){return PID;};
 
@@ -136,6 +127,7 @@ class Process_handler {
         bool Is_shared_memory_initialized(){return shared_memory_initialized;};
 
         vector<symbol_table_entry_class>::iterator Find_function(uint64_t address);
+        map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::iterator Find_function_VMA(uint64_t address);
 
 };
 
