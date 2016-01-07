@@ -13,18 +13,11 @@
 #include <unistd.h>
 #include <algorithm>
 #include <string>
+#include <iterator>
 
 #include <inttypes.h>
 
-
-
-
-
 using namespace std;
-
-//#define Memory_profiler_shared_library "libMemory_Profiler_shared_library.so"
-//#define Memory_profiler_IMM_shared_library "libMemory_Profiler_IMM_shared_library.so"
-
 
 Process_handler::Process_handler() {
 
@@ -60,7 +53,7 @@ Process_handler::Process_handler(pid_t PID) {
 	// Check whether the process starts profiling at the beginning with checking the existence of the corresponding shared memory area
 	shared_memory = shm_open(("/" + PID_string).c_str(),  O_RDWR , S_IRWXU | S_IRWXG | S_IRWXO);
 	if (shared_memory >= 0){
-		cout << "Constructor, shared memory exists, shared memory handler: " << shared_memory /*<<" errno: " <<errno*/ << endl;
+		cout << "Constructor, shared memory exists, shared memory handler: " << shared_memory <<" errno: " << errno << endl;
 
 		// Map the shared memory because it exists
 		memory_profiler_struct = (memory_profiler_sm_object_class*) mmap(
@@ -78,7 +71,7 @@ Process_handler::Process_handler(pid_t PID) {
 		}
 	}
 	else {
-		cout << "Constructor, shared memory not exist, shared memory handler: " << shared_memory /*<< " errno: " <<errno*/ <<endl;
+		cout << "Constructor, shared memory not exist, shared memory handler: " << shared_memory << " errno: " <<errno <<endl;
 	}
 
 	if (!Create_symbol_table()) {
@@ -111,6 +104,7 @@ Process_handler::Process_handler(const Process_handler &obj){
 
 	memory_map_table = obj.memory_map_table;
 	function_symbol_table = obj.function_symbol_table;
+	all_function_symbol_table = obj.all_function_symbol_table;
 
 }
 
@@ -129,73 +123,11 @@ Process_handler& Process_handler::operator=(const Process_handler &obj){
 			memory_map_table = obj.memory_map_table;
 			function_symbol_table = obj.function_symbol_table;
 			shared_memory_initialized = obj.shared_memory_initialized;
+			all_function_symbol_table = obj.all_function_symbol_table;
 		}
 		return *this;
 
 }
-/*
-Process_handler::Process_handler(Process_handler &&obj){
-
-	PID = obj.PID;
-	PID_string = obj.PID_string;
-	profiled = obj.profiled;
-	alive = obj.alive;
-	memory_profiler_struct = obj.memory_profiler_struct;
-	shared_memory = obj.shared_memory;
-	semaphore_shared_memory = obj.semaphore_shared_memory;
-	semaphore = obj.semaphore;
-	elf_path = obj.elf_path;
-	memory_map_table = obj.memory_map_table;
-	function_symbol_table = obj.function_symbol_table;
-	shared_memory_initialized = obj.shared_memory_initialized;
-
-	obj.PID = 0;
-	obj.PID_string = "";
-	obj.profiled = false;
-	obj.alive = false;
-	obj.memory_profiler_struct = 0;
-	obj.shared_memory = 0;
-	obj.semaphore_shared_memory = 0;
-	obj.semaphore = 0;
-	obj.elf_path = "";
-	obj.memory_map_table.clear();
-	obj.function_symbol_table.clear();
-	obj.shared_memory_initialized = false;
-}
-*/
-/*Process_handler& Process_handler::operator=(Process_handler&& obj){
-
-	if (this != &obj) {
-
-		PID = obj.PID;
-		PID_string = obj.PID_string;
-		profiled = obj.profiled;
-		alive = obj.alive;
-		memory_profiler_struct = obj.memory_profiler_struct;
-		shared_memory = obj.shared_memory;
-		semaphore_shared_memory = obj.semaphore_shared_memory;
-		semaphore = obj.semaphore;
-		elf_path = obj.elf_path;
-		memory_map_table = obj.memory_map_table;
-		function_symbol_table = obj.function_symbol_table;
-		shared_memory_initialized = obj.shared_memory_initialized;
-
-		obj.PID = 0;
-		obj.PID_string = "";
-		obj.profiled = false;
-		obj.alive = false;
-		obj.memory_profiler_struct = 0;
-		obj.shared_memory = 0;
-		obj.semaphore_shared_memory = 0;
-		obj.semaphore = 0;
-		obj.elf_path = "";
-		obj.function_symbol_table.clear();
-		obj.memory_map_table.clear();
-		obj.shared_memory_initialized = false;
-	}
-	return *this;
-}
-*/
 
 Process_handler::~Process_handler() {
 
@@ -221,14 +153,28 @@ void Process_handler::Process_delete(){
 
 
 /**
- * Returns with the index of function in vector
+ * Returns with the iterator containing the corresponding function name
  */
 vector<symbol_table_entry_class>::iterator Process_handler::Find_function(uint64_t address){
 
-	vector<symbol_table_entry_class>::iterator it = lower_bound(function_symbol_table.begin(),function_symbol_table.end(),address);
+	map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::iterator it_VMA = Find_function_VMA(address);
+	vector<symbol_table_entry_class>::iterator it = lower_bound(it_VMA->second.begin(),it_VMA->second.end(),address);
 
 	if(!(it == function_symbol_table.begin())) it = it-1;
 
+	//return it-1;
+	return it;
+}
+
+/**
+ * Returns with iterator to corresponding shared library where the address is located
+ */
+map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::iterator Process_handler::Find_function_VMA(uint64_t address){
+
+	map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::iterator it;
+	memory_map_table_entry_class tmp(0,address,"");
+
+	it = all_function_symbol_table.upper_bound(tmp);
 	return it;
 }
 
@@ -263,7 +209,6 @@ bfd* Process_handler::Open_ELF(string ELF_path){
 		return tmp_bfd;
 }
 
-
 long Process_handler::Parse_symbol_table_from_ELF(bfd* bfd_ptr,asymbol ***symbol_table){
 
 	long storage_needed;
@@ -291,168 +236,122 @@ long Process_handler::Parse_dynamic_symbol_table_from_ELF(bfd* bfd_ptr,asymbol *
 	return number_of_symbols;
 }
 
-string Process_handler::Find_memory_profiler_library_name(){
 
-	/*for(auto elem : memory_map_table){
-		if(elem.shared_lib_path.find(Memory_profiler_shared_library) != string::npos){
-			return Memory_profiler_shared_library;
-		}
-		else if(elem.shared_lib_path.find(Memory_profiler_IMM_shared_library) != string::npos){
-			 return Memory_profiler_IMM_shared_library;
+/**
+ * Put local (defined) functions into tmp_function_symbol_table and calculates their absolute address
+ */
+bool Process_handler::Get_defined_symbols(asymbol ***symbol_table_param,long number_of_symbols,vector<symbol_table_entry_class> &tmp_function_symbol_table,unsigned long VMA_start_address){
+
+	symbol_info *sym_inf = (symbol_info*)malloc(sizeof(symbol_info));
+	symbol_table_entry_class symbol_entry;
+	asymbol **symbol_table = *symbol_table_param;
+
+	for (int i = 0; i < number_of_symbols; i++) {
+
+		if ((symbol_table)[i]->flags & BSF_FUNCTION) {
+
+			bfd_symbol_info(symbol_table[i],sym_inf);
+
+			// Initialize name and address
+			symbol_entry.name = (symbol_table)[i]->name;
+			symbol_entry.address = 0;
+
+			//if (symbol_table[i]->value != 0 && symbol_table[i]->section->vma != 0) {
+			if(sym_inf->type == 't' || sym_inf->type == 'T'){
+				// Symbol is defined in the process, address is known from ELF
+				symbol_entry.address = (uint64_t)((symbol_table)[i]->section->vma + (symbol_table)[i]->value + VMA_start_address);
+				// Save the symbol with its absolute address in the vector
+				//function_symbol_table.emplace_back(symbol_entry);
+				tmp_function_symbol_table.push_back(symbol_entry);
+			}
 		}
 	}
-	return "";*/
-
-	vector<memory_map_table_entry_class>::iterator it;
-	string Memory_profiler_shared_library = "libMemory_Profiler_shared_library.so";
-	string Memory_profiler_IMM_shared_library = "libMemory_Profiler_IMM_shared_library.so";
-
-	for (it = memory_map_table.begin(); it != memory_map_table.end(); it++) {
-		if(it->shared_lib_path.find(Memory_profiler_shared_library) != string::npos){
-			return Memory_profiler_shared_library;
-		}
-		else if(it->shared_lib_path.find(Memory_profiler_IMM_shared_library) != string::npos){
-			 return Memory_profiler_IMM_shared_library;
-		}
-	}
-	return "";
+	free(sym_inf);
+	return true;
 }
 
-
-
-bool Process_handler::Create_symbol_table() {
+bool Process_handler::Create_symbol_table(){
 
 	bfd* tmp_bfd;
 	asymbol **symbol_table = 0;
 	long number_of_symbols;
 
-	symbol_table_entry_class symbol_entry;
-
 	// TODO This needs to be rethinked, define a const (linux MAX_PATH?) for it or a find dynamic way
 	char program_path[1024];
 	int len;
 
-	tmp_bfd = Open_ELF();
-	if (!tmp_bfd) {
-		return false;
-	}
+	vector<symbol_table_entry_class> tmp_function_symbol_table;
+	map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::iterator it;
 
-	number_of_symbols = Parse_symbol_table_from_ELF(tmp_bfd,&symbol_table);
 
-	if (number_of_symbols < 0) {
-		return false;
-	}
-
-	// Get the virtual addresses of the shared libs linked to the program
+	// Memory mappings are stored in memory_map_table after this
 	if(Read_virtual_memory_mapping() == false){
 		return false;
 	}
-
-
-	string memory_profiler_library = Find_memory_profiler_library_name();
 
 	// /proc/PID/exe is a sym link to the executable, read it with readlink because we need the full path of the executable
 	if ((len = readlink(elf_path.c_str(), program_path, sizeof(program_path)-1)) != -1)
 		program_path[len] = '\0';
 
+	for (it = all_function_symbol_table.begin(); it != all_function_symbol_table.end(); it++) {
 
-	// Get malloc from memory_profiler_shared_library
-	// Initialize name and address
-	symbol_entry.name = "malloc";
-	symbol_entry.address = 0;
-	for(unsigned int i = 0; i < memory_map_table.size(); i++){
+		// Read symbol table of the user application
+		if(it->first.path == program_path){
 
-		//Find the entry of the memory_profiler_shared_library, read its VM base address, and find malloc/free address offset from it
-		if(memory_map_table[i].shared_lib_path.find(memory_profiler_library) !=  string::npos){
-			symbol_entry.address = (uint64_t)(memory_map_table[i].start_address + Get_symbol_address_from_ELF(memory_map_table[i].shared_lib_path,symbol_entry.name));
-			break;
+			tmp_bfd = Open_ELF();
+			if (!tmp_bfd) {
+				return false;
+			}
+
+			number_of_symbols = Parse_symbol_table_from_ELF(tmp_bfd,&symbol_table);
+			if (number_of_symbols < 0) {
+				return false;
+			}
+
+			Get_defined_symbols(&symbol_table,number_of_symbols,tmp_function_symbol_table,0);
+
+			//Sort the symbols based on address
+			sort(tmp_function_symbol_table.begin(),tmp_function_symbol_table.end());
+
+			it->second = tmp_function_symbol_table;
+			tmp_function_symbol_table.clear();
 		}
-	}
-	// Save the symbol with its absolute address in the vector
-	//function_symbol_table.emplace_back(symbol_entry);
-	function_symbol_table.push_back(symbol_entry);
-
-	// Get free from memory_profiler_shared_library
-	// Initialize name and address
-	symbol_entry.name = "free";
-	symbol_entry.address = 0;
-	for(unsigned int i = 0; i < memory_map_table.size(); i++){
-			//Find the entry of the memory_profiler_shared_library, read its VM base address, and find malloc/free address offset from it
-			if(memory_map_table[i].shared_lib_path.find(memory_profiler_library) !=  string::npos){
-				symbol_entry.address = (uint64_t)(memory_map_table[i].start_address + Get_symbol_address_from_ELF(memory_map_table[i].shared_lib_path,symbol_entry.name));
-				break;
+		else{
+			tmp_bfd = Open_ELF(it->first.path);
+			if (!tmp_bfd) {
+				return false;
 			}
-	}
-	// Save the symbol with its absolute address in the vector
-	//function_symbol_table.emplace_back(symbol_entry);
-	function_symbol_table.push_back(symbol_entry);
 
-
-	symbol_info *sym_inf = (symbol_info*)malloc(sizeof(symbol_info));
-
-	for (int i = 0; i < number_of_symbols; i++) {
-		if (symbol_table[i]->flags & BSF_FUNCTION) {
-
-			bfd_symbol_info(symbol_table[i],sym_inf);
-
-			// Initialize name and address
-			symbol_entry.name = symbol_table[i]->name;
-			symbol_entry.address = 0;
-
-			//if (symbol_table[i]->value != 0 && symbol_table[i]->section->vma != 0) {
-			if(ret->type == 't' || ret->type == 'T'){
-				// Symbol is defined in the process, address is known from ELF
-				symbol_entry.address = (uint64_t)(symbol_table[i]->section->vma + symbol_table[i]->value);
-				// Save the symbol with its absolute address in the vector
-				//function_symbol_table.emplace_back(symbol_entry);
-				function_symbol_table.push_back(symbol_entry);
-			} else {
-				// Malloc and free has been already saved
-				if (symbol_entry.name == "malloc" || symbol_entry.name == "free") {
-
-					continue;
-
-				} else {
-					// Find the symbol from one of the dynamically linked shared library
-					for(unsigned int i = 0; i < memory_map_table.size(); i++){
-						// Do not check the program's own symbol table
-						if(memory_map_table[i].shared_lib_path.compare(program_path) !=0){
-
-							// Reading the symbols from .symtab contains @@LIB string in their name referring to the shared library
-							// Reading symbols from .dynsym only contains symbol name without @@LIB substring, need to strip it
-							// TODO: readelf -s somehow reads dynamic section with symbols containing the @@LIB substring
-							size_t posisition = symbol_entry.name.find_first_of("@");
-							string stripped_func_name = symbol_entry.name.substr(0,posisition);
-
-							if(Find_symbol_in_ELF(memory_map_table[i].shared_lib_path,stripped_func_name)){
-									symbol_entry.address = (uint64_t)(memory_map_table[i].start_address + Get_symbol_address_from_ELF(memory_map_table[i].shared_lib_path,stripped_func_name));
-									// Save the symbol with its absolute address in the vector
-									//function_symbol_table.emplace_back(symbol_entry);
-									function_symbol_table.push_back(symbol_entry);
-									break;
-							}
-						}
-					}
-				}
+			number_of_symbols = Parse_dynamic_symbol_table_from_ELF(tmp_bfd,&symbol_table);
+			if (number_of_symbols < 0) {
+				return false;
 			}
+
+			Get_defined_symbols(&symbol_table,number_of_symbols,tmp_function_symbol_table,it->first.start_address);
+
+			//Sort the symbols based on address
+			sort(tmp_function_symbol_table.begin(),tmp_function_symbol_table.end());
+
+			it->second = tmp_function_symbol_table;
+			tmp_function_symbol_table.clear();
 		}
 	}
 
-	free(sym_inf);
-
-	//Sort the symbols based on address
-	sort(function_symbol_table.begin(),function_symbol_table.end());
-
-	vector<symbol_table_entry_class>::iterator it;
-
-		for (it = function_symbol_table.begin(); it != function_symbol_table.end(); it++){
-
-		cout << std::hex << it->address <<"  " << it->name << endl;
-	}
-
-	// Free the symbol table allocated in
 	bfd_close(tmp_bfd);
 	free(symbol_table);
+
+	vector<symbol_table_entry_class>::iterator it2;
+
+	FILE *pfile;
+	pfile = fopen("./symbols.txt","w+");
+	for (it = all_function_symbol_table.begin(); it != all_function_symbol_table.end(); it++) {
+		for(it2 = it->second.begin(); it2 != it->second.end(); it2++){
+			char s[100];
+			sprintf(s, (it2->name + "--" + "%lx" + "\n").c_str(), it2->address);
+			fputs(s,pfile);
+		}
+	}
+	fclose(pfile);
 
 
 	return true;
@@ -468,13 +367,10 @@ bool Process_handler::Read_virtual_memory_mapping() {
 	size_t pos_end_address_start;
 	size_t pos_end_address_stop;
 
-
 	memory_map_table_entry_class entry;
-
 
 	while (getline(mapping, line)) {
 		try{
-
 			// Check /proc/PID/maps for the line formats
 			// Example of a line: 7f375e459000-7f375e614000 r-xp 00000000 08:01 398095                     /lib/x86_64-linux-gnu/libc-2.19.so
 
@@ -488,7 +384,7 @@ bool Process_handler::Read_virtual_memory_mapping() {
 				continue;
 			}
 
-			entry.shared_lib_path = line.substr(pos_shared_lib);
+			entry.path = line.substr(pos_shared_lib);
 
 			// First "string" is the starting address, after '-' char the closing address starts
 			pos_end_address_start = line.find_first_of("-");
@@ -500,7 +396,9 @@ bool Process_handler::Read_virtual_memory_mapping() {
 			entry.start_address = strtoumax(line.substr(0,pos_end_address_start).c_str(),&endptr,16);
 			entry.end_address = strtoumax(line.substr(pos_end_address_start+1,pos_end_address_stop-pos_end_address_start).c_str(),&endptr,16);
 
-			memory_map_table.push_back(entry);
+			//memory_map_table.push_back(entry);
+			vector<symbol_table_entry_class> symbol_table;
+			all_function_symbol_table.insert(pair< const memory_map_table_entry_class, vector<symbol_table_entry_class> >(memory_map_table_entry_class(entry.start_address,entry.end_address,entry.path),symbol_table));
 
 		}
 		catch(exception &e){
@@ -511,79 +409,6 @@ bool Process_handler::Read_virtual_memory_mapping() {
 	return true;
 }
 
-uint64_t Process_handler::Get_symbol_address_from_ELF(string ELF_path,string symbol_name){
-
-	bfd* tmp_bfd;
-	asymbol **symbol_table;
-	long number_of_symbols;
-
-	uint64_t address = 0;
-
-	tmp_bfd = Open_ELF(ELF_path);
-	if (!tmp_bfd) {
-		cout<< "Error parsing ELF in Get_symbol_address_from_ELF"<<endl;
-		return 0;
-	}
-
-	number_of_symbols = Parse_dynamic_symbol_table_from_ELF(tmp_bfd,&symbol_table);
-	if (number_of_symbols < 0) {
-		cout<< "Error reading symbols from ELF in Parse_symbol_table_from_ELF"<<endl;
-		return 0;
-	}
-
-
-	for (int i = 0; i < number_of_symbols; i++) {
-			if (symbol_table[i]->flags & BSF_FUNCTION) {
-				if (symbol_table[i]->value != 0) {
-					string name(symbol_table[i]->name);
-					if(name == symbol_name){
-						address = symbol_table[i]->section->vma + symbol_table[i]->value;
-						break;
-					}
-				}
-			}
-		}
-
-	bfd_close(tmp_bfd);
-	free(symbol_table);
-
-	return address;
-}
-
-bool Process_handler::Find_symbol_in_ELF(string ELF_path, string symbol_name){
-
-	bfd* tmp_bfd;
-	asymbol **symbol_table;
-	long number_of_symbols;
-
-	tmp_bfd = Open_ELF(ELF_path);
-	if(tmp_bfd == NULL){
-		return false;
-	}
-
-	number_of_symbols = Parse_dynamic_symbol_table_from_ELF(tmp_bfd,&symbol_table);
-	if (number_of_symbols < 0) {
-		return false;
-	}
-
-	for (int i = 0; i < number_of_symbols; i++) {
-		if (symbol_table[i]->flags & BSF_FUNCTION) {
-			string name(symbol_table[i]->name);
-			// If a symbol with the same name is found we has to be sure it is not a symbol from a shared library linked to this shared lib
-			// In this case value == 0
-			if(symbol_name.compare(name) == 0 && symbol_table[i]->value > 0){
-				free(symbol_table);
-				bfd_close(tmp_bfd);
-				return true;
-			}
-		}
-	}
-
-	bfd_close(tmp_bfd);
-	free(symbol_table);
-
-	return false;
-}
 
 void Process_handler::Init_semaphore() {
 
