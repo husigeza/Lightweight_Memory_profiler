@@ -8,6 +8,7 @@
 #include <map>
 #include <vector>
 #include <algorithm>
+#include <fstream>
 
 
 #include "Memory_Profiler_process.h"
@@ -55,7 +56,6 @@ bool Memory_Profiler::Add_Process_to_list(const pid_t PID) {
 
 	if (Processes.find(PID) == Processes.end()) {
 		Processes.insert(pair<const pid_t,Process_handler> (PID,Process_handler(PID)));
-
 		cout << "Process added, PID: " << PID << endl;
 		return true;
 	} else {
@@ -191,7 +191,6 @@ void Memory_Profiler::Read_FIFO() {
 
 			if (res > 0) {
 				//pid = stoi(buffer, &buff_size);
-				//std::istringstream(buffer) >> pid;
 				pid = atol( buffer.c_str() );
 				Add_Process_to_list(pid);
 				alive_processes.push_back(pid);
@@ -220,7 +219,13 @@ enum {
 	free_func = 2
 };
 
+
 void Memory_Profiler::Analyze_process(const pid_t PID){
+
+	ofstream log_file;
+	log_file.open(("Analyzation_output_"+ Processes[PID].PID_string + ".txt").c_str(), ios::app);
+
+	log_file << endl << endl <<"ANALYZING DATA" << endl;
 
 
 	if(Processes[PID].Is_shared_memory_initialized() == true){
@@ -256,13 +261,21 @@ void Memory_Profiler::Analyze_process(const pid_t PID){
 					}
 				}
 				if(total_counter_2 == shared_memory.log_count){
-					cout << "Memory " << std::hex << address << " has not been freed yet!" << endl;
-					cout << "Call stack: " << endl;
+
+					log_file << endl << "Memory " << std::hex << address << " has not been freed yet!" << endl;
+					//cout << "Memory " << std::hex << address << " has not been freed yet!" << endl;
+
+					log_file << "Call stack: " << endl;
+					//cout << "Call stack: " << endl;
+
 					for(int  k = 0; k < shared_memory.log_entry[total_counter].backtrace_length; k++){
-						cout << shared_memory.log_entry[total_counter].call_stack[k]<< " --- ";
-						cout << Processes[PID].Find_function((uint64_t)shared_memory.log_entry[total_counter].call_stack[k])->name<< endl;
+						log_file << shared_memory.log_entry[total_counter].call_stack[k]<< " --- ";
+						//cout << shared_memory.log_entry[total_counter].call_stack[k]<< " --- ";
+						log_file << Processes[PID].Find_function((uint64_t)shared_memory.log_entry[total_counter].call_stack[k])->name << endl;
+						//cout << Processes[PID].Find_function((uint64_t)shared_memory.log_entry[total_counter].call_stack[k])->name<< endl;
 					}
 					total_memory_leaked += shared_memory.log_entry[total_counter].size;
+
 				}
 			}
 			else if(shared_memory.log_entry[total_counter].valid && shared_memory.log_entry[total_counter].type == free_func){
@@ -270,15 +283,19 @@ void Memory_Profiler::Analyze_process(const pid_t PID){
 			}
 		}
 
-		cout << endl << "PID: " << PID << endl;
+		cout << endl << "PID: " << std::dec << PID << endl;
 		cout <<"Total memory allocated: " << std::dec << total_memory_allocated << " bytes" << endl;
 		cout << "Total memory freed: " << std::dec << total_memory_freed << " bytes" << endl;
 		cout << "Total memory leaked yet: " << std::dec << total_memory_leaked << " bytes" << endl;
 		cout << "Total number of mallocs: " << std::dec << malloc_counter << endl;
 		cout << "Total number of frees: " << std::dec << free_counter << endl<<endl;
 
+		log_file.close();
+
 	}
 	else{
+		log_file << endl << "NO DATA AVAILABLE, shared memory has not been initialized!" << endl;
+		log_file.close();
 		cout << endl << "Process " << PID << " cannot be analyzed, no shared memory has been initialized" <<endl;
 	}
 }

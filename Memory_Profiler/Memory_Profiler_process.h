@@ -64,7 +64,7 @@ struct memory_map_table_entry_class_comp {
 class Process_handler {
 
     pid_t PID;
-    string PID_string;
+
 
     bool profiled;
     bool alive;
@@ -73,13 +73,14 @@ class Process_handler {
     bool shared_memory_initialized;
     memory_profiler_sm_object_class *memory_profiler_struct;
 
+    //TODO: right know this semaphore is unused
     int semaphore_shared_memory;
     sem_t* semaphore;
 
     string elf_path;
 
     // This container stores the local symbols and symbols from shared libraries
-    map<memory_map_table_entry_class const,vector<symbol_table_entry_class>, memory_map_table_entry_class_comp> all_function_symbol_table;
+    map<memory_map_table_entry_class,vector<symbol_table_entry_class>, memory_map_table_entry_class_comp> all_function_symbol_table;
 
     // Storing memory mappings of the shared libraries used by the customer program
     vector<memory_map_table_entry_class> memory_map_table;
@@ -104,6 +105,8 @@ class Process_handler {
     	Process_handler();
         Process_handler(pid_t PID);
         ~Process_handler();
+
+        string PID_string;
 
         void Process_delete();
 

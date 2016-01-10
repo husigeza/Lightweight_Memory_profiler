@@ -280,9 +280,6 @@ void free(void* pointer) {
 
 			printf("This is from my free!\n");
 
-			//TODO: Make this faster for multiple thread, don't defend the whole structure
-			//sem_wait(&thread_semaphore);
-
 			long unsigned int new_shared_memory_size = sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count) * sizeof(memory_profiler_log_entry_t);
 
 			munmap(memory_profiler_struct, shared_memory_size);
@@ -335,8 +332,6 @@ void* malloc(size_t size) {
 		if (profiling_allowed()) {
 
 			printf("This is from my malloc!\n");
-
-			//TODO: Make this faster for multiple thread, don't defend the whole structure
 
 			void* pointer = __libc_malloc(size);
 
@@ -465,12 +460,11 @@ void* Memory_profiler_start_thread(void *arg){
 
 		} else {
 			printf("closing shared memory for profiling\n");
-			// Need to check thread_semaphore because if a thread is executing malloc/free cannot set profiling to false,
-			// because when "closing" the shared memory we unmap it, and the thread may need it from malloc/free, we have to wait for it to finish
+			// Need to check thread_semaphore because if a thread is executing malloc/free we cannot set profiling to false,
+			// because when we unmap the shared memory in the next instruction, and the thread may need it from malloc/free, we have to wait for it to finish
 			sem_wait(&thread_semaphore);
 				set_profiling(false);
 			sem_post(&thread_semaphore);
-
 			munmap(memory_profiler_struct, shared_memory_size);
 
 			sprintf(s,"Memory_profiler_start_thread: closing shared memory for profiling\n");
