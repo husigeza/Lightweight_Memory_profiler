@@ -48,8 +48,7 @@ obj/
 Debug/
 RemoteSystemsTempFiles/
 
-#Binaries for testing
-Memory_Profiler/Debug_test/
+
 
 
 
