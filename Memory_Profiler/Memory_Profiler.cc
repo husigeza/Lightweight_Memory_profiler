@@ -2,10 +2,11 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdio.h>
 #include "Memory_Profiler_class.h"
 #include "Memory_Profiler_process.h"
 
-//#define path_to_FIFO "/home/egezhus/mem_prof_fifo"
+//#define path_to_FIFO "/home/egezhus/Memory_profiler/mem_prof_fifo"
 #define path_to_FIFO "/dev/mem_prof_fifo"
 
 using namespace std;
@@ -23,26 +24,39 @@ void* Read_FIFO_thread(void *arg) {
 	return 0;
 }
 
-void
+/*void
 signal_callback_handler(int signum)
 {
    printf("Caught signal %d\n",signum);
 
    // Terminate program
    exit(signum);
-}
+}*/
 
 
 int main() {
 
-	signal(SIGINT, signal_callback_handler);
+	//signal(SIGINT, signal_callback_handler);
 
 	int err = pthread_create(&FIFO_read_thread_id, NULL, &Read_FIFO_thread, NULL);
 	if (err) {
-		printf("Thread creation failed error:%d \n", err);
+		cout << "Thread creation failed error: " << err << endl;
 	} else {
-		printf("Read_FIFO_thread created\n");
+		cout << "Read_FIFO_thread created" << endl;
 	}
+
+	getchar();
+	mem_prof.Print_all_processes();
+	mem_prof.Print_alive_processes();
+	mem_prof.Print_profiled_processes();
+
+	mem_prof.Start_stop_profiling_all_processes();
+	mem_prof.Remove_all_process_from_profiling();
+	cout << "Removed all from profiled" << endl;
+	mem_prof.Remap_all_process_shared_memory();
+	mem_prof.Analyze_all_process();
+
+
 
 	while (1) {
 
@@ -52,19 +66,18 @@ int main() {
 		mem_prof.Print_profiled_processes();
 
 		getchar();
-		/*mem_prof.Add_all_process_to_profiling();
+		mem_prof.Add_all_process_to_profiling();
 		cout << "Added all to profiled" << endl;
 		mem_prof.Start_stop_profiling_all_processes();
 		cout << "Signal sent" << endl;
-		getchar();*/
+		getchar();
 		mem_prof.Start_stop_profiling_all_processes();
 		cout << "Signal sent" << endl;
 		getchar();
-		/*mem_prof.Remove_all_process_from_profiling();
-		cout << "Removed all from profiled" << endl;*/
+		mem_prof.Remove_all_process_from_profiling();
+		cout << "Removed all from profiled" << endl;
 		mem_prof.Remap_all_process_shared_memory();
 		cout << "Remapped shared memories" << endl;
-		getchar();
 		//mem_prof.Print_all_processes_shared_memory();
 		mem_prof.Analyze_all_process();
 
