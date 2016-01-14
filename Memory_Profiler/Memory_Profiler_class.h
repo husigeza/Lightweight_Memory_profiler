@@ -2,7 +2,6 @@
 #define MEMORY_PROFILER_H_INCLUDED
 
 #include <map>
-#include <bfd.h>
 
 #include "Memory_Profiler_process.h"
 

@@ -9,13 +9,13 @@
 
 pthread_t tid[3];
 
-#define max_call_stack_depth 100
 
 void dummy_malloc_1(int *pointer, int *i){
 
 	*i += 1;
 
 	pointer = (int *)malloc(sizeof(int));
+	//free(pointer);
 }
 
 void dummy_malloc_2(int *pointer, int *i){
@@ -23,17 +23,18 @@ void dummy_malloc_2(int *pointer, int *i){
 	*i += 1;
 
 	pointer = (int *)malloc(sizeof(int));
+	//free(pointer);
 }
 
 void* Thread_1(void *arg)
 {
-    int *pointer = NULL;
+	int *pointer = NULL;
     int i;
 
     while(1) {
-        printf("Thread %d \n",(int*)arg);
+       printf("Thread %d \n",(int*)arg);
         dummy_malloc_1(pointer,&i);
-        free(pointer);
+        //usleep(3000);
         sleep(1);
     }
 
@@ -49,7 +50,7 @@ void* Thread_2(void *arg)
     while(1) {
         printf("Thread %d \n",(int*)arg);
         dummy_malloc_2(pointer,&i);
-        free(pointer);
+        //usleep(3000);
         sleep(1);
     }
 
@@ -63,13 +64,14 @@ int main()
 {
 
     pthread_create(&(tid[0]), NULL, &Thread_1, (int*)1);
-    printf("\n Created Thread 1\n");
+    printf("\nCreated Thread 1\n");
 
    pthread_create(&(tid[1]), NULL, &Thread_2, (int*)2);
-    printf("\n Created Thread 2\n");
+    printf("\nCreated Thread 2\n");
 
     while(1){
     	sleep(1);
+    	func1();
    }
 
     return 0;
