@@ -123,8 +123,8 @@ class Process_handler {
         memory_profiler_sm_object_class* Get_shared_memory();
         bool Is_shared_memory_initialized(){return shared_memory_initialized;};
 
-        vector<symbol_table_entry_class>::iterator& Find_function(uint64_t address);
-        map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::iterator& Find_function_VMA(uint64_t address);
+        vector<symbol_table_entry_class>::iterator Find_function(uint64_t address);
+        map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::iterator Find_function_VMA(uint64_t address);
 
 };
 

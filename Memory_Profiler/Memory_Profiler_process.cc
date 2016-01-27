@@ -83,8 +83,6 @@ Process_handler::Process_handler(pid_t PID) {
 
 Process_handler::Process_handler(Process_handler &&obj)noexcept{
 
-	cout << "MOVE constructor, PID: " << std::dec << obj.PID << endl;
-
 	PID = obj.PID;
 	PID_string = obj.PID_string;
 	profiled = obj.profiled;
@@ -164,7 +162,7 @@ Process_handler::~Process_handler() {
 /**
  * Returns with the iterator containing the corresponding function name
  */
-vector<symbol_table_entry_class>::iterator& Process_handler::Find_function(uint64_t address){
+vector<symbol_table_entry_class>::iterator Process_handler::Find_function(uint64_t address){
 
 	map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::iterator it_VMA = Find_function_VMA(address);
 	vector<symbol_table_entry_class>::iterator it = lower_bound(it_VMA->second.begin(),it_VMA->second.end(),address);
@@ -178,7 +176,7 @@ vector<symbol_table_entry_class>::iterator& Process_handler::Find_function(uint6
 /**
  * Returns with iterator to corresponding shared library where the address is located
  */
-map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::iterator& Process_handler::Find_function_VMA(uint64_t address){
+map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::iterator Process_handler::Find_function_VMA(uint64_t address){
 
 	map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::iterator it;
 	memory_map_table_entry_class tmp(0,address,"");
@@ -256,9 +254,14 @@ bool Process_handler::Get_defined_symbols(asymbol ***symbol_table_param,long num
 	symbol_table_entry_class symbol_entry;
 	asymbol **symbol_table = *symbol_table_param;
 
+	ofstream bfd_values;
+	bfd_values.open(("bfd_values_"+ PID_string + ".txt").c_str(), ios::app);
+
+	bfd_values << endl <<"bfd_values from lib with starting address: "<< std::hex << VMA_start_address << endl;
+
 	for (int i = 0; i < number_of_symbols; i++) {
 
-		if (symbol_table[i]->flags & BSF_FUNCTION) {
+		//if (symbol_table[i]->flags & BSF_FUNCTION) {
 
 			bfd_symbol_info(symbol_table[i],sym_inf);
 
@@ -266,20 +269,24 @@ bool Process_handler::Get_defined_symbols(asymbol ***symbol_table_param,long num
 			symbol_entry.name = symbol_table[i]->name;
 			symbol_entry.address = 0;
 
-
-
-
-			//if (symbol_table[i]->value != 0 && symbol_table[i]->section->vma != 0) {
 			if(sym_inf->type == 't' || sym_inf->type == 'T'){
-				//cout << endl <<sym_inf->name<< ": " << std::hex <<sym_inf->value << endl;
-				//cout << "VMA: " << std::hex <<symbol_table[i]->section->vma << "  value: " << symbol_table[i]->value << "  START ADDR: " << VMA_start_address << endl;
+				bfd_values << "Symbol "<< symbol_table[i]->name << " is defined here!" << endl;
+				bfd_values << "section->vma: "<< std::hex<< symbol_table[i]->section->vma << "  value: " <<std::hex << symbol_table[i]->value << endl;
 				// Symbol is defined in the process, address is known from ELF
-				symbol_entry.address = (uint64_t)(symbol_table[i]->section->vma + symbol_table[i]->value + VMA_start_address);
+				if(symbol_table[i]->section->vma + symbol_table[i]->value < VMA_start_address){
+					bfd_values << "Interpreting values as relative..."<< endl;
+					symbol_entry.address = (uint64_t)(symbol_table[i]->section->vma + symbol_table[i]->value + VMA_start_address);
+				}
+					else {
+				bfd_values << "Interpreting values as absolute..."<< endl;
+					symbol_entry.address = (uint64_t)(symbol_table[i]->section->vma + symbol_table[i]->value);
+				}
 				// Save the symbol with its absolute address in the vector
-				//function_symbol_table.emplace_back(symbol_entry);
+				bfd_values << "Address: "<<std::hex << symbol_entry.address << endl <<endl;
+
 				tmp_function_symbol_table.push_back(symbol_entry);
 			}
-		}
+		//}
 	}
 	free(sym_inf);
 	return true;
