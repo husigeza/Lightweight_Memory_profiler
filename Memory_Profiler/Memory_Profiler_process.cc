@@ -364,12 +364,6 @@ bool Process_handler::Create_symbol_table(){
 						}
 			}
 
-
-			number_of_symbols = Parse_dynamic_symbol_table_from_ELF(tmp_bfd,&symbol_table);
-			if (number_of_symbols < 0) {
-				return false;
-			}
-
 			Get_defined_symbols(&symbol_table,number_of_symbols,tmp_function_symbol_table,it->first.start_address);
 
 			//Sort the symbols based on address
