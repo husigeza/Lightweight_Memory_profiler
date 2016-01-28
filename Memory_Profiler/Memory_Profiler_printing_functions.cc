@@ -4,14 +4,14 @@
 
 using namespace std;
 
-void Memory_Profiler::Print_all_processes() const {
+void Memory_Profiler::Print_all_processes(){
 
 	cout << "Printing all processes" << endl;
-	for (auto& element : Processes) {
+	map<const pid_t, Process_handler>::iterator it;
 
-		cout << "PID: " << std::dec << element.first << endl;
+	for (it = Processes.begin(); it != Processes.end(); it++) {
+		cout << "PID: " << std::dec << it->first << endl;
 	}
-	cout << "Number of processes: " << Processes.size() << endl;
 }
 
 void Memory_Profiler::Print_alive_processes() {
@@ -24,19 +24,19 @@ void Memory_Profiler::Print_alive_processes() {
 		if(Get_process_alive_flag(it->first)){
 			cout << "PID: " << std::dec << it->first << endl;
 		}
-
 	}
-
 }
 
 void Memory_Profiler::Print_profiled_processes() {
 
 	cout << "Printing profiled" << endl;
-	for (auto& element : Processes) {
+	map<const pid_t, Process_handler>::iterator it;
 
-		if (element.second.Get_profiled() == true) {
-			cout << element.first << endl;
+	for (it = Processes.begin(); it != Processes.end(); it++) {
+		if(it->second.Get_profiled() == true){
+			cout << "PID: " << std::dec << it->first << endl;
 		}
+
 	}
 }
 
@@ -70,7 +70,6 @@ void Memory_Profiler::Print_all_processes_shared_memory() {
 	map<const pid_t, Process_handler>::iterator it;
 
 	for (it = Processes.begin(); it != Processes.end(); it++) {
-		//if(Processes[it->first].Get_shared_memory() != NULL){
 		if(it->second.Get_shared_memory() != NULL){
 			cout << "Process's address: " << &Processes[it->first] << endl;
 			cout << "log_count in printing "<< it->second.Get_shared_memory()->log_count << endl;
@@ -93,17 +92,6 @@ void Memory_Profiler::Print_all_processes_shared_memory() {
 			}
 		}
 	}
-	/*for(auto process : Processes){
-		if(process.second.Get_shared_memory() != NULL) {
-			for(int j=0; j < process.second.Get_shared_memory()->log_count; j++){
-				if(process.second.Get_shared_memory()->log_entry[j].valid == true){
-					cout <<"Shared memory PID: " << process.first << endl;
-					cout <<"Address: " << process.second.Get_shared_memory()->log_entry[j].address << endl;
-				}
-			}
-		}
-	}*/
-
 }
 
 void Memory_Profiler::Print_process_symbol_table(pid_t PID){
@@ -111,8 +99,6 @@ void Memory_Profiler::Print_process_symbol_table(pid_t PID){
 	map<const pid_t, Process_handler>::iterator it;
 
 	for (it = Processes.begin(); it != Processes.end(); it++) {
-
-
 		//TODO: complete this
 	}
 

@@ -47,6 +47,7 @@ obj/
 .settings/
 Debug/
 RemoteSystemsTempFiles/
+*.txt
 
 
 #Log files

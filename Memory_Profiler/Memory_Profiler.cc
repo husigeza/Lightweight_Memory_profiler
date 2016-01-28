@@ -24,16 +24,6 @@ void* Read_FIFO_thread(void *arg) {
 	return 0;
 }
 
-/*void
-signal_callback_handler(int signum)
-{
-   printf("Caught signal %d\n",signum);
-
-   // Terminate program
-   exit(signum);
-}*/
-
-
 int main() {
 
 	//signal(SIGINT, signal_callback_handler);

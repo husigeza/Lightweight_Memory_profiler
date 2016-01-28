@@ -7,18 +7,18 @@
 #include "Memory_Profiler_symbol_table.h"
 
 
-symbol_table_entry_class::symbol_table_entry_class(const symbol_table_entry_class &obj)noexcept{
+symbol_table_entry_class::symbol_table_entry_class(const symbol_table_entry_class &obj){
 		address = obj.address;
 		name = obj.name;
 	}
 
-symbol_table_entry_class& symbol_table_entry_class::operator=(const symbol_table_entry_class &obj)noexcept{
+symbol_table_entry_class& symbol_table_entry_class::operator=(const symbol_table_entry_class &obj){
 		address = obj.address;
 		name = obj.name;
 		return *this;
 	}
 
-symbol_table_entry_class::symbol_table_entry_class(symbol_table_entry_class &&obj)noexcept{
+symbol_table_entry_class::symbol_table_entry_class(symbol_table_entry_class &&obj){
 
 		if(this != &obj){
 			address = obj.address;
@@ -29,7 +29,7 @@ symbol_table_entry_class::symbol_table_entry_class(symbol_table_entry_class &&ob
 		}
 	}
 
-symbol_table_entry_class& symbol_table_entry_class::operator=(symbol_table_entry_class &&obj)noexcept{
+symbol_table_entry_class& symbol_table_entry_class::operator=(symbol_table_entry_class &&obj){
 
 		if (this != &obj) {
 			name = obj.name;

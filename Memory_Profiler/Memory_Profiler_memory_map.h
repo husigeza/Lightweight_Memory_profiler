@@ -20,14 +20,21 @@ public:
 	uint64_t end_address;
 	string path;
 
-	memory_map_table_entry_class() : start_address{0},end_address{0},path{""} {};
-	memory_map_table_entry_class(uint64_t start_address_p,uint64_t end_address_p,string path_p) : start_address{start_address_p},end_address{end_address_p},path{path_p} {};
+	memory_map_table_entry_class() {
+		start_address = 0;
+		end_address = 0;
+		path = "";
+	}
+	memory_map_table_entry_class(uint64_t start_address_p,uint64_t end_address_p,string path_p) {
+		start_address = start_address_p;
+		end_address = end_address_p;
+		path = path_p;
+	}
+	memory_map_table_entry_class(const memory_map_table_entry_class &obj);
+	memory_map_table_entry_class& operator=(const memory_map_table_entry_class &obj);
 
-	memory_map_table_entry_class(const memory_map_table_entry_class &obj)noexcept;
-	memory_map_table_entry_class& operator=(const memory_map_table_entry_class &obj)noexcept;
-
-	memory_map_table_entry_class(memory_map_table_entry_class &&obj)noexcept;
-	memory_map_table_entry_class& operator=(memory_map_table_entry_class &&obj)noexcept;
+	memory_map_table_entry_class(memory_map_table_entry_class &&obj);
+	memory_map_table_entry_class& operator=(memory_map_table_entry_class &&obj);
 
 	bool operator==(const string& path) const {
 	    if(this->path.compare(path) == 0)return true;
