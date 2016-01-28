@@ -19,14 +19,20 @@ public:
 	string name;
 	uint64_t address;
 
-	symbol_table_entry_class() : name{""},address{0} {};
-	symbol_table_entry_class(string name_p, uint64_t address_p): name{name_p},address{address_p} {};
+	symbol_table_entry_class(){
+		name = "";
+		address = 0;
+	}
+	symbol_table_entry_class(string name_p, uint64_t address_p){
+		name = name_p;
+		address = address_p;
+	}
 
-	symbol_table_entry_class(const symbol_table_entry_class &obj)noexcept;
-	symbol_table_entry_class& operator=(const symbol_table_entry_class &obj)noexcept;
+	symbol_table_entry_class(const symbol_table_entry_class &obj);
+	symbol_table_entry_class& operator=(const symbol_table_entry_class &obj);
 
-	symbol_table_entry_class(symbol_table_entry_class &&obj)noexcept;
-	symbol_table_entry_class& operator=(symbol_table_entry_class &&obj)noexcept;
+	symbol_table_entry_class(symbol_table_entry_class &&obj);
+	symbol_table_entry_class& operator=(symbol_table_entry_class &&obj);
 
 	bool operator==(const string& symbol_name) const {
 		    if(this->name.compare(symbol_name) == 0)return true;

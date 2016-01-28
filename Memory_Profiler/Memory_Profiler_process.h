@@ -13,12 +13,13 @@
 #include <vector>
 #include <map>
 
-//#include "/project/builds/rbnlinux/build_env/ppc_devboard-3.0.0.5/export/sysroot/fsl_8544ds-glibc_std/sysroot/usr/include/bfd.h"
-//#include "/project/builds/rbnlinux/build_env/ppc_lc2_devboard-4.3.0.1/wrll-toolchain-4.4a-341/powerpc/i686-pc-linux-gnu/powerpc-wrs-linux-gnu/include/bfd.h"
 #include <bfd.h>
 
 #include "Memory_Profiler_memory_map.h"
 #include "Memory_Profiler_symbol_table.h"
+
+#include <sstream>
+#define SSTR( x ) dynamic_cast< std::ostringstream & >( std::ostringstream() << std::dec << x ).str()
 
 
 using namespace std;
@@ -28,7 +29,15 @@ using namespace std;
 class memory_profiler_sm_object_log_entry_class{
 
 public:
-	memory_profiler_sm_object_log_entry_class() : thread_id{0},type{0}, size{0},backtrace_length{0},call_stack{nullptr},address{0},valid{false}{};
+	memory_profiler_sm_object_log_entry_class() {
+		thread_id = 0;
+		type = 0;
+		size = 0;
+		backtrace_length = 0;
+		//call_stack = nullptr;
+		address = 0;
+		valid = false;
+	}
 
 	pthread_t thread_id;
 	int type; //malloc = 1, free = 2
@@ -42,12 +51,6 @@ public:
 class memory_profiler_sm_object_class {
 
 public:
-
-	/*memory_profiler_sm_object_class(const memory_profiler_sm_object_class &obj)noexcept;
-	memory_profiler_sm_object_class& operator=(const memory_profiler_sm_object_class &obj)noexcept;
-
-	memory_profiler_sm_object_class(memory_profiler_sm_object_class &&obj)noexcept;
-	memory_profiler_sm_object_class& operator=(memory_profiler_sm_object_class &&obj)noexcept;*/
 
 	long unsigned int log_count;
 	memory_profiler_sm_object_log_entry_class log_entry[1];
@@ -105,8 +108,8 @@ class Process_handler {
 
         void Process_delete();
 
-        Process_handler(Process_handler &&obj)noexcept;
-        Process_handler& operator=(Process_handler &&obj)noexcept;
+        Process_handler(Process_handler &&obj);
+        Process_handler& operator=(Process_handler &&obj);
 
         pid_t GetPID(){return PID;};
 

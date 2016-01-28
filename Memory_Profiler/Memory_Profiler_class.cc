@@ -177,7 +177,7 @@ void Memory_Profiler::Read_FIFO() {
 		while ((res = read(mem_prof_fifo, (char*)buffer.c_str(), buff_size/*sizeof(buffer)*/)) != 0) {
 
 			if (res > 0) {
-				pid = stoi(buffer, nullptr);
+				pid = atol( buffer.c_str() );
 				Add_Process_to_list(pid);
 				alive_processes.push_back(pid);
 
@@ -288,8 +288,9 @@ void Memory_Profiler::Analyze_process(const pid_t PID){
 
 void Memory_Profiler::Analyze_all_process(){
 
-	for(auto &it : Processes){
-		Analyze_process(it.first);
+	map<const pid_t, Process_handler>::iterator it;
+	for (it = Processes.begin(); it != Processes.end(); it++) {
+		Analyze_process(it->first);
 	}
 }
 

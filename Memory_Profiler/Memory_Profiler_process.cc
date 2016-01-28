@@ -28,7 +28,7 @@ Process_handler::Process_handler() {
 	memory_profiler_struct = 0;
 	shared_memory = 0;
 	semaphore_shared_memory = 0;
-	semaphore = nullptr;
+	semaphore = 0;
 	elf_path = "";
 	shared_memory_initialized = false;
 
@@ -37,13 +37,13 @@ Process_handler::Process_handler() {
 Process_handler::Process_handler(pid_t PID) {
 
 	this->PID = PID;
-	PID_string = to_string(PID);
+	PID_string = SSTR(PID);
 	alive = true;
 	profiled = false;
-	memory_profiler_struct = nullptr;
+	memory_profiler_struct = 0;
 	shared_memory = 0;
 	semaphore_shared_memory = 0;
-	semaphore = nullptr;
+	semaphore = 0;
 	elf_path = "/proc/" + this->PID_string + "/exe";
 	shared_memory_initialized = false;
 
@@ -81,7 +81,7 @@ Process_handler::Process_handler(pid_t PID) {
 
 }
 
-Process_handler::Process_handler(Process_handler &&obj)noexcept{
+Process_handler::Process_handler(Process_handler &&obj){
 
 	PID = obj.PID;
 	PID_string = obj.PID_string;
@@ -101,10 +101,10 @@ Process_handler::Process_handler(Process_handler &&obj)noexcept{
 	obj.PID_string = "";
 	obj.profiled = false;
 	obj.alive = false;
-	obj.memory_profiler_struct = nullptr;
+	obj.memory_profiler_struct = 0;
 	obj.shared_memory = 0;
 	obj.semaphore_shared_memory = 0;
-	obj.semaphore = nullptr;
+	obj.semaphore = 0;
 	obj.elf_path = "";
 	obj.memory_map_table.clear();
 	obj.function_symbol_table.clear();
@@ -112,7 +112,7 @@ Process_handler::Process_handler(Process_handler &&obj)noexcept{
 	obj.all_function_symbol_table.clear();
 }
 
-Process_handler& Process_handler::operator=(Process_handler&& obj)noexcept{
+Process_handler& Process_handler::operator=(Process_handler&& obj){
 
 	if (this != &obj) {
 
@@ -134,10 +134,10 @@ Process_handler& Process_handler::operator=(Process_handler&& obj)noexcept{
 		obj.PID_string = "";
 		obj.profiled = false;
 		obj.alive = false;
-		obj.memory_profiler_struct = nullptr;
+		obj.memory_profiler_struct = 0;
 		obj.shared_memory = 0;
 		obj.semaphore_shared_memory = 0;
-		obj.semaphore = nullptr;
+		obj.semaphore = 0;
 		obj.elf_path = "";
 		obj.function_symbol_table.clear();
 		obj.memory_map_table.clear();
@@ -261,8 +261,6 @@ bool Process_handler::Get_defined_symbols(asymbol ***symbol_table_param,long num
 
 	for (int i = 0; i < number_of_symbols; i++) {
 
-		//if (symbol_table[i]->flags & BSF_FUNCTION) {
-
 			bfd_symbol_info(symbol_table[i],sym_inf);
 
 			// Initialize name and address
@@ -286,7 +284,6 @@ bool Process_handler::Get_defined_symbols(asymbol ***symbol_table_param,long num
 
 				tmp_function_symbol_table.push_back(symbol_entry);
 			}
-		//}
 	}
 	free(sym_inf);
 	return true;
@@ -315,51 +312,30 @@ bool Process_handler::Create_symbol_table(){
 	memory_map.open(("Memory_map_"+ PID_string + ".txt").c_str(), ios::app);
 
 	memory_map << "MEMORY MAP from /proc/ID/maps:" << endl;
-
 	for(it = all_function_symbol_table.begin(); it != all_function_symbol_table.end(); it++){
 		memory_map << "0x" << std::hex << it->first.start_address << "--" << "0x" << std::hex << it->first.end_address << "   " << it->first.path <<endl;
 	}
-
 	memory_map << endl << "Parsing symbols from:" << endl;
+	memory_map.close();
+
 	// /proc/PID/exe is a sym link to the executable, read it with readlink because we need the full path of the executable
-	if ((len = readlink(elf_path.c_str(), program_path, sizeof(program_path)-1)) != -1)
+	if ((len = readlink(elf_path.c_str(), program_path, sizeof(program_path)-1)) != -1){
 		program_path[len] = '\0';
+	}
 
 	for (it = all_function_symbol_table.begin(); it != all_function_symbol_table.end(); it++) {
 
-		// Read symbol table of the user application
-		if(it->first.path == program_path){
-			memory_map << it->first.path << endl;
-
-			tmp_bfd = Open_ELF();
-			if (!tmp_bfd) {
-				return false;
-			}
-
-			number_of_symbols = Parse_symbol_table_from_ELF(tmp_bfd,&symbol_table);
-
-			if (number_of_symbols < 0) {
-				return false;
-			}
-			Get_defined_symbols(&symbol_table,number_of_symbols,tmp_function_symbol_table,0);
-
-			//Sort the symbols based on address
-			sort(tmp_function_symbol_table.begin(),tmp_function_symbol_table.end());
-
-			it->second = tmp_function_symbol_table;
-			tmp_function_symbol_table.clear();
-		}
-		else{
-			memory_map << it->first.path << endl;
 			tmp_bfd = Open_ELF(it->first.path);
 			if (!tmp_bfd) {
 				return false;
 			}
 
 			number_of_symbols = Parse_symbol_table_from_ELF(tmp_bfd,&symbol_table);
-			if (number_of_symbols == 0) {
+			if (number_of_symbols <= 0) {
+				free(symbol_table);
 				number_of_symbols = Parse_dynamic_symbol_table_from_ELF(tmp_bfd,&symbol_table);
 						if (number_of_symbols < 0) {
+							free(symbol_table);
 							return false;
 						}
 			}
@@ -371,18 +347,14 @@ bool Process_handler::Create_symbol_table(){
 
 			it->second = tmp_function_symbol_table;
 			tmp_function_symbol_table.clear();
-		}
+			free(symbol_table);
+			bfd_close(tmp_bfd);
 	}
-	memory_map.close();
-
-	bfd_close(tmp_bfd);
-	free(symbol_table);
 
 	vector<symbol_table_entry_class>::iterator it2;
 
 	ofstream symbol_file;
 	symbol_file.open(("Symbol_table_"+ PID_string + ".txt").c_str(), ios::out);
-
 	for (it = all_function_symbol_table.begin(); it != all_function_symbol_table.end(); it++) {
 		symbol_file << endl << endl << it->first.path << endl;
  		for(it2 = it->second.begin(); it2 != it->second.end(); it2++){
@@ -397,8 +369,7 @@ bool Process_handler::Create_symbol_table(){
 
 bool Process_handler::Read_virtual_memory_mapping() {
 
-
-	ifstream mapping("/proc/" + this->PID_string + "/maps");
+	ifstream mapping(("/proc/" + this->PID_string + "/maps").c_str(), std::ifstream::in);
 	string line;
 
 	string first_path;
@@ -428,7 +399,8 @@ bool Process_handler::Read_virtual_memory_mapping() {
 				first_found = false;
 			}
 
-			// The fist line for each library contains an x in permission section
+			// Read lines only with x (executable) permission, I assume symbols are only put here
+			// If permission x is not enabled, skip this line (until the path of shared lib, x could be appear only 1 place: at permissions))
 			pos_x = line.find_first_of("x");
 
 			if(first_found == false){
@@ -439,9 +411,10 @@ bool Process_handler::Read_virtual_memory_mapping() {
 				entry.path = first_path;
 				// Convert the strings to numbers
 				char * endptr;
-				entry.start_address = stoul(line.substr(0,pos_end_address_start).c_str(),nullptr,16);
-				entry.end_address = stoul(line.substr(pos_end_address_start+1,pos_end_address_stop-pos_end_address_start).c_str(),nullptr,16);
+				entry.start_address = strtoumax(line.substr(0,pos_end_address_start).c_str(),&endptr,16);
+				entry.end_address = strtoumax(line.substr(pos_end_address_start+1,pos_end_address_stop-pos_end_address_start).c_str(),&endptr,16);
 
+				//memory_map_table.push_back(entry);
 				vector<symbol_table_entry_class> symbol_table;
 				all_function_symbol_table.insert(pair< const memory_map_table_entry_class, vector<symbol_table_entry_class> >(memory_map_table_entry_class(entry.start_address,entry.end_address,entry.path),symbol_table));
 				first_found = true;
@@ -458,7 +431,7 @@ bool Process_handler::Read_virtual_memory_mapping() {
 						if(it->first.path == current_path){
 							char * endptr;
 							unsigned long start = it->first.start_address;
-							unsigned long end = stoul(line.substr(0,pos_end_address_start).c_str(),nullptr,16);
+							unsigned long end = strtoumax(line.substr(pos_end_address_start+1,pos_end_address_stop-pos_end_address_start).c_str(),&endptr,16);
 							string path = it->first.path;
 							all_function_symbol_table.erase(it);
 
