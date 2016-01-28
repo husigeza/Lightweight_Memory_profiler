@@ -148,11 +148,6 @@ bool Memory_Profiler::Remap_process_shared_memory(const pid_t PID){
 
 void Memory_Profiler::Remap_all_process_shared_memory(){
 
-	/*for(auto &elem : Processes){
-		if(elem.second.Remap_shared_memory() == false){
-			cout << "Failed remapping process " << elem.first << "shared memory" << endl;
-		}
-	}*/
 	map<const pid_t, Process_handler>::iterator it;
 
 	for (it = Processes.begin(); it != Processes.end(); it++) {
@@ -227,7 +222,8 @@ void Memory_Profiler::Analyze_process(const pid_t PID){
 		unsigned long int address = 0;
 		unsigned long int total_memory_leaked = 0;
 
-		for(total_counter = 0; total_counter < shared_memory.log_count; total_counter++){
+		//Need to count with shared_memory.log_count-1 because shared_memory.log_count shows a bigger value with 1 than the real number of elements
+		for(total_counter = 0; total_counter < shared_memory.log_count-1; total_counter++){
 
 			if(shared_memory.log_entry[total_counter].valid && shared_memory.log_entry[total_counter].type == malloc_func){
 
@@ -235,30 +231,23 @@ void Memory_Profiler::Analyze_process(const pid_t PID){
 				address = shared_memory.log_entry[total_counter].address;
 				malloc_counter++;
 
-				for(total_counter_2 = total_counter; total_counter_2 < shared_memory.log_count; total_counter_2++){
+				for(total_counter_2 = total_counter; total_counter_2 < shared_memory.log_count-1; total_counter_2++){
 					if(shared_memory.log_entry[total_counter_2].valid && shared_memory.log_entry[total_counter_2].type == free_func){
 						if(shared_memory.log_entry[total_counter_2].address == address){
-							//if(total_counter < total_counter_2){
-								//cout << "Memory " << std:: hex << address << " is freed" << endl;
 								total_memory_freed += shared_memory.log_entry[total_counter].size;
 								break;
-							//}
 						}
 					}
 				}
-				if(total_counter_2 == shared_memory.log_count){
+				if(total_counter_2 == shared_memory.log_count-1){
 
 					log_file << endl << "Memory " << std::hex << address << " has not been freed yet!" << endl;
-					//cout << "Memory " << std::hex << address << " has not been freed yet!" << endl;
 
 					log_file << "Call stack: " << endl;
-					//cout << "Call stack: " << endl;
 
 					for(int  k = 0; k < shared_memory.log_entry[total_counter].backtrace_length; k++){
 						log_file << shared_memory.log_entry[total_counter].call_stack[k]<< " --- ";
-						//cout << shared_memory.log_entry[total_counter].call_stack[k]<< " --- ";
 						log_file << Processes[PID].Find_function((uint64_t)shared_memory.log_entry[total_counter].call_stack[k])->name << endl;
-						//cout << Processes[PID].Find_function((uint64_t)shared_memory.log_entry[total_counter].call_stack[k])->name<< endl;
 					}
 					total_memory_leaked += shared_memory.log_entry[total_counter].size;
 

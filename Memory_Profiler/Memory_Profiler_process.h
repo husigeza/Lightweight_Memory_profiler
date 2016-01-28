@@ -52,7 +52,7 @@ class memory_profiler_sm_object_class {
 
 public:
 
-	long unsigned int log_count;
+	long unsigned int log_count; // Always has a bigger value with 1 than the real element number
 	memory_profiler_sm_object_log_entry_class log_entry[1];
 };
 
@@ -71,6 +71,7 @@ class Process_handler {
     int shared_memory;
     bool shared_memory_initialized;
     memory_profiler_sm_object_class *memory_profiler_struct;
+    unsigned long mapped_size_of_shared_memory;
 
     //TODO: right know this semaphore is unused
     int semaphore_shared_memory;

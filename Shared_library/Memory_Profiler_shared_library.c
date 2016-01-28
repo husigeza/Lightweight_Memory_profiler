@@ -93,7 +93,7 @@ typedef struct memory_profiler_log_entry_s{
 
 typedef struct memory_profiler_struct_s {
 	long unsigned int log_count;
-	memory_profiler_log_entry_t log_entry[1];
+	memory_profiler_log_entry_t log_entry[1]; // Always has a bigger value with 1 than the real element number
 } memory_profiler_struct_t;
 
 static memory_profiler_struct_t *memory_profiler_struct;
@@ -421,7 +421,6 @@ bool Open_shared_memory(){
 	if(shared_memory_size == 0){
 		shared_memory_size = sizeof(memory_profiler_struct_t);
 	}
-	printf("SIZE in open: %lu\n",shared_memory_size);
 
 	shared_memory = shm_open(PID_string_shared_mem, O_RDWR, S_IRWXU | S_IRWXG | S_IRWXO);
 	if (shared_memory < 0) {
@@ -431,7 +430,7 @@ bool Open_shared_memory(){
 		return false;
 	}
 
-	memory_profiler_struct = (memory_profiler_struct_t*)mmap(NULL, /*sizeof(memory_profiler_struct_t)*/shared_memory_size, PROT_WRITE, MAP_SHARED , shared_memory, 0);
+	memory_profiler_struct = (memory_profiler_struct_t*)mmap(NULL, shared_memory_size, PROT_WRITE, MAP_SHARED , shared_memory, 0);
 	if (memory_profiler_struct == MAP_FAILED) {
 		printf("Failed mapping the shared memory: %d \n", errno);
 		sprintf(s,"Open_shared_memory: Failed mapping the shared memory: %d \n", errno);

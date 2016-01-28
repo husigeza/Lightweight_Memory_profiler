@@ -26,6 +26,7 @@ Process_handler::Process_handler() {
 	alive = false;
 	profiled = false;
 	memory_profiler_struct = 0;
+	mapped_size_of_shared_memory = 0;
 	shared_memory = 0;
 	semaphore_shared_memory = 0;
 	semaphore = 0;
@@ -41,6 +42,7 @@ Process_handler::Process_handler(pid_t PID) {
 	alive = true;
 	profiled = false;
 	memory_profiler_struct = 0;
+	mapped_size_of_shared_memory = 0;
 	shared_memory = 0;
 	semaphore_shared_memory = 0;
 	semaphore = 0;
@@ -68,6 +70,8 @@ Process_handler::Process_handler(pid_t PID) {
 			shared_memory_initialized = true;
 			// If shared memory is already initialized until this point it means the process is being profiled at the moment
 			profiled = true;
+
+			mapped_size_of_shared_memory = sizeof(memory_profiler_sm_object_class);
 		}
 	}
 	else {
@@ -89,6 +93,7 @@ Process_handler::Process_handler(Process_handler &&obj){
 	alive = obj.alive;
 	memory_profiler_struct = obj.memory_profiler_struct;
 	shared_memory = obj.shared_memory;
+	mapped_size_of_shared_memory = obj.mapped_size_of_shared_memory;
 	semaphore_shared_memory = obj.semaphore_shared_memory;
 	semaphore = obj.semaphore;
 	elf_path = obj.elf_path;
@@ -103,6 +108,7 @@ Process_handler::Process_handler(Process_handler &&obj){
 	obj.alive = false;
 	obj.memory_profiler_struct = 0;
 	obj.shared_memory = 0;
+	obj.mapped_size_of_shared_memory = 0;
 	obj.semaphore_shared_memory = 0;
 	obj.semaphore = 0;
 	obj.elf_path = "";
@@ -122,6 +128,7 @@ Process_handler& Process_handler::operator=(Process_handler&& obj){
 		alive = obj.alive;
 		memory_profiler_struct = obj.memory_profiler_struct;
 		shared_memory = obj.shared_memory;
+		mapped_size_of_shared_memory = obj.mapped_size_of_shared_memory;
 		semaphore_shared_memory = obj.semaphore_shared_memory;
 		semaphore = obj.semaphore;
 		elf_path = obj.elf_path;
@@ -136,6 +143,7 @@ Process_handler& Process_handler::operator=(Process_handler&& obj){
 		obj.alive = false;
 		obj.memory_profiler_struct = 0;
 		obj.shared_memory = 0;
+		obj.mapped_size_of_shared_memory = 0;
 		obj.semaphore_shared_memory = 0;
 		obj.semaphore = 0;
 		obj.elf_path = "";
@@ -508,30 +516,29 @@ bool Process_handler::Remap_shared_memory(){
 		return false;
 	}
 
+	unsigned long real_size = sizeof(memory_profiler_sm_object_class) + (memory_profiler_struct->log_count-1)*sizeof(memory_profiler_sm_object_log_entry_class);
+
 	// Unmap it first to prevent too much mapping
-	/*int err = munmap(memory_profiler_struct, sizeof(memory_profiler_sm_object_class)+(memory_profiler_struct->log_count) * sizeof(memory_profiler_sm_object_log_entry_class));
+	int err = munmap(memory_profiler_struct, mapped_size_of_shared_memory);
 	if(err < 0){
-		cout << "Failed unmapping it first, errno: " << errno << endl;
+		cout << "Failed unmapping, errno: " << errno << endl;
 		return false;
-	}*/
+	}
 
-
-	unsigned long log_count = memory_profiler_struct->log_count;
-	unsigned long new_size = sizeof(memory_profiler_sm_object_class) + log_count*sizeof(memory_profiler_sm_object_log_entry_class);
-	//cout << "size of shared memory: "<< new_size << endl;
-
-
-	this->memory_profiler_struct = (memory_profiler_sm_object_class*) mmap(
+	memory_profiler_struct = (memory_profiler_sm_object_class*) mmap(
 							NULL,
-							new_size,
+							real_size,
 							PROT_READ,
 							MAP_SHARED,
 							shared_memory,
 							0);
+
 	if (memory_profiler_struct == MAP_FAILED) {
 		cout << "Failed re-mapping the shared memory: " << errno << endl;
 		return false;
 	}
+
+	mapped_size_of_shared_memory = real_size;
 
 	return true;
 

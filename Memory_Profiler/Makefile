@@ -1,5 +1,6 @@
 gcc = /home/egezhus/GCC_4_3_bin/bin/gcc
-g++ = /home/egezhus/GCC_4_3_bin/bin/g++	
+g++ = /home/egezhus/GCC_4_3_bin/bin/g++
+	
 
 objects = Debug/Memory_Profiler.o Debug/Memory_Profiler_class.o Debug/Memory_Profiler_process.o Debug/Memory_Profiler_printing_functions.o Debug/Memory_Profiler_memory_map.o Debug/Memory_Profiler_symbol_table.o
 
@@ -28,4 +29,4 @@ Debug/Memory_Profiler : $(objects)
 all: Debug/Memory_Profiler
 
 clean:
-	rm Debug/*.o
+	rm -rf Debug/*.o
