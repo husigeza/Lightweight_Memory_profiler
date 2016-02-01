@@ -275,7 +275,6 @@ bool Process_handler::Get_defined_symbols(asymbol ***symbol_table_param,long num
 			symbol_entry.name = symbol_table[i]->name;
 			symbol_entry.address = 0;
 
-			if(sym_inf->type == 't' || sym_inf->type == 'T'){
 				bfd_values << "Symbol "<< symbol_table[i]->name << " is defined here!" << endl;
 				bfd_values << "section->vma: "<< std::hex<< symbol_table[i]->section->vma << "  value: " <<std::hex << symbol_table[i]->value << endl;
 				// Symbol is defined in the process, address is known from ELF
@@ -291,7 +290,6 @@ bool Process_handler::Get_defined_symbols(asymbol ***symbol_table_param,long num
 				bfd_values << "Address: "<<std::hex << symbol_entry.address << endl <<endl;
 
 				tmp_function_symbol_table.push_back(symbol_entry);
-			}
 	}
 	free(sym_inf);
 	return true;
