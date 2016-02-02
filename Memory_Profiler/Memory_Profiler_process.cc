@@ -15,6 +15,8 @@
 #include <string>
 #include <iterator>
 #include <inttypes.h>
+#include <exception>
+#include <stdexcept>
 
 
 using namespace std;
@@ -23,11 +25,13 @@ Process_handler::Process_handler() {
 
 	PID = 0;
 	PID_string = "";
+	PID_mapping = "";
 	alive = false;
 	profiled = false;
 	memory_profiler_struct = 0;
 	mapped_size_of_shared_memory = 0;
 	shared_memory = 0;
+	shared_memory_name = "";
 	semaphore_shared_memory = 0;
 	semaphore = 0;
 	elf_path = "";
@@ -39,11 +43,13 @@ Process_handler::Process_handler(pid_t PID) {
 
 	this->PID = PID;
 	PID_string = SSTR(PID);
+	PID_mapping = "/proc/" + PID_string + "/maps";
 	alive = true;
 	profiled = false;
 	memory_profiler_struct = 0;
 	mapped_size_of_shared_memory = 0;
 	shared_memory = 0;
+	shared_memory_name = PID_string + "_mem_prof";
 	semaphore_shared_memory = 0;
 	semaphore = 0;
 	elf_path = "/proc/" + this->PID_string + "/exe";
@@ -52,12 +58,11 @@ Process_handler::Process_handler(pid_t PID) {
 	// If the profiled process compiled with START_PROF_IMM flag, that means it starts putting data into shared memory immediately after startup
 	// In this case we have to map the memory area, set the profiled and initialized flags of the process true
 	// Check whether the process starts profiling at the beginning with checking the existence of the corresponding shared memory area
-	shared_memory = shm_open(("/" + PID_string).c_str(),  O_RDWR , S_IRWXU | S_IRWXG | S_IRWXO);
+	shared_memory = shm_open(shared_memory_name.c_str(),  O_RDWR , S_IRWXU | S_IRWXG | S_IRWXO);
 	if (shared_memory >= 0){
 		cout << "Constructor, shared memory exists, shared memory handler: " << shared_memory <<" errno: " << errno << endl;
 
 		// Map the shared memory because it exists
-		// TODO: this mapping is unnecessary, will remap the shared memory again when needed
 		memory_profiler_struct = (memory_profiler_sm_object_class*) mmap(
 								NULL,
 								sizeof(memory_profiler_sm_object_class),
@@ -65,9 +70,12 @@ Process_handler::Process_handler(pid_t PID) {
 								MAP_SHARED,
 								shared_memory,
 								0);
+
 		if (memory_profiler_struct != MAP_FAILED) {
+
 			// Shared memory initalized by the profiled process
 			shared_memory_initialized = true;
+
 			// If shared memory is already initialized until this point it means the process is being profiled at the moment
 			profiled = true;
 
@@ -81,6 +89,7 @@ Process_handler::Process_handler(pid_t PID) {
 	if (!Create_symbol_table()) {
 		cout << "Error creating the symbol table" << endl;
 	}
+
 	Init_semaphore();
 
 }
@@ -89,10 +98,12 @@ Process_handler::Process_handler(Process_handler &&obj){
 
 	PID = obj.PID;
 	PID_string = obj.PID_string;
+	PID_mapping = obj.PID_mapping;
 	profiled = obj.profiled;
 	alive = obj.alive;
 	memory_profiler_struct = obj.memory_profiler_struct;
 	shared_memory = obj.shared_memory;
+	shared_memory_name = obj.shared_memory_name;
 	mapped_size_of_shared_memory = obj.mapped_size_of_shared_memory;
 	semaphore_shared_memory = obj.semaphore_shared_memory;
 	semaphore = obj.semaphore;
@@ -104,10 +115,12 @@ Process_handler::Process_handler(Process_handler &&obj){
 
 	obj.PID = 0;
 	obj.PID_string = "";
+	obj.PID_mapping = "";
 	obj.profiled = false;
 	obj.alive = false;
 	obj.memory_profiler_struct = 0;
 	obj.shared_memory = 0;
+	obj.shared_memory_name = "";
 	obj.mapped_size_of_shared_memory = 0;
 	obj.semaphore_shared_memory = 0;
 	obj.semaphore = 0;
@@ -124,10 +137,12 @@ Process_handler& Process_handler::operator=(Process_handler&& obj){
 
 		PID = obj.PID;
 		PID_string = obj.PID_string;
+		PID_mapping = obj.PID_mapping;
 		profiled = obj.profiled;
 		alive = obj.alive;
 		memory_profiler_struct = obj.memory_profiler_struct;
 		shared_memory = obj.shared_memory;
+		shared_memory_name = obj.shared_memory_name;
 		mapped_size_of_shared_memory = obj.mapped_size_of_shared_memory;
 		semaphore_shared_memory = obj.semaphore_shared_memory;
 		semaphore = obj.semaphore;
@@ -143,6 +158,7 @@ Process_handler& Process_handler::operator=(Process_handler&& obj){
 		obj.alive = false;
 		obj.memory_profiler_struct = 0;
 		obj.shared_memory = 0;
+		obj.shared_memory_name = "";
 		obj.mapped_size_of_shared_memory = 0;
 		obj.semaphore_shared_memory = 0;
 		obj.semaphore = 0;
@@ -168,16 +184,19 @@ Process_handler::~Process_handler() {
 
 
 /**
- * Returns with the iterator containing the corresponding function name
+ * Returns with the iterator containing the corresponding symbol from vector
  */
 vector<symbol_table_entry_class>::iterator Process_handler::Find_function(uint64_t address){
 
 	map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::iterator it_VMA = Find_function_VMA(address);
-	vector<symbol_table_entry_class>::iterator it = lower_bound(it_VMA->second.begin(),it_VMA->second.end(),address);
+	vector<symbol_table_entry_class>::iterator it = upper_bound(it_VMA->second.begin(),it_VMA->second.end(),address);
 
-	if(!(it == function_symbol_table.begin())) it = it-1;
+	if(it != it_VMA->second.begin()){
+		cout << "Begin" << endl;
+		it = it-1;
+	}
 
-	//return it-1;
+	// TODO: if it == it_VMA->second.end() then seg fault occur...
 	return it;
 }
 
@@ -190,9 +209,28 @@ map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_m
 	memory_map_table_entry_class tmp(0,address,"");
 
 	it = all_function_symbol_table.upper_bound(tmp);
+
 	return it;
 }
 
+
+const string Process_handler::Find_function_name(uint64_t const address){
+
+	map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::iterator it_VMA = Find_function_VMA(address);
+	vector<symbol_table_entry_class>::iterator it = upper_bound(it_VMA->second.begin(),it_VMA->second.end(),address);
+
+	if(it != it_VMA->second.begin()){
+			it = it-1;
+	}
+
+	if(it == it_VMA->second.end()){
+		return "Symbol has not been found for this address";
+	}
+	else{
+		return it->name;
+	}
+
+}
 
 /*
  * Need to free bfd manually after this function !!!
@@ -262,8 +300,9 @@ bool Process_handler::Get_defined_symbols(asymbol ***symbol_table_param,long num
 	symbol_table_entry_class symbol_entry;
 	asymbol **symbol_table = *symbol_table_param;
 
+
 	ofstream bfd_values;
-	bfd_values.open(("bfd_values_"+ PID_string + ".txt").c_str(), ios::app);
+	bfd_values.open(("bfd_values_"+ PID_string + ".txt").c_str(), ios::out);
 
 	bfd_values << endl <<"bfd_values from lib with starting address: "<< std::hex << VMA_start_address << endl;
 
@@ -271,23 +310,38 @@ bool Process_handler::Get_defined_symbols(asymbol ***symbol_table_param,long num
 
 			bfd_symbol_info(symbol_table[i],sym_inf);
 
+			//Skip symbols without names
+			if (sym_inf->name == NULL || *sym_inf->name == '\0'){
+				continue;
+			}
+			// Skip Symbols where value is 0 (they are undefined symbols in this ELF)
+			if (symbol_table[i]->value == 0){
+				    continue;
+			}
+
 			// Initialize name and address
 			symbol_entry.name = symbol_table[i]->name;
 			symbol_entry.address = 0;
 
-				bfd_values << "Symbol "<< symbol_table[i]->name << " is defined here!" << endl;
+				bfd_values << "Symbol "<< symbol_table[i]->name << endl;
 				bfd_values << "section->vma: "<< std::hex<< symbol_table[i]->section->vma << "  value: " <<std::hex << symbol_table[i]->value << endl;
 				// Symbol is defined in the process, address is known from ELF
 				if(symbol_table[i]->section->vma + symbol_table[i]->value < VMA_start_address){
 					bfd_values << "Interpreting values as relative..."<< endl;
 					symbol_entry.address = (uint64_t)(symbol_table[i]->section->vma + symbol_table[i]->value + VMA_start_address);
 				}
-					else {
+				else {
 				bfd_values << "Interpreting values as absolute..."<< endl;
 					symbol_entry.address = (uint64_t)(symbol_table[i]->section->vma + symbol_table[i]->value);
 				}
 				// Save the symbol with its absolute address in the vector
 				bfd_values << "Address: "<<std::hex << symbol_entry.address << endl <<endl;
+
+				bfd_values << "filepos: " << dec << symbol_table[i]->section->filepos << endl;
+				bfd_values << "line_filepos: " << dec << symbol_table[i]->section->line_filepos << endl;
+				bfd_values << "lineno_count: " << dec << symbol_table[i]->section->lineno_count << endl;
+				bfd_values << "rel_filepos: " << dec << symbol_table[i]->section->rel_filepos << endl << endl;
+
 
 				tmp_function_symbol_table.push_back(symbol_entry);
 	}
@@ -315,13 +369,12 @@ bool Process_handler::Create_symbol_table(){
 	}
 
 	ofstream memory_map;
-	memory_map.open(("Memory_map_"+ PID_string + ".txt").c_str(), ios::app);
+	memory_map.open(("Memory_map_"+ PID_string + ".txt").c_str(), ios::out);
 
 	memory_map << "MEMORY MAP from /proc/ID/maps:" << endl;
 	for(it = all_function_symbol_table.begin(); it != all_function_symbol_table.end(); it++){
 		memory_map << "0x" << std::hex << it->first.start_address << "--" << "0x" << std::hex << it->first.end_address << "   " << it->first.path <<endl;
 	}
-	memory_map << endl << "Parsing symbols from:" << endl;
 	memory_map.close();
 
 	// /proc/PID/exe is a sym link to the executable, read it with readlink because we need the full path of the executable
@@ -338,6 +391,7 @@ bool Process_handler::Create_symbol_table(){
 
 			number_of_symbols = Parse_symbol_table_from_ELF(tmp_bfd,&symbol_table);
 			if (number_of_symbols <= 0) {
+				//This means the ELF is stripped, reading the dynamic section
 				free(symbol_table);
 				number_of_symbols = Parse_dynamic_symbol_table_from_ELF(tmp_bfd,&symbol_table);
 						if (number_of_symbols < 0) {
@@ -367,6 +421,7 @@ bool Process_handler::Create_symbol_table(){
 			symbol_file << it2->name << " ---- " << "0x" << std::hex << it2->address << endl;
 		}
 	}
+
 	symbol_file.close();
 
 
@@ -375,18 +430,18 @@ bool Process_handler::Create_symbol_table(){
 
 bool Process_handler::Read_virtual_memory_mapping() {
 
-	ifstream mapping(("/proc/" + this->PID_string + "/maps").c_str(), std::ifstream::in);
-	string line;
+	ifstream mapping(PID_mapping.c_str(), std::ifstream::in);
+	string line = "";
 
-	string first_path;
-	string current_path;
+	string first_path = "";
+	string current_path = "";
 
 	map<memory_map_table_entry_class,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::iterator it;
 
-	size_t pos_x;
-	size_t pos_shared_lib;
-	size_t pos_end_address_start;
-	size_t pos_end_address_stop;
+	size_t pos_x = 0;
+	size_t pos_shared_lib = 0;
+	size_t pos_end_address_start = 0;
+	size_t pos_end_address_stop = 0;
 
 	bool first_found = false;
 
@@ -400,7 +455,9 @@ bool Process_handler::Read_virtual_memory_mapping() {
 
 			// Absolute path of the shared lib starts with /
 			pos_shared_lib = line.find("/");
+
 			current_path = line.substr(pos_shared_lib);
+
 			if(first_path != current_path){
 				first_found = false;
 			}
@@ -413,6 +470,7 @@ bool Process_handler::Read_virtual_memory_mapping() {
 				if(pos_shared_lib <= pos_x) {
 					continue;
 				}
+
 				first_path = line.substr(pos_shared_lib);
 				entry.path = first_path;
 				// Convert the strings to numbers
@@ -449,8 +507,14 @@ bool Process_handler::Read_virtual_memory_mapping() {
 				}
 			}
 		}
-		catch(exception &e){
-			// TODO Analyze exception and return with false if necessary
+		catch(const std::out_of_range& oor){
+			// Thrown by substring when no "/" character is in the line, drop that line
+				//cout << "Line without /" << endl;
+				//cout << line << endl;
+			}
+		catch(const exception & e){
+			//Any other exceptions
+			cout << "Exception in Read_virtual_memory_mapping function: " << e.what() << endl;
 		}
 	}
 
@@ -473,18 +537,27 @@ void Process_handler::Init_semaphore() {
 bool Process_handler::Init_shared_memory() {
 
 	// If this is the first profiling of a process create the shared memory, if the shared memory already exists just open it
-	shared_memory = shm_open(("/" + PID_string).c_str(), O_CREAT | O_RDWR | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO);
+	shared_memory = shm_open(shared_memory_name.c_str(), O_CREAT | O_RDWR | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO);
 
 	if (shared_memory < 0) {
-		cout << "Error while creating shared memory! errno: " << errno << endl;
 		if (errno == EEXIST){
-			cout << "Shared memory already exists, do not re-create it!" << errno << endl;
+			cout << "Shared memory already exists, do not re-create it! Trying to open it...  errno: " << errno << endl;
+			shared_memory = shm_open(shared_memory_name.c_str(),  O_RDWR , S_IRWXU | S_IRWXG | S_IRWXO);
+			if(shared_memory <= 0){
+				cout << "Failed opening the shared memory for Process: " << dec << PID << " errno: " << dec << errno << endl;
+				return false;
+			}
+			else {
+				cout << "Opening was successful, shared memory: " << dec << shared_memory << " errno: " << dec << errno << endl;
+			}
 		}
-		return false;
+		else {
+			cout << "Error while creating shared memory! errno: " << errno << endl;
+			return false;
+		}
 	}
 
 	// Truncate and map the shared memory if it has not existed before
-	cout << "Creating shared memory, ID: " << "/" + PID_string << endl;
 	int err = ftruncate(shared_memory, sizeof(memory_profiler_sm_object_class));
 	if (err < 0){
 		cout << "Error while truncating shared memory: " << errno << endl;
@@ -519,6 +592,8 @@ bool Process_handler::Remap_shared_memory(){
 	// Unmap it first to prevent too much mapping
 	int err = munmap(memory_profiler_struct, mapped_size_of_shared_memory);
 	if(err < 0){
+		cout << "mapped_size_of_shared_memory: " << mapped_size_of_shared_memory << endl;
+		cout << " memory_profiler_struct: " << memory_profiler_struct << endl;
 		cout << "Failed unmapping, errno: " << errno << endl;
 		return false;
 	}
@@ -547,7 +622,32 @@ void Process_handler::Start_Stop_profiling() {
 	sem_post(semaphore);
 }
 
-memory_profiler_sm_object_class* Process_handler::Get_shared_memory() {
+const memory_profiler_sm_object_class* Process_handler::Get_shared_memory() const{
 
 	return memory_profiler_struct;
+}
+
+
+void Process_handler::Print_shared_memory(){
+
+	cout << "Printing shared memory for Process: " << dec << PID << endl;
+
+	for (unsigned int j = 0; j < memory_profiler_struct->log_count-1; j++) {
+
+		if(memory_profiler_struct->log_entry[j].valid == true){
+			cout << endl <<"Shared memory PID: " << dec << PID << endl;
+			cout <<"Shared_memory index: " << dec <<j << endl;
+			cout <<"Thread ID: " << dec <<memory_profiler_struct->log_entry[j].thread_id << endl;
+			cout <<"Call stack type: " << dec << memory_profiler_struct->log_entry[j].type << endl;
+			cout <<"Address: " << hex <<memory_profiler_struct->log_entry[j].address << endl;
+			cout <<"Call stack size: " << dec << memory_profiler_struct->log_entry[j].size << endl;
+			cout <<"call stack: " << endl;
+
+			for(uint32_t i=0; i < memory_profiler_struct->log_entry[j].size;i++){
+				cout << hex <<memory_profiler_struct->log_entry[j].call_stack[i] << endl;
+			}
+		}
+	}
+
+	cout << "Finished!" << endl;
 }

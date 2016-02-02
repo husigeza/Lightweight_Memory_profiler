@@ -49,7 +49,7 @@ bool Memory_Profiler::Add_Process_to_list(const pid_t PID) {
 
 	if (Processes.find(PID) == Processes.end()) {
 		Processes.insert(pair<const pid_t,Process_handler> (PID,Process_handler(PID)));
-		cout << "Process added, PID: " << PID << endl;
+		cout << "Process added, PID: " << dec << PID << endl;
 		return true;
 	} else {
 		return false;
@@ -65,14 +65,21 @@ void Memory_Profiler::Add_process_to_profiling(const pid_t PID) {
 	//TODO: It would be better (faster) to get the reference of the Process object, and check the values. With this methods it is searched again and again from the map
 	if(Get_process_alive_flag(PID) == true){
 		if(Get_process_shared_memory_initilized_flag(PID) == false){
+			cout << "Shared memory has not been initialized, initializing it... Process: " << dec << PID << endl;
 			if(Processes[PID].Init_shared_memory() == false){
-				cout << "Shared memory init unsuccessful" << endl;
+				cout << "Shared memory init unsuccessful, not added to profiled state." << endl;
+				return;
 			}
+			cout << "Shared memory init successful, added to profiled state." << endl;
+		}
+		else {
+			cout << "Shared memory has been initialized for process: " << dec << PID << endl;
 		}
 		Processes[PID].Set_profiled(true);
+		cout << "Process " << dec << PID << " added to profiled state" << endl;
 	}
 	else{
-		cout << "Process " << PID << " is not alive!" << endl;
+		cout << "Process " << PID << " is not alive, not added to profiled state.!" << endl;
 	}
 }
 
@@ -151,11 +158,14 @@ void Memory_Profiler::Remap_all_process_shared_memory(){
 	map<const pid_t, Process_handler>::iterator it;
 
 	for (it = Processes.begin(); it != Processes.end(); it++) {
+		//cout << "Remapping Process: " << it->first << endl;
 			if(it->second.Remap_shared_memory() == false){
 				cout << "Failed remapping process " << it->first << " shared memory " << endl;
 			}
+			else {
+				//cout << "Remapping successful "<< endl;
+			}
 		}
-
  }
 
 
@@ -208,10 +218,11 @@ void Memory_Profiler::Analyze_process(const pid_t PID){
 
 	log_file << endl << endl <<"ANALYZING DATA" << endl;
 
-
 	if(Processes[PID].Is_shared_memory_initialized() == true){
+		cout << "Process is being analyzed " << dec << PID << endl;
 
-		memory_profiler_sm_object_class &shared_memory = *Processes[PID].Get_shared_memory();
+		const memory_profiler_sm_object_class &shared_memory = *Processes[PID].Get_shared_memory();
+
 		unsigned long int total_counter = 0;
 		unsigned long int total_counter_2 = 0;
 
@@ -242,15 +253,13 @@ void Memory_Profiler::Analyze_process(const pid_t PID){
 				if(total_counter_2 == shared_memory.log_count-1){
 
 					log_file << endl << "Memory " << std::hex << address << " has not been freed yet!" << endl;
-
 					log_file << "Call stack: " << endl;
 
 					for(int  k = 0; k < shared_memory.log_entry[total_counter].backtrace_length; k++){
 						log_file << shared_memory.log_entry[total_counter].call_stack[k]<< " --- ";
-						log_file << Processes[PID].Find_function((uint64_t)shared_memory.log_entry[total_counter].call_stack[k])->name << endl;
+						log_file << Processes[PID].Find_function_name((uint64_t)shared_memory.log_entry[total_counter].call_stack[k]) << endl;
 					}
 					total_memory_leaked += shared_memory.log_entry[total_counter].size;
-
 				}
 			}
 			else if(shared_memory.log_entry[total_counter].valid && shared_memory.log_entry[total_counter].type == free_func){
@@ -259,14 +268,19 @@ void Memory_Profiler::Analyze_process(const pid_t PID){
 		}
 
 		cout << endl << "PID: " << std::dec << PID << endl;
+		log_file<< endl << "PID: " << std::dec << PID << endl;
 		cout <<"Total memory allocated: " << std::dec << total_memory_allocated << " bytes" << endl;
+		log_file <<"Total memory allocated: " << std::dec << total_memory_allocated << " bytes" << endl;
 		cout << "Total memory freed: " << std::dec << total_memory_freed << " bytes" << endl;
+		log_file << "Total memory freed: " << std::dec << total_memory_freed << " bytes" << endl;
 		cout << "Total memory leaked yet: " << std::dec << total_memory_leaked << " bytes" << endl;
+		log_file << "Total memory leaked yet: " << std::dec << total_memory_leaked << " bytes" << endl;
 		cout << "Total number of mallocs: " << std::dec << malloc_counter << endl;
+		log_file << "Total number of mallocs: " << std::dec << malloc_counter << endl;
 		cout << "Total number of frees: " << std::dec << free_counter << endl<<endl;
+		log_file << "Total number of frees: " << std::dec << free_counter << endl<<endl;
 
 		log_file.close();
-
 	}
 	else{
 		log_file << endl << "NO DATA AVAILABLE, shared memory has not been initialized!" << endl;

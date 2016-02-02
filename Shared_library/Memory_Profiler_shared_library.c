@@ -45,7 +45,7 @@ static bool init_done = false;
 static bool enable = false;
 
 static char PID_string[6];
-static char PID_string_shared_mem[7];
+static char PID_string_shared_mem[16];
 static char PID_string_sem[16];
 
 static int shared_memory;
@@ -167,7 +167,8 @@ void __attribute__ ((constructor)) Memory_profiler_shared_library_init() {
 	sprintf(s,"current process is: %s\n",PID_string);
 	print_to_log(s);
 
-	sprintf(PID_string_shared_mem, "/%d", getpid());
+	//sprintf(PID_string_shared_mem, "/%d", getpid());
+	sprintf(PID_string_shared_mem, "%d_mem_prof", getpid());
 
 	sprintf(PID_string_sem, "%d_start_sem", getpid());
 	semaphore_shared_memory = shm_open(PID_string_sem, O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);

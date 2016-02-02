@@ -64,11 +64,13 @@ struct memory_map_table_entry_class_comp {
 class Process_handler {
 
     pid_t PID;
+    string PID_mapping;
 
     bool profiled;
     bool alive;
 
     int shared_memory;
+    string shared_memory_name;
     bool shared_memory_initialized;
     memory_profiler_sm_object_class *memory_profiler_struct;
     unsigned long mapped_size_of_shared_memory;
@@ -97,6 +99,10 @@ class Process_handler {
     bool Create_symbol_table();
     bool Read_virtual_memory_mapping();
 
+    vector<symbol_table_entry_class>::iterator Find_function(uint64_t address);
+	map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::iterator Find_function_VMA(uint64_t address);
+
+
     void Init_semaphore();
 
     public:
@@ -106,6 +112,7 @@ class Process_handler {
         ~Process_handler();
 
         string PID_string;
+
 
         void Process_delete();
 
@@ -125,11 +132,12 @@ class Process_handler {
         bool Init_shared_memory();
         bool Remap_shared_memory();
 
-        memory_profiler_sm_object_class* Get_shared_memory();
+        const memory_profiler_sm_object_class* Get_shared_memory() const;
         bool Is_shared_memory_initialized(){return shared_memory_initialized;};
 
-        vector<symbol_table_entry_class>::iterator Find_function(uint64_t address);
-        map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::iterator Find_function_VMA(uint64_t address);
+        const string Find_function_name(uint64_t const address);
+
+        void Print_shared_memory();
 
 };
 
