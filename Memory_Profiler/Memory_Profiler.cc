@@ -14,6 +14,15 @@ using namespace std;
 static Memory_Profiler mem_prof(path_to_FIFO);
 static pthread_t FIFO_read_thread_id;
 
+void
+signal_callback_handler(int signum)
+{
+	cout << " Signal callback" << endl;
+
+	// Terminate program, will call destructors
+	exit(signum);
+}
+
 
 void* Read_FIFO_thread(void *arg) {
 
@@ -26,7 +35,7 @@ void* Read_FIFO_thread(void *arg) {
 
 int main() {
 
-	//signal(SIGINT, signal_callback_handler);
+	signal(SIGINT, signal_callback_handler);
 
 	int err = pthread_create(&FIFO_read_thread_id, NULL, &Read_FIFO_thread, NULL);
 	if (err) {

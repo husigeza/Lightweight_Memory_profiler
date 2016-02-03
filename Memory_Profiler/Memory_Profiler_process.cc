@@ -32,8 +32,9 @@ Process_handler::Process_handler() {
 	mapped_size_of_shared_memory = 0;
 	shared_memory = 0;
 	shared_memory_name = "";
-	semaphore_shared_memory = 0;
-	semaphore = 0;
+	start_stop_semaphore_shared_memory = 0;
+	start_stop_semaphore_name = "";
+	start_stop_semaphore = 0;
 	elf_path = "";
 	shared_memory_initialized = false;
 
@@ -50,8 +51,9 @@ Process_handler::Process_handler(pid_t PID) {
 	mapped_size_of_shared_memory = 0;
 	shared_memory = 0;
 	shared_memory_name = PID_string + "_mem_prof";
-	semaphore_shared_memory = 0;
-	semaphore = 0;
+	start_stop_semaphore_shared_memory = 0;
+	start_stop_semaphore_name = PID_string + "_start_sem";
+	start_stop_semaphore = 0;
 	elf_path = "/proc/" + this->PID_string + "/exe";
 	shared_memory_initialized = false;
 
@@ -87,10 +89,14 @@ Process_handler::Process_handler(pid_t PID) {
 	}
 
 	if (!Create_symbol_table()) {
-		cout << "Error creating the symbol table" << endl;
+		cout << "Error creating the symbol table!" << endl;
+		throw false;
 	}
 
-	Init_semaphore();
+	if(!Init_start_stop_semaphore()){
+		cout << "Error initializing the start/stop semaphore!" << endl;
+		throw false;
+	}
 
 }
 
@@ -105,11 +111,10 @@ Process_handler::Process_handler(Process_handler &&obj){
 	shared_memory = obj.shared_memory;
 	shared_memory_name = obj.shared_memory_name;
 	mapped_size_of_shared_memory = obj.mapped_size_of_shared_memory;
-	semaphore_shared_memory = obj.semaphore_shared_memory;
-	semaphore = obj.semaphore;
+	start_stop_semaphore_shared_memory = obj.start_stop_semaphore_shared_memory;
+	start_stop_semaphore_name = obj.start_stop_semaphore_name;
+	start_stop_semaphore = obj.start_stop_semaphore;
 	elf_path = obj.elf_path;
-	memory_map_table = obj.memory_map_table;
-	function_symbol_table = obj.function_symbol_table;
 	shared_memory_initialized = obj.shared_memory_initialized;
 	all_function_symbol_table = obj.all_function_symbol_table;
 
@@ -122,11 +127,10 @@ Process_handler::Process_handler(Process_handler &&obj){
 	obj.shared_memory = 0;
 	obj.shared_memory_name = "";
 	obj.mapped_size_of_shared_memory = 0;
-	obj.semaphore_shared_memory = 0;
-	obj.semaphore = 0;
+	obj.start_stop_semaphore_shared_memory = 0;
+	obj.start_stop_semaphore_name = "";
+	obj.start_stop_semaphore = 0;
 	obj.elf_path = "";
-	obj.memory_map_table.clear();
-	obj.function_symbol_table.clear();
 	obj.shared_memory_initialized = false;
 	obj.all_function_symbol_table.clear();
 }
@@ -144,11 +148,10 @@ Process_handler& Process_handler::operator=(Process_handler&& obj){
 		shared_memory = obj.shared_memory;
 		shared_memory_name = obj.shared_memory_name;
 		mapped_size_of_shared_memory = obj.mapped_size_of_shared_memory;
-		semaphore_shared_memory = obj.semaphore_shared_memory;
-		semaphore = obj.semaphore;
+		start_stop_semaphore_shared_memory = obj.start_stop_semaphore_shared_memory;
+		start_stop_semaphore = obj.start_stop_semaphore;
+		start_stop_semaphore_name = obj.start_stop_semaphore_name;
 		elf_path = obj.elf_path;
-		memory_map_table = obj.memory_map_table;
-		function_symbol_table = obj.function_symbol_table;
 		shared_memory_initialized = obj.shared_memory_initialized;
 		all_function_symbol_table = obj.all_function_symbol_table;
 
@@ -160,11 +163,10 @@ Process_handler& Process_handler::operator=(Process_handler&& obj){
 		obj.shared_memory = 0;
 		obj.shared_memory_name = "";
 		obj.mapped_size_of_shared_memory = 0;
-		obj.semaphore_shared_memory = 0;
-		obj.semaphore = 0;
+		obj.start_stop_semaphore_shared_memory = 0;
+		obj.start_stop_semaphore_name = "";
+		obj.start_stop_semaphore = 0;
 		obj.elf_path = "";
-		obj.function_symbol_table.clear();
-		obj.memory_map_table.clear();
 		obj.shared_memory_initialized = false;
 		obj.all_function_symbol_table.clear();
 	}
@@ -173,51 +175,35 @@ Process_handler& Process_handler::operator=(Process_handler&& obj){
 
 Process_handler::~Process_handler() {
 
-	memory_map_table.clear();
-	function_symbol_table.clear();
 
-	munmap(semaphore, sizeof(sem_t));
+	cout << "Process handler destructor" << endl;
+	all_function_symbol_table.clear();
+
+	munmap(start_stop_semaphore, sizeof(sem_t));
 	munmap(memory_profiler_struct, sizeof(memory_profiler_sm_object_log_entry_class));
 
-	shm_unlink(("/" + PID_string).c_str());
+	shm_unlink(shared_memory_name.c_str());
+	shm_unlink(start_stop_semaphore_name.c_str());
 }
 
-
-/**
- * Returns with the iterator containing the corresponding symbol from vector
- */
-vector<symbol_table_entry_class>::iterator Process_handler::Find_function(uint64_t address){
-
-	map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::iterator it_VMA = Find_function_VMA(address);
-	vector<symbol_table_entry_class>::iterator it = upper_bound(it_VMA->second.begin(),it_VMA->second.end(),address);
-
-	if(it != it_VMA->second.begin()){
-		cout << "Begin" << endl;
-		it = it-1;
-	}
-
-	// TODO: if it == it_VMA->second.end() then seg fault occur...
-	return it;
-}
 
 /**
  * Returns with iterator to corresponding shared library where the address is located
  */
-map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::iterator Process_handler::Find_function_VMA(uint64_t address){
+ map<memory_map_table_entry_class,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::const_iterator Process_handler::Find_function_VMA (const uint64_t address) const{
 
-	map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::iterator it;
 	memory_map_table_entry_class tmp(0,address,"");
-
-	it = all_function_symbol_table.upper_bound(tmp);
+	map<memory_map_table_entry_class,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::const_iterator it = all_function_symbol_table.upper_bound(tmp);
 
 	return it;
 }
 
 
-const string Process_handler::Find_function_name(uint64_t const address){
+const string Process_handler::Find_function_name(const uint64_t address) const{
 
-	map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::iterator it_VMA = Find_function_VMA(address);
-	vector<symbol_table_entry_class>::iterator it = upper_bound(it_VMA->second.begin(),it_VMA->second.end(),address);
+	map<memory_map_table_entry_class,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::const_iterator it_VMA = Find_function_VMA(address);
+
+	vector<symbol_table_entry_class>::const_iterator it = upper_bound(it_VMA->second.begin(),it_VMA->second.end(),address);
 
 	if(it != it_VMA->second.begin()){
 			it = it-1;
@@ -235,7 +221,7 @@ const string Process_handler::Find_function_name(uint64_t const address){
 /*
  * Need to free bfd manually after this function !!!
  */
-bfd* Process_handler::Open_ELF() {
+bfd* Process_handler::Open_ELF() const{
 
 	return Open_ELF(elf_path);
 }
@@ -243,7 +229,7 @@ bfd* Process_handler::Open_ELF() {
 /*
  * Need to close bfd manually after this function !!!
  */
-bfd* Process_handler::Open_ELF(string ELF_path){
+bfd* Process_handler::Open_ELF(string ELF_path) const{
 
 	bfd* tmp_bfd = bfd_openr(ELF_path.c_str(),NULL);
 		if (tmp_bfd == NULL) {
@@ -294,7 +280,7 @@ long Process_handler::Parse_dynamic_symbol_table_from_ELF(bfd* bfd_ptr,asymbol *
 /**
  * Put local (defined) functions into tmp_function_symbol_table and calculates their absolute address
  */
-bool Process_handler::Get_defined_symbols(asymbol ***symbol_table_param,long number_of_symbols,vector<symbol_table_entry_class> &tmp_function_symbol_table,unsigned long VMA_start_address){
+void Process_handler::Get_defined_symbols(asymbol ***symbol_table_param,long number_of_symbols,vector<symbol_table_entry_class> &tmp_function_symbol_table,unsigned long VMA_start_address){
 
 	symbol_info *sym_inf = (symbol_info*)malloc(sizeof(symbol_info));
 	symbol_table_entry_class symbol_entry;
@@ -346,7 +332,6 @@ bool Process_handler::Get_defined_symbols(asymbol ***symbol_table_param,long num
 				tmp_function_symbol_table.push_back(symbol_entry);
 	}
 	free(sym_inf);
-	return true;
 }
 
 bool Process_handler::Create_symbol_table(){
@@ -371,7 +356,7 @@ bool Process_handler::Create_symbol_table(){
 	ofstream memory_map;
 	memory_map.open(("Memory_map_"+ PID_string + ".txt").c_str(), ios::out);
 
-	memory_map << "MEMORY MAP from /proc/ID/maps:" << endl;
+	memory_map << "MEMORY MAP from /proc/" + PID_string + "/maps:" << endl << endl;
 	for(it = all_function_symbol_table.begin(); it != all_function_symbol_table.end(); it++){
 		memory_map << "0x" << std::hex << it->first.start_address << "--" << "0x" << std::hex << it->first.end_address << "   " << it->first.path <<endl;
 	}
@@ -396,6 +381,7 @@ bool Process_handler::Create_symbol_table(){
 				number_of_symbols = Parse_dynamic_symbol_table_from_ELF(tmp_bfd,&symbol_table);
 						if (number_of_symbols < 0) {
 							free(symbol_table);
+							cout << " Error while parsing symbol and dynamic symbol table from ELF: " << it->first.path << endl;
 							return false;
 						}
 			}
@@ -518,20 +504,31 @@ bool Process_handler::Read_virtual_memory_mapping() {
 		}
 	}
 
+	if(all_function_symbol_table.size() == 0){
+
+		cout << "Failed reading the memory mapping..." << endl;
+		return false;
+	}
+
 	return true;
 }
 
 
-void Process_handler::Init_semaphore() {
+bool Process_handler::Init_start_stop_semaphore() {
 
-	semaphore_shared_memory = shm_open(
-			("/" + PID_string + "_start_sem").c_str(), O_RDWR,
-			S_IRWXU | S_IRWXG | S_IRWXO);
-	if (semaphore_shared_memory < 0) cout << "Error while opening semaphore shared memory: " << errno << endl;
+	start_stop_semaphore_shared_memory = shm_open(start_stop_semaphore_name.c_str(), O_RDWR,S_IRWXU | S_IRWXG | S_IRWXO);
+	if (start_stop_semaphore_shared_memory < 0){
+		cout << "Error while opening start_stop_semaphore shared memory: " << errno << endl;
+		return false;
+	}
 
-	semaphore = (sem_t*) mmap(NULL, sizeof(sem_t), PROT_WRITE, MAP_SHARED,
-			semaphore_shared_memory, 0);
-	if (semaphore == MAP_FAILED) cout << "Failed mapping the semaphore shared memory: " << errno << endl;
+	start_stop_semaphore = (sem_t*) mmap(NULL, sizeof(sem_t), PROT_WRITE, MAP_SHARED,start_stop_semaphore_shared_memory, 0);
+	if (start_stop_semaphore == MAP_FAILED){
+		cout << "Failed mapping the start_stop_semaphore shared memory: " << errno << endl;
+		return false;
+	}
+
+	return true;
 }
 
 bool Process_handler::Init_shared_memory() {
@@ -617,9 +614,9 @@ bool Process_handler::Remap_shared_memory(){
 
 }
 
-void Process_handler::Start_Stop_profiling() {
+void Process_handler::Start_Stop_profiling() const {
 
-	sem_post(semaphore);
+	sem_post(start_stop_semaphore);
 }
 
 const memory_profiler_sm_object_class* Process_handler::Get_shared_memory() const{
@@ -628,7 +625,7 @@ const memory_profiler_sm_object_class* Process_handler::Get_shared_memory() cons
 }
 
 
-void Process_handler::Print_shared_memory(){
+void Process_handler::Print_shared_memory() const{
 
 	cout << "Printing shared memory for Process: " << dec << PID << endl;
 

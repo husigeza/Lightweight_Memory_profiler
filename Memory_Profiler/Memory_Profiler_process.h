@@ -75,35 +75,28 @@ class Process_handler {
     memory_profiler_sm_object_class *memory_profiler_struct;
     unsigned long mapped_size_of_shared_memory;
 
-    //TODO: right know this semaphore is unused
-    int semaphore_shared_memory;
-    sem_t* semaphore;
+    int start_stop_semaphore_shared_memory;
+    string start_stop_semaphore_name;
+    sem_t* start_stop_semaphore;
 
     string elf_path;
 
     // This container stores the local symbols and symbols from shared libraries
     map<memory_map_table_entry_class,vector<symbol_table_entry_class>, memory_map_table_entry_class_comp> all_function_symbol_table;
 
-    // Storing memory mappings of the shared libraries used by the customer program
-    vector<memory_map_table_entry_class> memory_map_table;
-    // Storing the symbols from the ELF with its proper virtual address
-	vector<symbol_table_entry_class> function_symbol_table;
-
-    bfd* Open_ELF();
-    bfd* Open_ELF(string ELF_path);
+    bfd* Open_ELF() const;
+    bfd* Open_ELF(string ELF_path) const;
 
     long Parse_dynamic_symbol_table_from_ELF(bfd* bfd_ptr,asymbol ***symbol_table);
     long Parse_symbol_table_from_ELF(bfd* bfd_ptr,asymbol ***symbol_table);
 
-    bool Get_defined_symbols(asymbol ***symbol_table_param,long number_of_symbols,vector<symbol_table_entry_class> &tmp_function_symbol_table,unsigned long VMA_start_address);
+    void Get_defined_symbols(asymbol ***symbol_table_param,long number_of_symbols,vector<symbol_table_entry_class> &tmp_function_symbol_table,unsigned long VMA_start_address);
     bool Create_symbol_table();
     bool Read_virtual_memory_mapping();
 
-    vector<symbol_table_entry_class>::iterator Find_function(uint64_t address);
-	map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::iterator Find_function_VMA(uint64_t address);
+     map<memory_map_table_entry_class,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::const_iterator Find_function_VMA (const uint64_t address) const;
 
-
-    void Init_semaphore();
+    bool Init_start_stop_semaphore();
 
     public:
 
@@ -113,31 +106,28 @@ class Process_handler {
 
         string PID_string;
 
-
-        void Process_delete();
-
         Process_handler(Process_handler &&obj);
         Process_handler& operator=(Process_handler &&obj);
 
-        pid_t GetPID(){return PID;};
+        const pid_t GetPID() const {return PID;};
 
         void Set_profiled(bool value){this->profiled = value;};
-        bool Get_profiled(){return profiled;};
+        bool Get_profiled() const {return profiled;};
 
         void Set_alive(bool value){this->alive = value;};
-		bool Get_alive(){return alive;};
+		bool Get_alive() const {return alive;};
 
-        void Start_Stop_profiling();
+        void Start_Stop_profiling() const;
 
         bool Init_shared_memory();
         bool Remap_shared_memory();
 
         const memory_profiler_sm_object_class* Get_shared_memory() const;
-        bool Is_shared_memory_initialized(){return shared_memory_initialized;};
+        const bool Is_shared_memory_initialized() const {return shared_memory_initialized;} ;
 
-        const string Find_function_name(uint64_t const address);
+        const string Find_function_name(uint64_t const address) const;
 
-        void Print_shared_memory();
+        void Print_shared_memory() const;
 
 };
 

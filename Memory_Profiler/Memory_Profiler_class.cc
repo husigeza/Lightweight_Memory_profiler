@@ -48,13 +48,26 @@ bool Memory_Profiler::Add_Process_to_list(const pid_t PID) {
 
 
 	if (Processes.find(PID) == Processes.end()) {
+
+		try{
 		Processes.insert(pair<const pid_t,Process_handler> (PID,Process_handler(PID)));
-		cout << "Process added, PID: " << dec << PID << endl;
-		return true;
-	} else {
-		return false;
-		//cout<< "Process is already added to process list: " << PID << endl;
+		}
+		catch(const bool v){
+			if(v == false){
+				cout << "Process NOT added, PID: " << dec << PID << endl;
+				return false;
+			}
+		}
+
+		if(Processes.find(PID) != Processes.end()){
+			cout << "Process added, PID: " << dec << PID << endl;
+			return true;
+		}
 	}
+
+	//cout<< "Process is already in the list: " << PID << endl;
+	return true;
+
 
 }
 void Memory_Profiler::Add_process_to_profiling(const pid_t PID) {
@@ -195,6 +208,7 @@ void Memory_Profiler::Read_FIFO() {
 		for (it = Processes.begin(); it != Processes.end(); it++) {
 			if(find(alive_processes.begin(), alive_processes.end(), it->first) == alive_processes.end()) {
 				Set_process_alive_flag(it->first,false);
+				//cout << "Process " << dec << it->first <<" is no more alive!" << endl;
 			}
 			else {
 				Set_process_alive_flag(it->first,true);
