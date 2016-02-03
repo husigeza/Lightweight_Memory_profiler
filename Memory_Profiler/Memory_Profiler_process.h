@@ -12,6 +12,7 @@
 #include <semaphore.h>
 #include <vector>
 #include <map>
+#include <time.h>
 
 #include <bfd.h>
 
@@ -40,6 +41,7 @@ public:
 	}
 
 	pthread_t thread_id;
+	struct timeval tval;
 	int type; //malloc = 1, free = 2
 	size_t  size; // in case of malloc
 	int backtrace_length;

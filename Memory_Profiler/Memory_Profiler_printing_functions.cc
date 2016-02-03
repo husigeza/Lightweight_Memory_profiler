@@ -52,6 +52,7 @@ void Memory_Profiler::Print_all_processes_shared_memory() {
 	cout << "Printing shared memories" << endl;
 	map<const pid_t, Process_handler>::iterator it;
 
+
 	for (it = Processes.begin(); it != Processes.end(); it++) {
 		if(it->second.Get_shared_memory() != NULL){
 			cout << "Process's address: " << &Processes[it->first] << endl;
@@ -61,6 +62,9 @@ void Memory_Profiler::Print_all_processes_shared_memory() {
 					cout << endl <<"Shared memory PID: " << std::dec << it->first << endl;
 					cout <<"Shared_memory index: " << std::dec << j << endl;
 					cout <<"Thread ID: " << it->second.Get_shared_memory()->log_entry[j].thread_id << endl;
+					char buffer[30];
+					strftime(buffer,30,"%m-%d-%Y %T.",localtime(&(it->second.Get_shared_memory()->log_entry[j].tval.tv_sec)));
+					printf("%s%ld\n",buffer,it->second.Get_shared_memory()->log_entry[j].tval.tv_usec);
 					cout <<"Call stack type: " << it->second.Get_shared_memory()->log_entry[j].type << endl;
 					cout <<"Address: " << std::hex << it->second.Get_shared_memory()->log_entry[j].address << endl;
 					cout <<"Allocated size: " << std::dec << it->second.Get_shared_memory()->log_entry[j].size << endl;

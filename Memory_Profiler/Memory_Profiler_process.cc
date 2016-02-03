@@ -17,6 +17,7 @@
 #include <inttypes.h>
 #include <exception>
 #include <stdexcept>
+#include <time.h>
 
 
 using namespace std;
@@ -175,8 +176,6 @@ Process_handler& Process_handler::operator=(Process_handler&& obj){
 
 Process_handler::~Process_handler() {
 
-
-	cout << "Process handler destructor" << endl;
 	all_function_symbol_table.clear();
 
 	munmap(start_stop_semaphore, sizeof(sem_t));
@@ -635,6 +634,9 @@ void Process_handler::Print_shared_memory() const{
 			cout << endl <<"Shared memory PID: " << dec << PID << endl;
 			cout <<"Shared_memory index: " << dec <<j << endl;
 			cout <<"Thread ID: " << dec <<memory_profiler_struct->log_entry[j].thread_id << endl;
+			char buffer[30];
+			strftime(buffer,30,"%m-%d-%Y %T.",localtime(&(memory_profiler_struct->log_entry[j].tval.tv_sec)));
+			cout << buffer << memory_profiler_struct->log_entry[j].tval.tv_usec << endl;
 			cout <<"Call stack type: " << dec << memory_profiler_struct->log_entry[j].type << endl;
 			cout <<"Address: " << hex <<memory_profiler_struct->log_entry[j].address << endl;
 			cout <<"Call stack size: " << dec << memory_profiler_struct->log_entry[j].size << endl;

@@ -23,9 +23,6 @@ class Memory_Profiler {
         void Add_process_to_profiling(const pid_t PID);
         void Add_all_process_to_profiling();
 
-        map<const pid_t,Process_handler>& Get_profiled_processes_list();
-        map<const pid_t,Process_handler>& Get_all_processes_list();
-
         void Set_process_alive_flag(const pid_t PID, bool value);
         bool Get_process_alive_flag(const pid_t PID);
 

@@ -9,6 +9,7 @@
 #include <vector>
 #include <algorithm>
 #include <fstream>
+#include <time.h>
 
 
 #include "Memory_Profiler_process.h"
@@ -38,7 +39,7 @@ Memory_Profiler::Memory_Profiler(string fifo_path) {
 
 Memory_Profiler::~Memory_Profiler() {
 
-	cout << "Memory profiler destructor" << endl;
+	//cout << "Memory profiler destructor" << endl;
 	close(mem_prof_fifo);
 	unlink(fifo_path.c_str());
 	Processes.clear();
@@ -137,10 +138,6 @@ void Memory_Profiler::Remove_all_process_from_profiling(){
 }
 
 
-map<const pid_t, Process_handler>& Memory_Profiler::Get_all_processes_list(){
-
-	return Processes;
-}
 
 void Memory_Profiler::Start_stop_profiling(const pid_t PID){
 
@@ -236,6 +233,12 @@ void Memory_Profiler::Analyze_process(const pid_t PID){
 		cout << "Process is being analyzed " << dec << PID << endl;
 
 		const memory_profiler_sm_object_class &shared_memory = *Processes[PID].Get_shared_memory();
+		if(shared_memory.log_count == 0){
+			log_file << endl << "shared_memory log_count = 0, no data to analyze!" << endl;
+			log_file.close();
+			cout << endl << "Process " << PID << " shared_memory log_count = 0, no data to analyze!" <<endl;
+			return;
+		}
 
 		unsigned long int total_counter = 0;
 		unsigned long int total_counter_2 = 0;
@@ -266,10 +269,15 @@ void Memory_Profiler::Analyze_process(const pid_t PID){
 				}
 				if(total_counter_2 == shared_memory.log_count-1){
 
-					log_file << endl << "Memory " << std::hex << address << " has not been freed yet!" << endl;
-					log_file << "Call stack: " << endl;
+					log_file << endl << "Memory 0x" << std::hex << address << " has not been freed yet!" << endl;
 
+					char buffer[30];
+					strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(shared_memory.log_entry[total_counter].tval.tv_sec)));
+					log_file << "GMT: " << buffer << dec << shared_memory.log_entry[total_counter].tval.tv_usec << endl;
+
+					log_file << "Call stack: " << endl;
 					for(int  k = 0; k < shared_memory.log_entry[total_counter].backtrace_length; k++){
+
 						log_file << shared_memory.log_entry[total_counter].call_stack[k]<< " --- ";
 						log_file << Processes[PID].Find_function_name((uint64_t)shared_memory.log_entry[total_counter].call_stack[k]) << endl;
 					}

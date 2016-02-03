@@ -18,6 +18,7 @@
 #include <sys/types.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 
 
 #define _GNU_SOURCE         /* See feature_test_macros(7) */
@@ -74,7 +75,6 @@ static int semaphore_shared_memory;
 static sem_t* memory_profiler_start_semaphore;
 
 
-
 enum {
 	malloc_func = 1,
 	free_func = 2
@@ -82,6 +82,7 @@ enum {
 
 typedef struct memory_profiler_log_entry_s{
 	pthread_t thread_id;
+	struct timeval tval;
 	int type; //malloc = 1, free = 2
 	size_t  size; // in case of malloc
 	int backtrace_length;
@@ -298,6 +299,7 @@ void free(void* pointer) {
 
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].backtrace_length = backtrace(memory_profiler_struct->log_entry[memory_profiler_struct->log_count].call_stack,max_call_stack_depth);
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].thread_id = pthread_self();
+			gettimeofday(&memory_profiler_struct->log_entry[memory_profiler_struct->log_count].tval,NULL);
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].type = free_func;
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].size = 0;
 		    memory_profiler_struct->log_entry[memory_profiler_struct->log_count].address = (uint64_t)pointer;
@@ -334,6 +336,8 @@ void* malloc(size_t size) {
 
 			printf("This is from my malloc!\n");
 
+			//printf("Time now: %s",ctime(&now));
+
 			void* pointer = __libc_malloc(size);
 
 			unsigned long new_shared_memory_size = sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count) * sizeof(memory_profiler_log_entry_t);
@@ -353,6 +357,7 @@ void* malloc(size_t size) {
 
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].backtrace_length = backtrace(memory_profiler_struct->log_entry[memory_profiler_struct->log_count].call_stack,max_call_stack_depth);
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].thread_id = pthread_self();
+			gettimeofday(&memory_profiler_struct->log_entry[memory_profiler_struct->log_count].tval,NULL);
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].type = malloc_func;
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].size = size;
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].address = (uint64_t*)pointer;
