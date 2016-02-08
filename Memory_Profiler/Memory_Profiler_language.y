@@ -28,7 +28,7 @@ extern "C" {
 }
 
 %token PRINT
-%token PROCESS ALL ALIVE PROFILED SHM
+%token PROCESS ALL ALIVE PROFILED SHM ANALYZE
 %token <number> ON 
 %token <number> OFF
 %token <number> NUMBER
@@ -55,6 +55,8 @@ command : PRINT PROCESS NUMBER '\n'      			{mem_prof.Print_process($3);}
 		| PROCESS NUMBER PROFILED OFF '\n'			{mem_prof.Remove_process_from_profiling($2);}
 		| PROCESS ALL PROFILED ON '\n'				{mem_prof.Add_all_process_to_profiling();}
 		| PROCESS ALL PROFILED OFF '\n'				{mem_prof.Remove_all_process_from_profiling();}
+		| PROCESS NUMBER ANALYZE '\n'				{mem_prof.Analyze_process($2);}
+		| PROCESS ALL ANALYZE '\n'					{mem_prof.Analyze_all_process();}
 		| HELP '\n'									{Print_help();}
 		| EXIT_COMMAND '\n'    						{exit(1);}
 		| '\n'										{;}
@@ -82,6 +84,7 @@ void yyerror(const char *s){
 
 void Print_help(){
 	cout << endl << "Recognized commands:" << endl;
+	cout << "number = Process's PID" << endl;
 
 	cout <<"print process number" << endl;
 	cout <<"print process all" << endl;
@@ -93,6 +96,8 @@ void Print_help(){
 	cout <<"process number profiled off" << endl;
 	cout <<"process all profiled on" << endl;
 	cout <<"process all profiled off" << endl;
+	cout <<"process number analyze" << endl;
+	cout <<"process all analyze" << endl;
 	cout <<"help" << endl;
 	cout <<"exit" << endl;
 	cout << endl;

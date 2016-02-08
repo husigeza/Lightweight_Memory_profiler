@@ -545,6 +545,7 @@ bool Process_handler::Init_shared_memory() {
 			}
 			else {
 				cout << "Opening was successful, shared memory: " << dec << shared_memory << " errno: " << dec << errno << endl;
+				return true;
 			}
 		}
 		else {
@@ -571,7 +572,7 @@ bool Process_handler::Init_shared_memory() {
 		cout << "Failed mapping the shared memory: " << errno << endl;
 		return false;
 	}
-
+	mapped_size_of_shared_memory = sizeof(memory_profiler_sm_object_class);
 	shared_memory_initialized = true;
 	return true;
 }
@@ -588,9 +589,7 @@ bool Process_handler::Remap_shared_memory(){
 	// Unmap it first to prevent too much mapping
 	int err = munmap(memory_profiler_struct, mapped_size_of_shared_memory);
 	if(err < 0){
-		cout << "mapped_size_of_shared_memory: " << mapped_size_of_shared_memory << endl;
-		cout << " memory_profiler_struct: " << memory_profiler_struct << endl;
-		cout << "Failed unmapping, errno: " << errno << endl;
+		cout << "Failed unmapping shared memory for Process "<< PID << " , errno: " << errno << endl;
 		return false;
 	}
 
@@ -640,11 +639,11 @@ void Process_handler::Print_shared_memory() const{
 			cout <<"Shared_memory index: " << dec <<j << endl;
 			cout <<"Thread ID: " << dec <<memory_profiler_struct->log_entry[j].thread_id << endl;
 			char buffer[30];
-			strftime(buffer,30,"%m-%d-%Y %T.",localtime(&(memory_profiler_struct->log_entry[j].tval.tv_sec)));
-			cout << buffer << memory_profiler_struct->log_entry[j].tval.tv_usec << endl;
+			strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(memory_profiler_struct->log_entry[j].tval.tv_sec)));
+			cout <<"GMT: " << buffer << dec << memory_profiler_struct->log_entry[j].tval.tv_usec << endl;
 			cout <<"Call stack type: " << dec << memory_profiler_struct->log_entry[j].type << endl;
 			cout <<"Address: " << hex <<memory_profiler_struct->log_entry[j].address << endl;
-			cout <<"Call stack size: " << dec << memory_profiler_struct->log_entry[j].backtrace_length << endl;
+			cout <<"Call stack size: " << dec << memory_profiler_struct->log_entry[j].size << endl;
 			cout <<"Call stack: " << endl;
 			for(int  k=0; k < memory_profiler_struct->log_entry[j].backtrace_length;k++){
 				cout << memory_profiler_struct->log_entry[j].call_stack[k]<< " --- ";

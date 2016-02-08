@@ -20,6 +20,7 @@ extern "C" {
 "shm"				{return SHM;}
 "on"				{return ON;}
 "off"				{return OFF;}
+"analyze"			{return ANALYZE;}
 [0-9]+				{yylval.number=atoi(yytext); return NUMBER;}
 "all"				{return ALL;}
 "exit"  			{return EXIT_COMMAND;}
