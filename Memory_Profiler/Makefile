@@ -2,10 +2,15 @@ gcc = /home/egezhus/GCC_4_3_bin/bin/gcc
 g++ = /home/egezhus/GCC_4_3_bin/bin/g++
 	
 
-objects = Debug/Memory_Profiler.o Debug/Memory_Profiler_class.o Debug/Memory_Profiler_process.o Debug/Memory_Profiler_printing_functions.o Debug/Memory_Profiler_memory_map.o Debug/Memory_Profiler_symbol_table.o
+objects = Debug/Memory_Profiler_class.o Debug/Memory_Profiler_process.o Debug/Memory_Profiler_printing_functions.o \
+          Debug/Memory_Profiler_memory_map.o Debug/Memory_Profiler_symbol_table.o \
+		  Debug/Memory_Profiler_tab.tab.o Debug/Memory_Profiler_lex.yy.o
+          
+#Debug/Memory_Profiler.o
 
-Debug/Memory_Profiler.o : Memory_Profiler.cc
-	g++ -c -g3 Memory_Profiler.cc -std=c++0x -o Debug/Memory_Profiler.o 	
+
+#Debug/Memory_Profiler.o : Memory_Profiler.cc
+#	g++ -c -g3 Memory_Profiler.cc -std=c++0x -o Debug/Memory_Profiler.o 	
 
 Debug/Memory_Profiler_class.o : Memory_Profiler_class.cc
 	g++ -c -g3 Memory_Profiler_class.cc -std=c++0x -o Debug/Memory_Profiler_class.o
@@ -21,6 +26,14 @@ Debug/Memory_Profiler_memory_map.o : Memory_Profiler_memory_map.cc
 	
 Debug/Memory_Profiler_symbol_table.o : Memory_Profiler_symbol_table.cc
 	g++ -c -g3 Memory_Profiler_symbol_table.cc -std=c++0x -o Debug/Memory_Profiler_symbol_table.o
+	
+Debug/Memory_Profiler_tab.tab.o: Memory_Profiler_language.y
+	yacc -o Debug/Memory_Profiler_tab.tab.cc -d Memory_Profiler_language.y
+	g++ -c -g3 Debug/Memory_Profiler_tab.tab.cc -std=c++0x -o Debug/Memory_Profiler_tab.tab.o
+
+Debug/Memory_Profiler_lex.yy.o: Memory_Profiler_lex.l 
+	 lex -o Debug/Memory_Profiler_lex.yy.c Memory_Profiler_lex.l
+	 g++ -c -g3 Debug/Memory_Profiler_lex.yy.c -std=c++0x -o Debug/Memory_Profiler_lex.yy.o	
 
 Debug/Memory_Profiler : $(objects)
 	@echo ' '
@@ -29,4 +42,4 @@ Debug/Memory_Profiler : $(objects)
 all: Debug/Memory_Profiler
 
 clean:
-	rm -rf Debug/*.o
+	rm -rf Debug/Memory_*

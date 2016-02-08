@@ -626,7 +626,12 @@ const memory_profiler_sm_object_class* Process_handler::Get_shared_memory() cons
 
 void Process_handler::Print_shared_memory() const{
 
-	cout << "Printing shared memory for Process: " << dec << PID << endl;
+	cout << endl <<"Shared memory for Process  " << dec << PID << endl;
+
+	if(Is_shared_memory_initialized() == false){
+		cout << "Shared memory has not been initialized yet!" << endl;
+		return;
+	}
 
 	for (unsigned int j = 0; j < memory_profiler_struct->log_count-1; j++) {
 
@@ -639,11 +644,11 @@ void Process_handler::Print_shared_memory() const{
 			cout << buffer << memory_profiler_struct->log_entry[j].tval.tv_usec << endl;
 			cout <<"Call stack type: " << dec << memory_profiler_struct->log_entry[j].type << endl;
 			cout <<"Address: " << hex <<memory_profiler_struct->log_entry[j].address << endl;
-			cout <<"Call stack size: " << dec << memory_profiler_struct->log_entry[j].size << endl;
-			cout <<"call stack: " << endl;
-
-			for(uint32_t i=0; i < memory_profiler_struct->log_entry[j].size;i++){
-				cout << hex <<memory_profiler_struct->log_entry[j].call_stack[i] << endl;
+			cout <<"Call stack size: " << dec << memory_profiler_struct->log_entry[j].backtrace_length << endl;
+			cout <<"Call stack: " << endl;
+			for(int  k=0; k < memory_profiler_struct->log_entry[j].backtrace_length;k++){
+				cout << memory_profiler_struct->log_entry[j].call_stack[k]<< " --- ";
+				cout << Find_function_name((uint64_t&)Get_shared_memory()->log_entry[j].call_stack[k])<< endl;
 			}
 		}
 	}
