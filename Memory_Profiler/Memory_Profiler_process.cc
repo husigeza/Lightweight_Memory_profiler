@@ -217,9 +217,6 @@ Process_handler::~Process_handler() {
 
 	munmap(start_stop_semaphore, sizeof(sem_t));
 	munmap(memory_profiler_struct, sizeof(memory_profiler_sm_object_log_entry_class));
-
-	shm_unlink(shared_memory_name.c_str());
-	shm_unlink(start_stop_semaphore_name.c_str());
 }
 
 
