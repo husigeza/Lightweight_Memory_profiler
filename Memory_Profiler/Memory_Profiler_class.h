@@ -49,7 +49,12 @@ class Memory_Profiler {
         void Print_profiled_processes() const;
         void Print_process_shared_memory(const pid_t PID) const;
         void Print_all_processes_shared_memory() const;
-        void Print_process_symbol_table(const pid_t PID) const;
+
+        void Save_process_symbol_table_to_file(const pid_t PID);
+        void Save_process_memory_mapping_to_file(const pid_t PID);
+        void Save_process_shared_memory_to_file(const pid_t PID);
+        void Save_all_process_shared_memory_to_file();
+
 };
 
 #endif // MEMORY_PROFILER_H_INCLUDED

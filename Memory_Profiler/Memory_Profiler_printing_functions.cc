@@ -18,7 +18,7 @@ void Memory_Profiler::Print_process(const pid_t PID) const{
 		cout <<"Profiled: " << it->second.Get_profiled() << endl;
 		cout <<"Shared memory initialized: " << it->second.Is_shared_memory_initialized() << endl;
 		if(it->second.Is_shared_memory_initialized()){
-			cout <<"Shared memory entry count: "<< dec << it->second.Get_shared_memory()->log_count-1  << endl;
+			cout <<"Number of backtraces: "<< dec << it->second.Get_shared_memory()->log_count-1  << endl;
 		}
 		cout << endl;
 	}
@@ -80,7 +80,7 @@ void Memory_Profiler::Print_process_shared_memory(const pid_t PID) const{
 
 void Memory_Profiler::Print_all_processes_shared_memory() const{
 
-	cout << "Shared memories" << endl;
+	cout << "Backtraces:" << endl;
 	map<const pid_t, Process_handler>::const_iterator it;
 
 
@@ -95,12 +95,50 @@ void Memory_Profiler::Print_all_processes_shared_memory() const{
 	cout << endl << "Finished" << endl;
 }
 
-void Memory_Profiler::Print_process_symbol_table(const pid_t PID) const{
+void Memory_Profiler::Save_process_symbol_table_to_file(const pid_t PID){
 
-	map<const pid_t, Process_handler>::const_iterator it;
-
-	for (it = Processes.begin(); it != Processes.end(); it++) {
-		//TODO: complete this
+	map<const pid_t, Process_handler>::iterator it = Processes.find(PID);
+	if(it != Processes.end()){
+		Processes[PID].Save_symbol_table_to_file();
+	}
+	else{
+		cout << "No Process with " << dec << PID << " found!" << endl;
 	}
 
+}
+
+void Memory_Profiler::Save_process_memory_mapping_to_file(const pid_t PID){
+
+	map<const pid_t, Process_handler>::iterator it = Processes.find(PID);
+	if(it != Processes.end()){
+		Processes[PID].Save_memory_mappings_to_file();
+	}
+	else{
+		cout << "No Process with " << dec << PID << " found!" << endl;
+	}
+}
+
+void Memory_Profiler::Save_process_shared_memory_to_file(const pid_t PID){
+
+	map<const pid_t, Process_handler>::iterator it = Processes.find(PID);
+		if(it != Processes.end()){
+			Processes[PID].Save_shared_memory_to_file();
+		}
+		else{
+			cout << "No Process with " << dec << PID << " found!" << endl;
+		}
+}
+
+void Memory_Profiler::Save_all_process_shared_memory_to_file(){
+
+	map<const pid_t, Process_handler>::iterator it;
+	for (it = Processes.begin(); it != Processes.end(); it++) 	{
+		if(it->second.Get_profiled() == false){
+			it->second.Save_shared_memory_to_file();
+		}
+		else {
+			cout << "Process " << dec << it->first << " is under profiling, backtrace cannot be saved!" << endl;
+		}
+	}
+	cout << "Finished" << endl;
 }

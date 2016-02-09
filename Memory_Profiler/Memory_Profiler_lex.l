@@ -17,7 +17,10 @@ extern "C" {
 "alive"				{return ALIVE;}
 "profiled"			{return PROFILED;}
 "process" 			{return PROCESS;}
-"shm"				{return SHM;}
+"save"				{return SAVE;}
+"symbols"			{return SYMBOLS;}
+"map"				{return MAP;}
+"bt"				{return BT;}
 "on"				{return ON;}
 "off"				{return OFF;}
 "analyze"			{return ANALYZE;}

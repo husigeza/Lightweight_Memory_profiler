@@ -13,6 +13,7 @@
 #include <vector>
 #include <map>
 #include <time.h>
+#include <fstream>
 
 #include <bfd.h>
 
@@ -96,9 +97,22 @@ class Process_handler {
     bool Create_symbol_table();
     bool Read_virtual_memory_mapping();
 
-     map<memory_map_table_entry_class,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::const_iterator Find_function_VMA (const uint64_t address) const;
+    map<memory_map_table_entry_class,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::const_iterator Find_function_VMA (const uint64_t address) const;
 
     bool Init_start_stop_semaphore();
+
+    ofstream symbol_file;
+    string symbol_file_name;
+    ofstream memory_map_file;
+	string memory_map_file_name;
+    ofstream shared_memory_file;
+	string shared_memory_file_name;
+
+
+	//ofstream bfd_values_file;
+	//string bfd_values_file_name = "bfd_values_"+ PID_string + ".txt";
+
+
 
     public:
 
@@ -130,6 +144,10 @@ class Process_handler {
         const string Find_function_name(uint64_t const address) const;
 
         void Print_shared_memory() const;
+
+        void Save_symbol_table_to_file();
+        void Save_memory_mappings_to_file();
+        void Save_shared_memory_to_file();
 
 };
 

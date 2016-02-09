@@ -28,9 +28,9 @@ extern "C" {
 }
 
 %token PRINT
-%token PROCESS ALL ALIVE PROFILED SHM ANALYZE
-%token <number> ON 
-%token <number> OFF
+%token PROCESS ALL ALIVE PROFILED BT ANALYZE
+%token SAVE SYMBOLS MAP
+%token ON OFF
 %token <number> NUMBER
 %token HELP
 %token EXIT_COMMAND
@@ -49,8 +49,12 @@ command : PRINT PROCESS NUMBER '\n'      			{mem_prof.Print_process($3);}
 		| PRINT PROCESS ALL '\n' 					{mem_prof.Print_all_processes();}
 		| PRINT PROCESS ALIVE '\n'					{mem_prof.Print_alive_processes();}	
 		| PRINT PROCESS PROFILED '\n'				{mem_prof.Print_profiled_processes();}
-		| PRINT PROCESS NUMBER SHM '\n'				{mem_prof.Print_process_shared_memory($3);}
-		| PRINT PROCESS ALL SHM '\n'				{mem_prof.Print_all_processes_shared_memory();}
+		| PRINT PROCESS NUMBER BT '\n'				{mem_prof.Print_process_shared_memory($3);}
+		| PRINT PROCESS ALL BT '\n'					{mem_prof.Print_all_processes_shared_memory();}
+		| SAVE PROCESS NUMBER SYMBOLS '\n'			{mem_prof.Save_process_symbol_table_to_file($3);}
+		| SAVE PROCESS NUMBER MAP '\n'				{mem_prof.Save_process_memory_mapping_to_file($3);}
+		| SAVE PROCESS NUMBER BT '\n'				{mem_prof.Save_process_shared_memory_to_file($3);}
+		| SAVE PROCESS ALL BT '\n'				    {mem_prof.Save_all_process_shared_memory_to_file();}
 		| PROCESS NUMBER PROFILED ON '\n'			{mem_prof.Add_process_to_profiling($2);}
 		| PROCESS NUMBER PROFILED OFF '\n'			{mem_prof.Remove_process_from_profiling($2);}
 		| PROCESS ALL PROFILED ON '\n'				{mem_prof.Add_all_process_to_profiling();}
@@ -84,14 +88,18 @@ void yyerror(const char *s){
 
 void Print_help(){
 	cout << endl << "Recognized commands:" << endl;
-	cout << "number = Process's PID" << endl;
+	cout << endl << "number = Process's PID" << endl;
 
 	cout <<"print process number" << endl;
 	cout <<"print process all" << endl;
 	cout <<"print process alive" << endl;
 	cout <<"print process profiled" << endl;
-	cout <<"print process number shm" << endl;
-	cout <<"print process all shm" << endl;
+	cout <<"print process number bt" << endl;
+	cout <<"print process all bt" << endl;
+	cout <<"save process number symbols" << endl;
+	cout <<"save process number map" << endl;
+	cout <<"save process number bt" << endl;
+	cout <<"save process all bt" << endl;
 	cout <<"process number profiled on" << endl;
 	cout <<"process number profiled off" << endl;
 	cout <<"process all profiled on" << endl;
