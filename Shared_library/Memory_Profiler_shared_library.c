@@ -282,19 +282,25 @@ void free(void* pointer) {
 
 			printf("This is from my free!\n");
 
-			long unsigned int new_shared_memory_size = sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count) * sizeof(memory_profiler_log_entry_t);
+			if(shared_memory_size < (sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count) * sizeof(memory_profiler_log_entry_t))){
 
-			munmap(memory_profiler_struct, shared_memory_size);
+				printf("Increasing shared memory...\n");
+				printf("Size before: %lu",shared_memory_size);
 
-			shared_memory_size = new_shared_memory_size;
+				munmap(memory_profiler_struct, shared_memory_size);
 
-			int err = ftruncate(shared_memory, shared_memory_size);
-			if (err < 0) {
-				printf("Error while truncating shared memory: %d\n", errno);
-			}
-			memory_profiler_struct = (memory_profiler_struct_t*)mmap(NULL, shared_memory_size, PROT_WRITE, MAP_SHARED , shared_memory, 0);
-			if (memory_profiler_struct == MAP_FAILED) {
-				printf("Failed mapping the shared memory: %d \n", errno);
+				shared_memory_size = 2*shared_memory_size;
+
+				printf("Size after: %lu",shared_memory_size);
+
+				int err = ftruncate(shared_memory, shared_memory_size);
+				if (err < 0) {
+					printf("Error while truncating shared memory: %d\n", errno);
+				}
+				memory_profiler_struct = (memory_profiler_struct_t*)mmap(NULL, shared_memory_size, PROT_WRITE, MAP_SHARED , shared_memory, 0);
+				if (memory_profiler_struct == MAP_FAILED) {
+					printf("Failed mapping the shared memory: %d \n", errno);
+				}
 			}
 
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].backtrace_length = backtrace(memory_profiler_struct->log_entry[memory_profiler_struct->log_count].call_stack,max_call_stack_depth);
@@ -303,7 +309,6 @@ void free(void* pointer) {
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].type = free_func;
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].size = 0;
 		    memory_profiler_struct->log_entry[memory_profiler_struct->log_count].address = (uint64_t)pointer;
-		    //printf("address: %lx\n",memory_profiler_struct->log_entry[memory_profiler_struct->log_count].address);
 		    memory_profiler_struct->log_entry[memory_profiler_struct->log_count].valid = true;
 
 		    memory_profiler_struct->log_count++;
@@ -336,24 +341,28 @@ void* malloc(size_t size) {
 
 			printf("This is from my malloc!\n");
 
-			//printf("Time now: %s",ctime(&now));
+			if(shared_memory_size < (sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count) * sizeof(memory_profiler_log_entry_t))){
+
+				printf("Increasing shared memory...\n");
+				printf("Size before: %lu\n",shared_memory_size);
+
+
+				munmap(memory_profiler_struct, shared_memory_size);
+
+				shared_memory_size = 2*shared_memory_size;
+				printf("Size after: %lu\n",shared_memory_size);
+
+				int err = ftruncate(shared_memory, shared_memory_size);
+				if (err < 0) {
+					printf("Error while truncating shared memory: %d\n", errno);
+				}
+				memory_profiler_struct = (memory_profiler_struct_t*)mmap(NULL, shared_memory_size, PROT_WRITE, MAP_SHARED , shared_memory, 0);
+				if (memory_profiler_struct == MAP_FAILED) {
+					printf("Failed mapping the shared memory: %d \n", errno);
+				}
+			}
 
 			void* pointer = __libc_malloc(size);
-
-			unsigned long new_shared_memory_size = sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count) * sizeof(memory_profiler_log_entry_t);
-
-			munmap(memory_profiler_struct, shared_memory_size);
-
-			shared_memory_size = new_shared_memory_size;
-
-			int err = ftruncate(shared_memory, shared_memory_size);
-			if (err < 0) {
-				printf("Error while truncating shared memory: %d\n", errno);
-			}
-			memory_profiler_struct = (memory_profiler_struct_t*)mmap(NULL, shared_memory_size, PROT_WRITE, MAP_SHARED , shared_memory, 0);
-			if (memory_profiler_struct == MAP_FAILED) {
-				printf("Failed mapping the shared memory: %d \n", errno);
-			}
 
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].backtrace_length = backtrace(memory_profiler_struct->log_entry[memory_profiler_struct->log_count].call_stack,max_call_stack_depth);
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].thread_id = pthread_self();
@@ -361,7 +370,6 @@ void* malloc(size_t size) {
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].type = malloc_func;
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].size = size;
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].address = (uint64_t*)pointer;
-			//printf("address: %xl\n",(uint64_t*)pointer);
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].valid = true;
 
 			memory_profiler_struct->log_count++;
