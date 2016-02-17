@@ -38,14 +38,9 @@ Process_handler::Process_handler() {
 	start_stop_semaphore = 0;
 	elf_path = "";
 	shared_memory_initialized = false;
-	//symbol_file = 0;
 	symbol_file_name = "";
-	//memory_map_file = 0;
 	memory_map_file_name = "";
-	//shared_memory_file = 0;
 	shared_memory_file_name = "";
-
-
 }
 
 Process_handler::Process_handler(pid_t PID) {
@@ -64,11 +59,8 @@ Process_handler::Process_handler(pid_t PID) {
 	start_stop_semaphore = 0;
 	elf_path = "/proc/" + this->PID_string + "/exe";
 	shared_memory_initialized = false;
-	//symbol_file = 0;
 	symbol_file_name = "Symbol_table_"+ PID_string + ".txt";
-	//memory_map_file = 0;
 	memory_map_file_name = "Memory_map_"+ PID_string + ".txt";
-	//shared_memory_file = 0;
 	shared_memory_file_name = "Backtrace_"+ PID_string + ".txt";
 
 	// If the profiled process compiled with START_PROF_IMM flag, that means it starts putting data into shared memory immediately after startup
@@ -131,11 +123,8 @@ Process_handler::Process_handler(Process_handler &&obj){
 	elf_path = obj.elf_path;
 	shared_memory_initialized = obj.shared_memory_initialized;
 	all_function_symbol_table = obj.all_function_symbol_table;
-	//symbol_file = move(obj.symbol_file);
 	symbol_file_name = obj.symbol_file_name;
-	//memory_map_file = move(obj.memory_map_file);
 	memory_map_file_name = obj.memory_map_file_name;
-	//shared_memory_file = move(obj.shared_memory_file);
 	shared_memory_file_name = obj.shared_memory_file_name;
 
 	obj.PID = 0;
@@ -153,11 +142,8 @@ Process_handler::Process_handler(Process_handler &&obj){
 	obj.elf_path = "";
 	obj.shared_memory_initialized = false;
 	obj.all_function_symbol_table.clear();
-	//obj.symbol_file;
 	obj.symbol_file_name = "";
-	//obj.memory_map_file;
 	obj.memory_map_file_name = "";
-	//obj.shared_memory_file;
 	obj.shared_memory_file_name = "";
 }
 
@@ -180,11 +166,8 @@ Process_handler& Process_handler::operator=(Process_handler&& obj){
 		elf_path = obj.elf_path;
 		shared_memory_initialized = obj.shared_memory_initialized;
 		all_function_symbol_table = obj.all_function_symbol_table;
-		//symbol_file = move(obj.symbol_file);
 		symbol_file_name = obj.symbol_file_name;
-		//memory_map_file = move(obj.memory_map_file);
 		memory_map_file_name = obj.memory_map_file_name;
-		//shared_memory_file = move(obj.shared_memory_file);
 		shared_memory_file_name = obj.shared_memory_file_name;
 
 		obj.PID = 0;
@@ -201,11 +184,8 @@ Process_handler& Process_handler::operator=(Process_handler&& obj){
 		obj.elf_path = "";
 		obj.shared_memory_initialized = false;
 		obj.all_function_symbol_table.clear();
-		//obj.symbol_file = 0;
 		obj.symbol_file_name = "";
-		//obj.memory_map_file = 0;
 		obj.memory_map_file_name = "";
-		//obj.shared_memory_file = 0;
 		obj.shared_memory_file_name = "";
 	}
 	return *this;
@@ -248,7 +228,6 @@ const string Process_handler::Find_function_name(const uint64_t address) const{
 	else{
 		return it->name;
 	}
-
 }
 
 /*
@@ -277,7 +256,6 @@ bfd* Process_handler::Open_ELF(string ELF_path) const{
 				return NULL;
 			}
 		}
-
 		return tmp_bfd;
 }
 
@@ -319,12 +297,6 @@ void Process_handler::Get_defined_symbols(asymbol ***symbol_table_param,long num
 	symbol_table_entry_class symbol_entry;
 	asymbol **symbol_table = *symbol_table_param;
 
-
-
-	////bfd_values_file.open(//bfd_values_file_name.c_str(), ios::out);
-
-	////bfd_values_file << endl <<"//bfd_values_file from lib with starting address: "<< std::hex << VMA_start_address << endl;
-
 	for (int i = 0; i < number_of_symbols; i++) {
 
 			bfd_symbol_info(symbol_table[i],sym_inf);
@@ -342,27 +314,17 @@ void Process_handler::Get_defined_symbols(asymbol ***symbol_table_param,long num
 			symbol_entry.name = symbol_table[i]->name;
 			symbol_entry.address = 0;
 
-				//bfd_values_file << "Symbol "<< symbol_table[i]->name << endl;
-				//bfd_values_file << "section->vma: "<< std::hex<< symbol_table[i]->section->vma << "  value: " <<std::hex << symbol_table[i]->value << endl;
-				// Symbol is defined in the process, address is known from ELF
-				if(symbol_table[i]->section->vma + symbol_table[i]->value < VMA_start_address){
-					//bfd_values_file << "Interpreting values as relative..."<< endl;
-					symbol_entry.address = (uint64_t)(symbol_table[i]->section->vma + symbol_table[i]->value + VMA_start_address);
-				}
-				else {
-				//bfd_values_file << "Interpreting values as absolute..."<< endl;
-					symbol_entry.address = (uint64_t)(symbol_table[i]->section->vma + symbol_table[i]->value);
-				}
-				// Save the symbol with its absolute address in the vector
-				//bfd_values_file << "Address: "<<std::hex << symbol_entry.address << endl <<endl;
+			// Symbol is defined in the process, address is known from ELF
+			if(symbol_table[i]->section->vma + symbol_table[i]->value < VMA_start_address){
+				symbol_entry.address = (uint64_t)(symbol_table[i]->section->vma + symbol_table[i]->value + VMA_start_address);
+			}
+			else {
+			//bfd_values_file << "Interpreting values as absolute..."<< endl;
+				symbol_entry.address = (uint64_t)(symbol_table[i]->section->vma + symbol_table[i]->value);
+			}
+			// Save the symbol with its absolute address in the vector
 
-				//bfd_values_file << "filepos: " << dec << symbol_table[i]->section->filepos << endl;
-				//bfd_values_file << "line_filepos: " << dec << symbol_table[i]->section->line_filepos << endl;
-				//bfd_values_file << "lineno_count: " << dec << symbol_table[i]->section->lineno_count << endl;
-				//bfd_values_file << "rel_filepos: " << dec << symbol_table[i]->section->rel_filepos << endl << endl;
-
-
-				tmp_function_symbol_table.push_back(symbol_entry);
+			tmp_function_symbol_table.push_back(symbol_entry);
 	}
 	free(sym_inf);
 }
@@ -648,7 +610,7 @@ void Process_handler::Print_shared_memory() const{
 		return;
 	}
 
-	for (unsigned int j = 0; j < memory_profiler_struct->log_count-1; j++) {
+	for (unsigned int j = 0; j <= memory_profiler_struct->log_count-1; j++) {
 
 		if(memory_profiler_struct->log_entry[j].valid == true){
 			cout << endl <<"PID: " << dec << PID << endl;
@@ -659,7 +621,7 @@ void Process_handler::Print_shared_memory() const{
 			cout <<"GMT: " << buffer << dec << memory_profiler_struct->log_entry[j].tval.tv_usec << endl;
 			cout <<"Call stack type: " << dec << memory_profiler_struct->log_entry[j].type << endl;
 			cout <<"Address: " << hex <<memory_profiler_struct->log_entry[j].address << endl;
-			cout <<"Call stack size: " << dec << memory_profiler_struct->log_entry[j].size << endl;
+			cout <<"Call stack size: " << dec << memory_profiler_struct->log_entry[j].backtrace_length << endl;
 			cout <<"Call stack: " << endl;
 			for(int  k=0; k < memory_profiler_struct->log_entry[j].backtrace_length;k++){
 				cout << memory_profiler_struct->log_entry[j].call_stack[k]<< " --- ";
@@ -669,6 +631,18 @@ void Process_handler::Print_shared_memory() const{
 	}
 
 	cout << "Finished!" << endl;
+}
+
+void Process_handler::Print_backtrace(unsigned int entry_num, ofstream &log_file) const{
+
+	cout << "Backtrace: " << endl;
+	log_file << "Backtrace: " << endl;
+	for(int  k = 0; k < memory_profiler_struct->log_entry[entry_num].backtrace_length; k++){
+		cout << memory_profiler_struct->log_entry[entry_num].call_stack[k]<< " --- ";
+		log_file << memory_profiler_struct->log_entry[entry_num].call_stack[k]<< " --- ";
+		cout << Find_function_name((uint64_t)memory_profiler_struct->log_entry[entry_num].call_stack[k]) << endl;
+		log_file << Find_function_name((uint64_t)memory_profiler_struct->log_entry[entry_num].call_stack[k]) << endl;
+	}
 }
 
 
@@ -723,7 +697,7 @@ void Process_handler::Save_shared_memory_to_file(){
 		return;
 	}
 
-	for (unsigned int j = 0; j < memory_profiler_struct->log_count-1; j++) {
+	for (unsigned int j = 0; j <= memory_profiler_struct->log_count-1; j++) {
 
 		if(memory_profiler_struct->log_entry[j].valid == true){
 			shared_memory_file << endl <<"Shared memory PID: " << dec << PID << endl;

@@ -1,6 +1,3 @@
-gcc = /home/egezhus/GCC_4_3_bin/bin/gcc
-g++ = /home/egezhus/GCC_4_3_bin/bin/g++
-
 #sources
 sources = main.c
 #object files

@@ -8,6 +8,10 @@
 #ifndef MEMORY_PROFILER_PROCESS_H_
 #define MEMORY_PROFILER_PROCESS_H_
 
+#ifdef bfd_need_config_h
+#include "config.h"
+#endif
+
 #include <stdint.h>
 #include <semaphore.h>
 #include <vector>
@@ -15,7 +19,8 @@
 #include <time.h>
 #include <fstream>
 
-#include <bfd.h>
+#include "bfd.h"
+
 
 #include "Memory_Profiler_memory_map.h"
 #include "Memory_Profiler_symbol_table.h"
@@ -108,12 +113,6 @@ class Process_handler {
     ofstream shared_memory_file;
 	string shared_memory_file_name;
 
-
-	//ofstream bfd_values_file;
-	//string bfd_values_file_name = "bfd_values_"+ PID_string + ".txt";
-
-
-
     public:
 
     	Process_handler();
@@ -144,6 +143,7 @@ class Process_handler {
         const string Find_function_name(uint64_t const address) const;
 
         void Print_shared_memory() const;
+        void Print_backtrace(unsigned int entry_num,ofstream &log_file) const;
 
         void Save_symbol_table_to_file();
         void Save_memory_mappings_to_file();

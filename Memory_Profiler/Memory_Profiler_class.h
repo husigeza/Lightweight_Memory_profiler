@@ -1,11 +1,7 @@
 #ifndef MEMORY_PROFILER_H_INCLUDED
 #define MEMORY_PROFILER_H_INCLUDED
 
-#include <map>
-
 #include "Memory_Profiler_process.h"
-
-//using namespace std;
 
 class Memory_Profiler {
 
@@ -40,8 +36,13 @@ class Memory_Profiler {
 
         void Read_FIFO();
 
+        bool Process_analyze_ready(const pid_t PID);
+
         void Analyze_process(const pid_t PID);
         void Analyze_all_process();
+
+        void Analyze_process_memory_leak(const pid_t PID);
+        void Analyze_process_dummy_free(const pid_t PID);
 
         void Print_process(const pid_t PID) const;
         void Print_all_processes() const;

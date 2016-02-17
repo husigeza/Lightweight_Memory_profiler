@@ -11,11 +11,12 @@
 #include <fstream>
 #include <time.h>
 
-
-#include "Memory_Profiler_process.h"
-
 using namespace std;
 
+enum {
+	malloc_func = 1,
+	free_func = 2
+};
 
 Memory_Profiler::Memory_Profiler(string fifo_path) {
 
@@ -55,7 +56,9 @@ bool Memory_Profiler::Add_Process_to_list(const pid_t PID) {
 		}
 		catch(const bool v){
 			if(v == false){
-				cout << "Process NOT added, PID: " << dec << PID << endl;
+				cout << "Process NOT added,"
+						""
+						" PID: " << dec << PID << endl;
 				return false;
 			}
 		}
@@ -219,7 +222,7 @@ void Memory_Profiler::Read_FIFO() {
 				alive_processes.push_back(pid);
 
 			} else {
-				cout << "Failed reading the FIFO" << endl;
+				//cout << "Failed reading the FIFO" << endl;
 				return;
 			}
 		}
@@ -238,102 +241,173 @@ void Memory_Profiler::Read_FIFO() {
 	}
 }
 
-enum {
-	malloc_func = 1,
-	free_func = 2
-};
-
-
-void Memory_Profiler::Analyze_process(const pid_t PID){
+bool Memory_Profiler::Process_analyze_ready(const pid_t PID){
 
 	ofstream log_file;
 	log_file.open(("Analyzation_output_"+ Processes[PID].PID_string + ".txt").c_str(), ios::app);
 
-	log_file << endl << endl <<"ANALYZING DATA" << endl;
-
-	if(Processes[PID].Is_shared_memory_initialized() == true){
-		if(Processes[PID].Get_profiled() == true){
-			cout << "Process "<< dec << PID <<" is still being profiled, stop profiling first! "<< endl;
-		}
-		cout << "Process "<< dec << PID <<" is being analyzed... "<< endl;
-
-		const memory_profiler_sm_object_class &shared_memory = *Processes[PID].Get_shared_memory();
-		if(shared_memory.log_count == 0){
-			log_file << endl << "shared_memory log_count = 0, no data to analyze!" << endl;
-			log_file.close();
-			cout << endl << "Process " << PID << " shared_memory log_count = 0, no data to analyze!" <<endl;
-			return;
-		}
-
-		unsigned long int total_counter = 0;
-		unsigned long int total_counter_2 = 0;
-
-		unsigned long int malloc_counter = 0;
-		unsigned long int free_counter = 0;
-		unsigned long int total_memory_allocated = 0;
-		unsigned long int total_memory_freed = 0;
-		unsigned long int address = 0;
-		unsigned long int total_memory_leaked = 0;
-
-		//Need to count with shared_memory.log_count-1 because shared_memory.log_count shows a bigger value with 1 than the real number of elements
-		for(total_counter = 0; total_counter < shared_memory.log_count-1; total_counter++){
-
-			if(shared_memory.log_entry[total_counter].valid && shared_memory.log_entry[total_counter].type == malloc_func){
-
-				total_memory_allocated += shared_memory.log_entry[total_counter].size;
-				address = shared_memory.log_entry[total_counter].address;
-				malloc_counter++;
-
-				for(total_counter_2 = total_counter; total_counter_2 < shared_memory.log_count-1; total_counter_2++){
-					if(shared_memory.log_entry[total_counter_2].valid && shared_memory.log_entry[total_counter_2].type == free_func){
-						if(shared_memory.log_entry[total_counter_2].address == address){
-								total_memory_freed += shared_memory.log_entry[total_counter].size;
-								break;
-						}
-					}
-				}
-				if(total_counter_2 == shared_memory.log_count-1){
-
-					log_file << endl << "Memory 0x" << std::hex << address << " has not been freed yet!" << endl;
-
-					char buffer[30];
-					strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(shared_memory.log_entry[total_counter].tval.tv_sec)));
-					log_file << "GMT: " << buffer << dec << shared_memory.log_entry[total_counter].tval.tv_usec << endl;
-
-					log_file << "Call stack: " << endl;
-					for(int  k = 0; k < shared_memory.log_entry[total_counter].backtrace_length; k++){
-
-						log_file << shared_memory.log_entry[total_counter].call_stack[k]<< " --- ";
-						log_file << Processes[PID].Find_function_name((uint64_t)shared_memory.log_entry[total_counter].call_stack[k]) << endl;
-					}
-					total_memory_leaked += shared_memory.log_entry[total_counter].size;
-				}
+	try{
+		if(Processes[PID].Is_shared_memory_initialized() == true){
+			if(Processes[PID].Get_profiled() == true){
+				log_file << "Process "<< dec << PID <<" is still being profiled, stop profiling first! "<< endl;
+				cout << "Process "<< dec << PID <<" is still being profiled, stop profiling first! "<< endl;
+				throw false;
 			}
-			else if(shared_memory.log_entry[total_counter].valid && shared_memory.log_entry[total_counter].type == free_func){
-				free_counter++;
+			const memory_profiler_sm_object_class &shared_memory = *Processes[PID].Get_shared_memory();
+			if(shared_memory.log_count == 0){
+				cout << endl << "shared_memory log_count = 0, no data to analyze!" << endl;
+				log_file << endl << "shared_memory log_count = 0, no data to analyze!" << endl;
+				throw false;
 			}
 		}
-
-		cout << endl << "PID: " << std::dec << PID << endl;
-		log_file<< endl << "PID: " << std::dec << PID << endl;
-		cout <<"Total memory allocated: " << std::dec << total_memory_allocated << " bytes" << endl;
-		log_file <<"Total memory allocated: " << std::dec << total_memory_allocated << " bytes" << endl;
-		cout << "Total memory freed: " << std::dec << total_memory_freed << " bytes" << endl;
-		log_file << "Total memory freed: " << std::dec << total_memory_freed << " bytes" << endl;
-		cout << "Total memory leaked yet: " << std::dec << total_memory_leaked << " bytes" << endl;
-		log_file << "Total memory leaked yet: " << std::dec << total_memory_leaked << " bytes" << endl;
-		cout << "Total number of mallocs: " << std::dec << malloc_counter << endl;
-		log_file << "Total number of mallocs: " << std::dec << malloc_counter << endl;
-		cout << "Total number of frees: " << std::dec << free_counter << endl<<endl;
-		log_file << "Total number of frees: " << std::dec << free_counter << endl<<endl;
-
-		log_file.close();
+		else{
+			cout << endl << "NO DATA AVAILABLE, shared memory has not been initialized!" << endl;
+			log_file << endl << "NO DATA AVAILABLE, shared memory has not been initialized!" << endl;
+			throw false;
+		}
+		throw true;
 	}
-	else{
-		log_file << endl << "NO DATA AVAILABLE, shared memory has not been initialized!" << endl;
+	catch(bool b){
 		log_file.close();
-		cout << endl << "Process " << PID << " cannot be analyzed, no shared memory has been initialized" <<endl;
+		if(b == true){
+			return true;
+		}
+		else {
+			return false;
+		}
 	}
+}
+
+
+void Memory_Profiler::Analyze_process(const pid_t PID){
+
+	Analyze_process_memory_leak(PID);
+	Analyze_process_dummy_free(PID);
+
+}
+void Memory_Profiler::Analyze_process_dummy_free(const pid_t PID){
+
+	if(Process_analyze_ready(PID) == false){
+		return;
+	}
+
+	ofstream log_file;
+	log_file.open(("Analyzation_output_"+ Processes[PID].PID_string + ".txt").c_str(), ios::app);
+
+	cout << endl << endl <<"Running dummy free searching for Process: "<< dec << PID << endl;
+	log_file << endl << endl <<"Running dummy free searching for Process: "<< dec << PID << endl;
+
+	vector<uint64_t> malloc_vector;
+	vector<uint64_t>::iterator it;
+	const memory_profiler_sm_object_class &shared_memory = *Processes[PID].Get_shared_memory();
+
+
+
+	//Need to count with shared_memory.log_count-1 because shared_memory.log_count shows a bigger value with 1 than the real number of elements
+	for(unsigned long int total_counter = 0; total_counter <= shared_memory.log_count-1; total_counter++){
+		if(shared_memory.log_entry[total_counter].valid && shared_memory.log_entry[total_counter].type == malloc_func){
+			malloc_vector.push_back(shared_memory.log_entry[total_counter].address);
+		}
+		else if(shared_memory.log_entry[total_counter].valid && shared_memory.log_entry[total_counter].type == free_func){
+			it = find(malloc_vector.begin(), malloc_vector.end(), shared_memory.log_entry[total_counter].address);
+			if(it == malloc_vector.end()){
+				cout << endl <<"Address 0x"<< hex << shared_memory.log_entry[total_counter].address << " is freed but has not been allocated!"<< endl;
+				log_file << endl <<"Address 0x"<< hex << shared_memory.log_entry[total_counter].address << " is freed but has not been allocated!"<< endl;
+
+				Processes[PID].Print_backtrace(total_counter,log_file);
+			}
+			else{
+				malloc_vector.erase(it);
+			}
+		}
+	}
+
+	cout << "Finished!" << endl;
+	log_file << "Finished!" << endl;
+
+	log_file.close();
+
+}
+
+void Memory_Profiler::Analyze_process_memory_leak(const pid_t PID){
+
+
+	if(Process_analyze_ready(PID) == false){
+		return;
+	}
+
+	ofstream log_file;
+	log_file.open(("Analyzation_output_"+ Processes[PID].PID_string + ".txt").c_str(), ios::app);
+
+	cout << endl << endl <<"Running memory leak analyzation for Process: "<< dec << PID << endl;
+	log_file << endl << endl <<"Running memory leak analyzation for Process: "<< dec << PID << endl;
+
+	const memory_profiler_sm_object_class &shared_memory = *Processes[PID].Get_shared_memory();
+
+	unsigned long int total_counter = 0;
+	unsigned long int total_counter_2 = 0;
+
+	unsigned long int malloc_counter = 0;
+	unsigned long int free_counter = 0;
+	unsigned long int total_memory_allocated = 0;
+	unsigned long int total_memory_freed = 0;
+	unsigned long int address = 0;
+	unsigned long int total_memory_leaked = 0;
+
+	//Need to count with shared_memory.log_count-1 because shared_memory.log_count shows a bigger value with 1 than the real number of elements
+	for(total_counter = 0; total_counter <= shared_memory.log_count-1; total_counter++){
+
+		if(shared_memory.log_entry[total_counter].valid && shared_memory.log_entry[total_counter].type == malloc_func){
+
+			total_memory_allocated += shared_memory.log_entry[total_counter].size;
+			address = shared_memory.log_entry[total_counter].address;
+			malloc_counter++;
+
+			for(total_counter_2 = total_counter; total_counter_2 < shared_memory.log_count-1; total_counter_2++){
+				if(shared_memory.log_entry[total_counter_2].valid && shared_memory.log_entry[total_counter_2].type == free_func){
+					if(shared_memory.log_entry[total_counter_2].address == address){
+							total_memory_freed += shared_memory.log_entry[total_counter].size;
+							break;
+					}
+				}
+			}
+			if(total_counter_2 == shared_memory.log_count-1){
+
+				log_file << endl << "Memory 0x" << std::hex << address << " has not been freed yet!" << endl;
+
+				char buffer[30];
+				strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(shared_memory.log_entry[total_counter].tval.tv_sec)));
+				log_file << "GMT: " << buffer << dec << shared_memory.log_entry[total_counter].tval.tv_usec << endl;
+
+				log_file << "Call stack: " << endl;
+				for(int  k = 0; k < shared_memory.log_entry[total_counter].backtrace_length; k++){
+
+					log_file << shared_memory.log_entry[total_counter].call_stack[k]<< " --- ";
+					log_file << Processes[PID].Find_function_name((uint64_t)shared_memory.log_entry[total_counter].call_stack[k]) << endl;
+				}
+				total_memory_leaked += shared_memory.log_entry[total_counter].size;
+			}
+		}
+		else if(shared_memory.log_entry[total_counter].valid && shared_memory.log_entry[total_counter].type == free_func){
+			free_counter++;
+		}
+	}
+
+	cout << endl << "PID: " << std::dec << PID << endl;
+	log_file<< endl << "PID: " << std::dec << PID << endl;
+	cout <<"Total memory allocated: " << std::dec << total_memory_allocated << " bytes" << endl;
+	log_file <<"Total memory allocated: " << std::dec << total_memory_allocated << " bytes" << endl;
+	cout << "Total memory freed: " << std::dec << total_memory_freed << " bytes" << endl;
+	log_file << "Total memory freed: " << std::dec << total_memory_freed << " bytes" << endl;
+	cout << "Total memory leaked yet: " << std::dec << total_memory_leaked << " bytes" << endl;
+	log_file << "Total memory leaked yet: " << std::dec << total_memory_leaked << " bytes" << endl;
+	cout << "Total number of mallocs: " << std::dec << malloc_counter << endl;
+	log_file << "Total number of mallocs: " << std::dec << malloc_counter << endl;
+	cout << "Total number of frees: " << std::dec << free_counter << endl<<endl;
+	log_file << "Total number of frees: " << std::dec << free_counter << endl<<endl;
+
+	log_file.close();
+
 }
 
 void Memory_Profiler::Analyze_all_process(){

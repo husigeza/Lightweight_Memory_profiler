@@ -1,6 +1,6 @@
-#include <iostream>
-
 #include "Memory_Profiler_class.h"
+
+#include <iostream>
 
 using namespace std;
 
@@ -18,7 +18,9 @@ void Memory_Profiler::Print_process(const pid_t PID) const{
 		cout <<"Profiled: " << it->second.Get_profiled() << endl;
 		cout <<"Shared memory initialized: " << it->second.Is_shared_memory_initialized() << endl;
 		if(it->second.Is_shared_memory_initialized()){
-			cout <<"Number of backtraces: "<< dec << it->second.Get_shared_memory()->log_count-1  << endl;
+			// Use it->second.Get_shared_memory()->log_count is correct here
+			// Indexing starts with 0 that's why need to use the actual value (and not -1) here
+			cout <<"Number of backtraces: "<< dec << it->second.Get_shared_memory()->log_count  << endl;
 		}
 		cout << endl;
 	}

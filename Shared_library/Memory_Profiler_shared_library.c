@@ -499,7 +499,7 @@ void* Hearthbeat(void *arg) {
 			sprintf(s,"Hearthbeat: Failed opening the FIFO, errno: %d\n", errno);
 			print_to_log(s);
 		}
-		sleep(1);
+		usleep(100);
 	}
 
 }

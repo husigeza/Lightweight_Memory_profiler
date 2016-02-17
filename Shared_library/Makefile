@@ -1,6 +1,3 @@
-gcc = /home/egezhus/GCC_4_3_bin/bin/gcc
-g++ = /home/egezhus/GCC_4_3_bin/bin/g++	
-
 #sources
 sources = Memory_Profiler_shared_library.c
 #headers

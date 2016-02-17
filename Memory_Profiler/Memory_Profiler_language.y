@@ -9,13 +9,13 @@ extern "C" {
 	}
 }
 
+#include "../Memory_Profiler_class.h"
+
 #include <iostream>
 #include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
-
-#include "../Memory_Profiler_class.h"
 
 %}
 
@@ -124,7 +124,7 @@ void* Read_FIFO_thread(void *arg) {
 
 	while (true) {
 		mem_prof.Read_FIFO();
-		sleep(2);
+		usleep(200);
 	}
 	return 0;
 }
