@@ -284,14 +284,9 @@ void free(void* pointer) {
 
 			if(shared_memory_size < (sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count) * sizeof(memory_profiler_log_entry_t))){
 
-				printf("Increasing shared memory...\n");
-				printf("Size before: %lu",shared_memory_size);
-
 				munmap(memory_profiler_struct, shared_memory_size);
 
 				shared_memory_size = 2*shared_memory_size;
-
-				printf("Size after: %lu",shared_memory_size);
 
 				int err = ftruncate(shared_memory, shared_memory_size);
 				if (err < 0) {
@@ -343,14 +338,9 @@ void* malloc(size_t size) {
 
 			if(shared_memory_size < (sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count) * sizeof(memory_profiler_log_entry_t))){
 
-				printf("Increasing shared memory...\n");
-				printf("Size before: %lu\n",shared_memory_size);
-
-
 				munmap(memory_profiler_struct, shared_memory_size);
 
 				shared_memory_size = 2*shared_memory_size;
-				printf("Size after: %lu\n",shared_memory_size);
 
 				int err = ftruncate(shared_memory, shared_memory_size);
 				if (err < 0) {

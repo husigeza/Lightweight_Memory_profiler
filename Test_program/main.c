@@ -14,8 +14,8 @@ void dummy_malloc_1(int *pointer, int *i){
 
 	*i += 1;
 
-	pointer = (int *)malloc(sizeof(int));
-	//free(pointer);
+	pointer = (int *)malloc(3);
+	free(pointer);
 }
 
 void dummy_malloc_2(int *pointer, int *i){

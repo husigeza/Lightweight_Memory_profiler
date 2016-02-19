@@ -29,9 +29,17 @@
 #define SSTR( x ) dynamic_cast< std::ostringstream & >( std::ostringstream() << std::dec << x ).str()
 
 
+enum {
+	malloc_func = 1,
+	free_func = 2
+};
+
 using namespace std;
 
 #define max_call_stack_depth 100
+
+class Process_handler;
+
 
 class memory_profiler_sm_object_log_entry_class{
 
@@ -54,6 +62,9 @@ public:
 	void *call_stack[max_call_stack_depth];
 	uint64_t address;
 	bool valid;
+
+	void Print(Process_handler *process, ofstream &log_file) const;
+
 };
 
 class memory_profiler_sm_object_class {
@@ -123,6 +134,9 @@ class Process_handler {
 
         Process_handler(Process_handler &&obj);
         Process_handler& operator=(Process_handler &&obj);
+
+        Process_handler(const Process_handler &obj);
+        Process_handler& operator=(const Process_handler &obj);
 
         const pid_t GetPID() const {return PID;};
 

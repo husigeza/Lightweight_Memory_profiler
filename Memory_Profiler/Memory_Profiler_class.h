@@ -2,6 +2,9 @@
 #define MEMORY_PROFILER_H_INCLUDED
 
 #include "Memory_Profiler_process.h"
+#include "Memory_Profiler_analyzer.h"
+#include <memory>
+#include "Memory_Profiler_analyzer_pattern.h"
 
 class Memory_Profiler {
 
@@ -16,6 +19,10 @@ class Memory_Profiler {
 
         void Start_stop_profiling(const pid_t PID);
         void Start_stop_profiling_all_processes();
+
+        vector< unique_ptr<Analyzer_Pattern> > Analyzator_patterns_vector;
+        vector< shared_ptr<Analyzer> > Analyzers_vector;
+        vector< shared_ptr<Filter_class> > Filters_vector;
 
     public:
         Memory_Profiler();
@@ -43,6 +50,21 @@ class Memory_Profiler {
 
         void Analyze_process_memory_leak(const pid_t PID);
         void Analyze_process_dummy_free(const pid_t PID);
+
+        void Create_new_pattern(string name);
+        void Print_patterns() const;
+
+        void Create_new_analyzer(shared_ptr<Analyzer> analyzer);
+        void Print_analyzers() const;
+
+        void Create_new_filter(shared_ptr<Filter_class> filter);
+        void Print_filters() const;
+
+        void Add_analyzer_to_pattern(unsigned int analyzer_index,unsigned int pattern_index);
+        void Add_filter_to_pattern(unsigned int filter_index,unsigned int pattern_index);
+
+        void Run_pattern(unsigned int pattern_index, Process_handler &process);
+        void Run_pattern_all_process(unsigned int pattern_index);
 
         void Print_process(const pid_t PID) const;
         void Print_all_processes() const;

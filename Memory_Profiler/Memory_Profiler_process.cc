@@ -22,6 +22,21 @@
 
 using namespace std;
 
+
+void memory_profiler_sm_object_log_entry_class::Print(Process_handler *process, ofstream &log_file) const{
+
+	cout << "Backtrace: " << endl;
+	log_file << "Backtrace: " << endl;
+
+	for(int  k = 0; k < backtrace_length; k++){
+		cout << call_stack[k]<< " --- ";
+		log_file << call_stack[k]<< " --- ";
+		cout << process->Find_function_name((uint64_t)call_stack[k]) << endl;
+		log_file << process->Find_function_name((uint64_t)call_stack[k]) << endl;
+	}
+}
+
+
 Process_handler::Process_handler() {
 
 	PID = 0;
@@ -104,6 +119,51 @@ Process_handler::Process_handler(pid_t PID) {
 		throw false;
 	}
 
+}
+
+Process_handler::Process_handler(const Process_handler &obj){
+	PID = obj.PID;
+	PID_string = obj.PID_string;
+	PID_mapping = obj.PID_mapping;
+	profiled = obj.profiled;
+	alive = obj.alive;
+	memory_profiler_struct = obj.memory_profiler_struct;
+	shared_memory = obj.shared_memory;
+	shared_memory_name = obj.shared_memory_name;
+	mapped_size_of_shared_memory = obj.mapped_size_of_shared_memory;
+	start_stop_semaphore_shared_memory = obj.start_stop_semaphore_shared_memory;
+	start_stop_semaphore_name = obj.start_stop_semaphore_name;
+	start_stop_semaphore = obj.start_stop_semaphore;
+	elf_path = obj.elf_path;
+	shared_memory_initialized = obj.shared_memory_initialized;
+	all_function_symbol_table = obj.all_function_symbol_table;
+	symbol_file_name = obj.symbol_file_name;
+	memory_map_file_name = obj.memory_map_file_name;
+	shared_memory_file_name = obj.shared_memory_file_name;
+}
+Process_handler& Process_handler::operator=(const Process_handler &obj){
+	if (this != &obj) {
+
+			PID = obj.PID;
+			PID_string = obj.PID_string;
+			PID_mapping = obj.PID_mapping;
+			profiled = obj.profiled;
+			alive = obj.alive;
+			memory_profiler_struct = obj.memory_profiler_struct;
+			shared_memory = obj.shared_memory;
+			shared_memory_name = obj.shared_memory_name;
+			mapped_size_of_shared_memory = obj.mapped_size_of_shared_memory;
+			start_stop_semaphore_shared_memory = obj.start_stop_semaphore_shared_memory;
+			start_stop_semaphore = obj.start_stop_semaphore;
+			start_stop_semaphore_name = obj.start_stop_semaphore_name;
+			elf_path = obj.elf_path;
+			shared_memory_initialized = obj.shared_memory_initialized;
+			all_function_symbol_table = obj.all_function_symbol_table;
+			symbol_file_name = obj.symbol_file_name;
+			memory_map_file_name = obj.memory_map_file_name;
+			shared_memory_file_name = obj.shared_memory_file_name;
+	}
+		return *this;
 }
 
 Process_handler::Process_handler(Process_handler &&obj){

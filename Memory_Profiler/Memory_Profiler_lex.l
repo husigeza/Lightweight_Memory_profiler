@@ -23,11 +23,20 @@ extern "C" {
 "bt"				{return BT;}
 "on"				{return ON;}
 "off"				{return OFF;}
+"add"				{return ADD;}
+"analyzer"			{return ANALYZER;}
+"analyzers"			{return ANALYZERS;}
+"pattern"			{return PATTERN;}
+"leak"				{return LEAK;}
+"dfree"				{return DFREE;}
 "analyze"			{return ANALYZE;}
-[0-9]+				{yylval.number=atoi(yytext); return NUMBER;}
+"filter"			{return FILTER;}
+"size"				{return SIZE;}
 "all"				{return ALL;}
 "exit"  			{return EXIT_COMMAND;}
 "help"				{return HELP;}
+[0-9]+				{yylval.number=atoi(yytext); return NUMBER;}
+[a-zA-Z0-9]*		{yylval.text = yytext; return NAME;}
 [\n]                {return yytext[0];}
 [ \t]+              ;
 .					{return UNRECOGNIZED_TOKEN;}

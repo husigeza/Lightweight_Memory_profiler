@@ -13,11 +13,6 @@
 
 using namespace std;
 
-enum {
-	malloc_func = 1,
-	free_func = 2
-};
-
 Memory_Profiler::Memory_Profiler(string fifo_path) {
 
 	this->fifo_path = fifo_path;
@@ -415,6 +410,102 @@ void Memory_Profiler::Analyze_all_process(){
 	map<const pid_t, Process_handler>::iterator it;
 	for (it = Processes.begin(); it != Processes.end(); it++) {
 		Analyze_process(it->first);
+	}
+}
+
+void Memory_Profiler::Create_new_analyzer(shared_ptr<Analyzer> analyzer){
+
+	Analyzers_vector.push_back(analyzer);
+}
+
+void Memory_Profiler::Create_new_filter(shared_ptr<Filter_class> filter){
+
+	Filters_vector.push_back(filter);
+}
+
+void Memory_Profiler::Create_new_pattern(string name){
+
+	Analyzator_patterns_vector.push_back( move(unique_ptr<Analyzer_Pattern> (new Analyzer_Pattern(name))) );
+}
+
+void Memory_Profiler::Print_patterns() const{
+
+	unsigned int i;
+	for(auto &a : Analyzator_patterns_vector){
+		cout <<"Index: " << dec << i << " : " << endl;
+		(*a).Print();
+		cout << "Analyzers in the pattern: " << endl;
+		(*a).Print_analyzers();
+		cout << "Filters in the pattern: " << endl;
+		(*a).Print_filters();
+		i++;
+	}
+}
+
+void Memory_Profiler::Print_filters() const{
+
+	unsigned int i;
+	for(auto &a : Filters_vector){
+		cout <<"Index: " << dec << i << " : " << endl;
+		(*a).Print();
+		i++;
+	}
+}
+
+void Memory_Profiler::Print_analyzers() const{
+
+	unsigned int i;
+	for(auto &a : Analyzers_vector){
+		cout <<"Index: " << dec << i << " : " << endl;
+		(*a).Print();
+		i++;
+	}
+}
+
+void Memory_Profiler::Add_analyzer_to_pattern(unsigned int analyzer_index,unsigned int pattern_index){
+
+	if(analyzer_index > Analyzers_vector.size()){
+		cout << "Wrong Analyzer ID" << endl;
+	}
+	else if (pattern_index > Analyzator_patterns_vector.size()){
+		cout << "Wrong Pattern ID" << endl;
+	}
+	else{
+		Analyzator_patterns_vector[pattern_index]->Analyzer_register(Analyzers_vector[analyzer_index]);
+	}
+}
+
+void Memory_Profiler::Add_filter_to_pattern(unsigned int filter_index,unsigned int pattern_index){
+
+	if(filter_index > Filters_vector.size()){
+		cout << "Wrong Filter ID" << endl;
+	}
+	else if (pattern_index > Analyzator_patterns_vector.size()){
+		cout << "Wrong Pattern ID" << endl;
+	}
+	else{
+		Analyzator_patterns_vector[pattern_index]->Filter_register(Filters_vector[filter_index]);
+	}
+}
+
+void  Memory_Profiler::Run_pattern_all_process(unsigned int pattern_index){
+
+	for(auto &process : Processes){
+		if (pattern_index > Analyzator_patterns_vector.size()){
+			cout << "Wrong pattern ID" << endl;
+		}
+		else {
+			Run_pattern(pattern_index,process.second);
+		}
+	}
+}
+
+void Memory_Profiler::Run_pattern(unsigned int pattern_index, Process_handler &process){
+	if (pattern_index > Analyzator_patterns_vector.size()){
+			cout << "Wrong pattern ID" << endl;
+		}
+	else{
+		Analyzator_patterns_vector[pattern_index]->Run_analyzers(process);
 	}
 }
 
