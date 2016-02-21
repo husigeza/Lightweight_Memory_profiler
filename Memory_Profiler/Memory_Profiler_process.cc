@@ -681,6 +681,7 @@ void Process_handler::Print_shared_memory() const{
 			cout <<"GMT: " << buffer << dec << memory_profiler_struct->log_entry[j].tval.tv_usec << endl;
 			cout <<"Call stack type: " << dec << memory_profiler_struct->log_entry[j].type << endl;
 			cout <<"Address: " << hex <<memory_profiler_struct->log_entry[j].address << endl;
+			cout <<"Allocation size: " << dec << memory_profiler_struct->log_entry[j].size << endl;
 			cout <<"Call stack size: " << dec << memory_profiler_struct->log_entry[j].backtrace_length << endl;
 			cout <<"Call stack: " << endl;
 			for(int  k=0; k < memory_profiler_struct->log_entry[j].backtrace_length;k++){

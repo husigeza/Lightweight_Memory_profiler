@@ -47,10 +47,12 @@ bool Analyzer::Start(Process_handler &process){
 	}
 }
 
-void Analyzer::Stop()const{
+void Analyzer::Stop(vector<const memory_profiler_sm_object_log_entry_class *> &entries){
 
 	ofstream log_file;
 	log_file.open(("Analyzation_output_"+ process->PID_string + ".txt").c_str(), ios::app);
+
+	entries.clear();
 
 	cout << endl << "Analyzation "<< type << " has finished!" << endl;
 	log_file << endl << "Analyzation "<< type << " has finished!" << endl;

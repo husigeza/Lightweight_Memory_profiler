@@ -30,7 +30,7 @@ public:
 
 	bool Start(Process_handler & process);
 	virtual void Analyze(vector<const memory_profiler_sm_object_log_entry_class *> &entries) const = 0;
-	void Stop()const;
+	void Stop(vector<const memory_profiler_sm_object_log_entry_class *> &entries);
 
 	virtual void Print()const {cout << "   type: " << type << endl;}
 };
