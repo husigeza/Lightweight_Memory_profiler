@@ -36,7 +36,7 @@ extern "C" {
 %token SAVE SYMBOLS MAP
 %token ON OFF
 %token <number> NUMBER
-%token <text> NAME
+%token <text> TEXT
 %token HELP
 %token EXIT_COMMAND
 %token UNRECOGNIZED_TOKEN
@@ -66,15 +66,16 @@ command : PRINT PROCESS NUMBER '\n'      			{mem_prof.Print_process($3);}
 		| PROCESS ALL PROFILED OFF '\n'				{mem_prof.Remove_all_process_from_profiling();}
 		| PROCESS NUMBER ANALYZE '\n'				{mem_prof.Analyze_process($2);}
 		| PROCESS ALL ANALYZE '\n'					{mem_prof.Analyze_all_process();}
-		| ADD PATTERN NAME '\n'						{mem_prof.Create_new_pattern($3);}
+		| ADD PATTERN TEXT '\n'						{mem_prof.Create_new_pattern($3);}
 		| ADD ANALYZER LEAK '\n'					{mem_prof.Create_new_analyzer(make_shared<Memory_Leak_Analyzer>());}
 		| ADD ANALYZER DFREE '\n'					{mem_prof.Create_new_analyzer(make_shared<Double_Free_Analyzer>());}
-		| ADD FILTER SIZE NUMBER NAME'\n'			{mem_prof.Create_new_filter(make_shared<Size_filter>($4,$5));}
+		| ADD FILTER SIZE NUMBER TEXT'\n'			{mem_prof.Create_new_filter_cli($4,$5);}
 		| ADD ANALYZER NUMBER PATTERN NUMBER '\n'	{mem_prof.Add_analyzer_to_pattern($3,$5);}
 		| ADD FILTER NUMBER PATTERN NUMBER '\n'		{mem_prof.Add_filter_to_pattern($3,$5);}
 		| PROCESS ALL ANALYZE PATTERN NUMBER '\n'	{mem_prof.Run_pattern_all_process($5);}
 		| PRINT ANALYZER ALL '\n'					{mem_prof.Print_analyzers();}
 		| PRINT PATTERN ALL '\n'					{mem_prof.Print_patterns();}
+		| PRINT FILTER ALL '\n'						{mem_prof.Print_filters();}
 		| HELP '\n'									{Print_help();}
 		| EXIT_COMMAND '\n'    						{exit(1);}
 		| '\n'										{;}

@@ -36,7 +36,7 @@ extern "C" {
 "exit"  			{return EXIT_COMMAND;}
 "help"				{return HELP;}
 [0-9]+				{yylval.number=atoi(yytext); return NUMBER;}
-[a-zA-Z0-9]*		{yylval.text = yytext; return NAME;}
+[a-zA-Z0-9]*		{yylval.text = yytext; return TEXT;}
 [\n]                {return yytext[0];}
 [ \t]+              ;
 .					{return UNRECOGNIZED_TOKEN;}

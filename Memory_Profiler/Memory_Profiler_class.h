@@ -57,6 +57,7 @@ class Memory_Profiler {
         void Create_new_analyzer(shared_ptr<Analyzer> analyzer);
         void Print_analyzers() const;
 
+        void Create_new_filter_cli(unsigned long size_p, string operation_p);
         void Create_new_filter(shared_ptr<Filter_class> filter);
         void Print_filters() const;
 

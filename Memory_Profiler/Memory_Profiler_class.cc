@@ -418,6 +418,19 @@ void Memory_Profiler::Create_new_analyzer(shared_ptr<Analyzer> analyzer){
 	Analyzers_vector.push_back(analyzer);
 }
 
+void Memory_Profiler::Create_new_filter_cli(unsigned long size_p, string operation_p){
+
+	try{
+		Create_new_filter(make_shared<Size_filter>(size_p,operation_p));
+	}
+	catch(const bool v){
+		if( v == false){
+			cout << "Filter not added, bad operation type." << endl;
+			cout << "Possibilities: equal, less, bigger" << endl;
+		}
+	}
+}
+
 void Memory_Profiler::Create_new_filter(shared_ptr<Filter_class> filter){
 
 	Filters_vector.push_back(filter);
@@ -432,7 +445,7 @@ void Memory_Profiler::Print_patterns() const{
 
 	unsigned int i;
 	for(auto &a : Analyzator_patterns_vector){
-		cout <<"Index: " << dec << i << " : " << endl;
+		cout <<"Index: " << dec << i << endl;
 		(*a).Print();
 		cout << "Analyzers in the pattern: " << endl;
 		(*a).Print_analyzers();
@@ -446,7 +459,7 @@ void Memory_Profiler::Print_filters() const{
 
 	unsigned int i;
 	for(auto &a : Filters_vector){
-		cout <<"Index: " << dec << i << " : " << endl;
+		cout <<"Index: " << dec << i << endl;
 		(*a).Print();
 		i++;
 	}
@@ -456,7 +469,7 @@ void Memory_Profiler::Print_analyzers() const{
 
 	unsigned int i;
 	for(auto &a : Analyzers_vector){
-		cout <<"Index: " << dec << i << " : " << endl;
+		cout <<"Index: " << dec << i << endl;
 		(*a).Print();
 		i++;
 	}
@@ -464,10 +477,10 @@ void Memory_Profiler::Print_analyzers() const{
 
 void Memory_Profiler::Add_analyzer_to_pattern(unsigned int analyzer_index,unsigned int pattern_index){
 
-	if(analyzer_index > Analyzers_vector.size()){
+	if(analyzer_index >= Analyzers_vector.size()){
 		cout << "Wrong Analyzer ID" << endl;
 	}
-	else if (pattern_index > Analyzator_patterns_vector.size()){
+	else if (pattern_index >= Analyzator_patterns_vector.size()){
 		cout << "Wrong Pattern ID" << endl;
 	}
 	else{
@@ -477,10 +490,10 @@ void Memory_Profiler::Add_analyzer_to_pattern(unsigned int analyzer_index,unsign
 
 void Memory_Profiler::Add_filter_to_pattern(unsigned int filter_index,unsigned int pattern_index){
 
-	if(filter_index > Filters_vector.size()){
+	if(filter_index >= Filters_vector.size()){
 		cout << "Wrong Filter ID" << endl;
 	}
-	else if (pattern_index > Analyzator_patterns_vector.size()){
+	else if (pattern_index >= Analyzator_patterns_vector.size()){
 		cout << "Wrong Pattern ID" << endl;
 	}
 	else{
@@ -491,7 +504,7 @@ void Memory_Profiler::Add_filter_to_pattern(unsigned int filter_index,unsigned i
 void  Memory_Profiler::Run_pattern_all_process(unsigned int pattern_index){
 
 	for(auto &process : Processes){
-		if (pattern_index > Analyzator_patterns_vector.size()){
+		if (pattern_index >= Analyzator_patterns_vector.size()){
 			cout << "Wrong pattern ID" << endl;
 		}
 		else {
@@ -501,7 +514,8 @@ void  Memory_Profiler::Run_pattern_all_process(unsigned int pattern_index){
 }
 
 void Memory_Profiler::Run_pattern(unsigned int pattern_index, Process_handler &process){
-	if (pattern_index > Analyzator_patterns_vector.size()){
+
+	if (pattern_index >= Analyzator_patterns_vector.size()){
 			cout << "Wrong pattern ID" << endl;
 		}
 	else{

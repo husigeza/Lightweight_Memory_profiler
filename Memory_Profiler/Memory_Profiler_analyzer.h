@@ -32,7 +32,7 @@ public:
 	virtual void Analyze(vector<const memory_profiler_sm_object_log_entry_class *> &entries) const = 0;
 	void Stop()const;
 
-	virtual void Print()const {cout << "   type: " << type << endl;} ;
+	virtual void Print()const {cout << "   type: " << type << endl;}
 };
 
 class Memory_Leak_Analyzer : public Analyzer{
@@ -48,7 +48,7 @@ class Double_Free_Analyzer : public Analyzer{
 
 public:
 	Double_Free_Analyzer() : Analyzer("Double free analyzer"){}
-	~Double_Free_Analyzer(){};
+	~Double_Free_Analyzer(){}
 
 	void Analyze(vector<const memory_profiler_sm_object_log_entry_class *> &entries) const override;
 

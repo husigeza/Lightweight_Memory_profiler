@@ -57,7 +57,7 @@ void Analyzer_Pattern::Print_analyzers(){
 	vector<shared_ptr<Analyzer> >::iterator it;
 
 	for(it = Analyzer_vector.begin(); it != Analyzer_vector.end(); it++){
-		cout <<"Index: " << dec << distance(Analyzer_vector.begin(), it) << ": " << endl;
+		cout <<"Index: " << dec << distance(Analyzer_vector.begin(), it) << endl;
 		(*it)->Print();
 	}
 }
@@ -67,7 +67,7 @@ void Analyzer_Pattern::Print_filters(){
 	vector<shared_ptr<Filter_class> >::iterator it;
 
 	for(it = Filter_vector.begin(); it != Filter_vector.end(); it++){
-		cout <<"Index: " << dec << distance(Filter_vector.begin(), it) << ": " << endl;
+		cout <<"Index: " << dec << distance(Filter_vector.begin(), it) << endl;
 		(*it)->Print();
 	}
 }
