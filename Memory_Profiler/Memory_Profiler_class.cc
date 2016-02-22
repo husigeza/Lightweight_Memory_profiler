@@ -452,12 +452,16 @@ void Memory_Profiler::Print_patterns() const{
 
 	unsigned int i;
 	for(auto &a : Patterns_vector){
+		cout << endl;
 		cout <<"Index: " << dec << i << endl;
 		(*a).Print();
+		cout << endl;
 		cout << "Analyzers in the pattern: " << endl;
 		(*a).Print_analyzers();
+		cout << endl;
 		cout << "Filters in the pattern: " << endl;
 		(*a).Print_filters();
+		cout << endl << "-----------------------------" << endl;
 		i++;
 	}
 }
@@ -466,6 +470,7 @@ void Memory_Profiler::Print_filters() const{
 
 	unsigned int i;
 	for(auto &a : Filters_vector){
+		cout << endl;
 		cout <<"Index: " << dec << i << endl;
 		(*a).Print();
 		i++;
@@ -476,6 +481,7 @@ void Memory_Profiler::Print_analyzers() const{
 
 	unsigned int i;
 	for(auto &a : Analyzers_vector){
+		cout << endl;
 		cout <<"Index: " << dec << i << endl;
 		(*a).Print();
 		i++;
