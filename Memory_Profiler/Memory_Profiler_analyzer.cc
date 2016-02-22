@@ -7,6 +7,24 @@
 
 using namespace std;
 
+Analyzer::Analyzer(unsigned int type_p){
+	switch (type_p){
+	case 1:
+		type = leak_analyzer;
+		type_string = "Memory Leak analyzer";
+	break;
+	case 2:
+		type = dfree_analyzer;
+		type_string = "Memory Leak analyzer";
+	break;
+	default:
+		type = analyzer_type_unknown;
+		type_string = "Unknown";
+	break;
+	}
+	process = nullptr;
+}
+
 
 bool Analyzer::Start(Process_handler &process){
 
@@ -52,8 +70,8 @@ void Analyzer::Stop(){
 	ofstream log_file;
 	log_file.open(("Analyzation_output_"+ process->PID_string + ".txt").c_str(), ios::app);
 
-	cout << endl << "Analyzation "<< type << " has finished!" << endl;
-	log_file << endl << "Analyzation "<< type << " has finished!" << endl;
+	cout << endl << "Analyzation "<< type_string << " has finished!" << endl;
+	log_file << endl << "Analyzation "<< type_string << " has finished!" << endl;
 
 	log_file.close();
 
@@ -74,7 +92,6 @@ void Memory_Leak_Analyzer::Analyze(vector<const memory_profiler_sm_object_log_en
 	unsigned long int address = 0;
 	unsigned long int total_memory_leaked = 0;
 
-	//Need to count with shared_memory.log_count-1 because shared_memory.log_count shows a bigger value with 1 than the real number of elements
 	vector<const memory_profiler_sm_object_log_entry_class *>::iterator it;
 	for(it = entries.begin(); it != entries.end(); it++){
 

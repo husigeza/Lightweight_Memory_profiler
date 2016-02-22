@@ -425,7 +425,7 @@ void Memory_Profiler::Create_new_filter_cli(unsigned long size_p, string operati
 	}
 	catch(const bool v){
 		if( v == false){
-			cout << "Filter not added, bad operation type." << endl;
+			cout << "Filter not added: bad operation type." << endl;
 			cout << "Possibilities: equal, less, bigger" << endl;
 		}
 	}

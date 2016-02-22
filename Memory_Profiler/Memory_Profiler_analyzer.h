@@ -13,32 +13,39 @@
 
 using namespace std;
 
+enum analyzer_type{
+	leak_analyzer = 1,
+	dfree_analyzer = 2,
+	analyzer_type_unknown
+};
+
 class Analyzer {
 private:
-	string type;
+	unsigned int type;
+	string type_string;
 
 protected:
 
-	Analyzer(string type_p) : type(type_p), process(nullptr) {}
+	Analyzer(unsigned int type_p);
 	virtual ~Analyzer(){}
 
 	Process_handler *process;
 
 public:
 
-	string GetType(){return type;}
+	unsigned int GetType(){return type;}
 
 	bool Start(Process_handler & process);
 	virtual void Analyze(vector<const memory_profiler_sm_object_log_entry_class *> &entries) const = 0;
 	void Stop();
 
-	virtual void Print()const {cout << "   type: " << type << endl;}
+	virtual void Print()const {cout << "   type: " << type_string << endl;}
 };
 
 class Memory_Leak_Analyzer : public Analyzer{
 
 public:
-	Memory_Leak_Analyzer() : Analyzer("Memory leak analyzer"){}
+	Memory_Leak_Analyzer() : Analyzer(leak_analyzer){}
 	~Memory_Leak_Analyzer(){}
 
 	void Analyze(vector<const memory_profiler_sm_object_log_entry_class *> &entries) const override;
@@ -47,7 +54,7 @@ public:
 class Double_Free_Analyzer : public Analyzer{
 
 public:
-	Double_Free_Analyzer() : Analyzer("Double free analyzer"){}
+	Double_Free_Analyzer() : Analyzer(dfree_analyzer){}
 	~Double_Free_Analyzer(){}
 
 	void Analyze(vector<const memory_profiler_sm_object_log_entry_class *> &entries) const override;
