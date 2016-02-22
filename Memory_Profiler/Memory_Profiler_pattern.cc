@@ -1,5 +1,5 @@
 
-#include "Memory_Profiler_analyzer_pattern.h"
+#include "Memory_Profiler_pattern.h"
 
 #include "Memory_Profiler_process.h"
 #include <iostream>
@@ -7,7 +7,7 @@
 
 using namespace std;
 
-Analyzer_Pattern::Analyzer_Pattern(Analyzer_Pattern &&obj){
+Pattern::Pattern(Pattern &&obj){
 	name = obj.name;
 	Analyzer_vector = obj.Analyzer_vector;
 	Filter_vector = obj.Filter_vector;
@@ -17,7 +17,7 @@ Analyzer_Pattern::Analyzer_Pattern(Analyzer_Pattern &&obj){
 	obj.Analyzer_vector.clear();
 	obj.Filter_vector.clear();
 }
-Analyzer_Pattern& Analyzer_Pattern::operator=(Analyzer_Pattern &&obj){
+Pattern& Pattern::operator=(Pattern &&obj){
 
 	if(this != &obj){
 		name = obj.name;
@@ -32,27 +32,27 @@ Analyzer_Pattern& Analyzer_Pattern::operator=(Analyzer_Pattern &&obj){
 }
 
 
-void Analyzer_Pattern::Analyzer_register(shared_ptr<Analyzer> analyzer){
+void Pattern::Analyzer_register(shared_ptr<Analyzer> analyzer){
 
 	Analyzer_vector.push_back(analyzer);
 }
 
-void Analyzer_Pattern::Filter_register(shared_ptr<Filter_class> filter){
+void Pattern::Filter_register(shared_ptr<Filter_class> filter){
 
 	Filter_vector.push_back(filter);
 }
 
-void Analyzer_Pattern::Analyzer_deregister(unsigned int index){
+void Pattern::Analyzer_deregister(unsigned int index){
 
 	Analyzer_vector.erase(Analyzer_vector.begin() + index);
 }
 
-void Analyzer_Pattern::Filter_deregister(unsigned int index){
+void Pattern::Filter_deregister(unsigned int index){
 
 	Filter_vector.erase(Filter_vector.begin() + index);
 }
 
-void Analyzer_Pattern::Print_analyzers(){
+void Pattern::Print_analyzers(){
 
 	vector<shared_ptr<Analyzer> >::iterator it;
 
@@ -62,7 +62,7 @@ void Analyzer_Pattern::Print_analyzers(){
 	}
 }
 
-void Analyzer_Pattern::Print_filters(){
+void Pattern::Print_filters(){
 
 	vector<shared_ptr<Filter_class> >::iterator it;
 
@@ -72,7 +72,7 @@ void Analyzer_Pattern::Print_filters(){
 	}
 }
 
-void Analyzer_Pattern::Filter_entries(const memory_profiler_sm_object_class &shared_memory){
+void Pattern::Filter_entries(const memory_profiler_sm_object_class &shared_memory){
 
 	bool filter = true;
 
@@ -88,7 +88,7 @@ void Analyzer_Pattern::Filter_entries(const memory_profiler_sm_object_class &sha
 }
 
 
-void Analyzer_Pattern::Run_analyzers(Process_handler &process){
+void Pattern::Run_analyzers(Process_handler &process){
 
 
 	for(auto &analyzer : Analyzer_vector){

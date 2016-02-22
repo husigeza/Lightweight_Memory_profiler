@@ -4,7 +4,8 @@
 #include "Memory_Profiler_process.h"
 #include "Memory_Profiler_analyzer.h"
 #include <memory>
-#include "Memory_Profiler_analyzer_pattern.h"
+
+#include "Memory_Profiler_pattern.h"
 
 class Memory_Profiler {
 
@@ -20,7 +21,7 @@ class Memory_Profiler {
         void Start_stop_profiling(const pid_t PID);
         void Start_stop_profiling_all_processes();
 
-        vector< unique_ptr<Analyzer_Pattern> > Analyzator_patterns_vector;
+        vector< unique_ptr<Pattern> > Patterns_vector;
         vector< shared_ptr<Analyzer> > Analyzers_vector;
         vector< shared_ptr<Filter_class> > Filters_vector;
 

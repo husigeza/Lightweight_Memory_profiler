@@ -5,8 +5,8 @@
  *      Author: root
  */
 
-#ifndef MEMORY_PROFILER_ANALYZER_PATTERN_H_
-#define MEMORY_PROFILER_ANALYZER_PATTERN_H_
+#ifndef MEMORY_PROFILER_PATTERN_H_
+#define MEMORY_PROFILER_PATTERN_H_
 
 #include "Memory_Profiler_analyzer.h"
 #include "Memory_Profiler_filter.h"
@@ -17,7 +17,7 @@
 using namespace std;
 
 
-class Analyzer_Pattern{
+class Pattern{
 private:
 	string name;
 	vector< shared_ptr<Analyzer> > Analyzer_vector;
@@ -27,10 +27,10 @@ private:
 	vector<const memory_profiler_sm_object_log_entry_class *> log_entry_vector;
 
 public:
-	Analyzer_Pattern(string name){this->name =  name;}
+	Pattern(string name){this->name =  name;}
 
-	Analyzer_Pattern(Analyzer_Pattern &&obj);
-	Analyzer_Pattern& operator=(Analyzer_Pattern &&obj);
+	Pattern(Pattern &&obj);
+	Pattern& operator=(Pattern &&obj);
 
 	const string Get_name() const {return this->name;}
 
@@ -49,4 +49,4 @@ public:
 };
 
 
-#endif /* MEMORY_PROFILER_ANALYZER_PATTERN_H_ */
+#endif /* MEMORY_PROFILER_PATTERN_H_ */

@@ -29,21 +29,21 @@ lib_path_ppc_2 =       	$(root_path_ppc_2)/powerpc-linux-gnu/lib
 objects = Debug/Memory_Profiler_class.o Debug/Memory_Profiler_process.o Debug/Memory_Profiler_printing_functions.o \
           Debug/Memory_Profiler_memory_map.o Debug/Memory_Profiler_symbol_table.o \
           Debug/Memory_Profiler_analyzer.o \
-          Debug/Memory_Profiler_analyzer_pattern.o \
+          Debug/Memory_Profiler_pattern.o \
           Debug/Memory_Profiler_filter.o \
 		  Debug/Memory_Profiler_tab.tab.o Debug/Memory_Profiler_lex.yy.o
 		  
 objects_ppc = Debug/Memory_Profiler_class_ppc.o Debug/Memory_Profiler_process_ppc.o Debug/Memory_Profiler_printing_functions_ppc.o \
           Debug/Memory_Profiler_memory_map_ppc.o Debug/Memory_Profiler_symbol_table_ppc.o \
           Debug/Memory_Profiler_analyzer_ppc.o \
-          Debug/Memory_Profiler_analyzer_pattern_ppc.o \
+          Debug/Memory_Profiler_pattern_ppc.o \
           Debug/Memory_Profiler_filter_ppc.o \
 		  Debug/Memory_Profiler_tab_ppc.tab.o Debug/Memory_Profiler_lex_ppc.yy.o
 
 objects_ppc_2 = Debug/Memory_Profiler_class_ppc_2.o Debug/Memory_Profiler_process_ppc_2.o Debug/Memory_Profiler_printing_functions_ppc_2.o \
           Debug/Memory_Profiler_memory_map_ppc_2.o Debug/Memory_Profiler_symbol_table_ppc_2.o \
           Debug/Memory_Profiler_analyzer_ppc_2.o \
-          Debug/Memory_Profiler_analyzer_pattern_ppc_2.o \
+          Debug/Memory_Profiler_pattern_ppc_2.o \
           Debug/Memory_Profiler_filter_ppc_2.o \
 		  Debug/Memory_Profiler_tab_ppc_2.tab.o Debug/Memory_Profiler_lex_ppc_2.yy.o
           
@@ -101,14 +101,14 @@ Debug/Memory_Profiler_analyzer_ppc.o: Memory_Profiler_analyzer.cc
 Debug/Memory_Profiler_analyzer_ppc_2.o:	Memory_Profiler_analyzer.cc
 	$(g++_ppc_2) -c -g3 Memory_Profiler_analyzer.cc -std=c++11 -Dbfd_need_config_h -I$(bfd_include_ppc_2) -I$(bfd_config_ppc_2) -o Debug/Memory_Profiler_analyzer_ppc_2.o
 
-Debug/Memory_Profiler_analyzer_pattern.o: Memory_Profiler_analyzer_pattern.cc
-	g++ -c -g3 Memory_Profiler_analyzer_pattern.cc -std=c++11 -o Debug/Memory_Profiler_analyzer_pattern.o
+Debug/Memory_Profiler_pattern.o: Memory_Profiler_pattern.cc
+	g++ -c -g3 Memory_Profiler_pattern.cc -std=c++11 -o Debug/Memory_Profiler_pattern.o
 
-Debug/Memory_Profiler_analyzer_pattern_ppc.o: Memory_Profiler_analyzer_pattern.cc
-	$(g++_ppc) -c -g3 Memory_Profiler_analyzer_pattern.cc -std=c++11 -Dbfd_need_config_h -I$(bfd_include_ppc) -I$(bfd_config_ppc) -o Debug/Memory_Profiler_analyzer_pattern_ppc.o
+Debug/Memory_Profiler_pattern_ppc.o: Memory_Profiler_pattern.cc
+	$(g++_ppc) -c -g3 Memory_Profiler_pattern.cc -std=c++11 -Dbfd_need_config_h -I$(bfd_include_ppc) -I$(bfd_config_ppc) -o Debug/Memory_Profiler_pattern_ppc.o
 
-Debug/Memory_Profiler_analyzer_pattern_ppc_2.o:	Memory_Profiler_analyzer_pattern.cc
-	$(g++_ppc_2) -c -g3 Memory_Profiler_analyzer_pattern.cc -std=c++11 -Dbfd_need_config_h -I$(bfd_include_ppc_2) -I$(bfd_config_ppc_2) -o Debug/Memory_Profiler_analyzer_pattern_ppc_2.o
+Debug/Memory_Profiler_pattern_ppc_2.o:	Memory_Profiler_pattern.cc
+	$(g++_ppc_2) -c -g3 Memory_Profiler_pattern.cc -std=c++11 -Dbfd_need_config_h -I$(bfd_include_ppc_2) -I$(bfd_config_ppc_2) -o Debug/Memory_Profiler_pattern_ppc_2.o
 
 Debug/Memory_Profiler_filter.o: Memory_Profiler_filter.cc
 	g++ -c -g3 Memory_Profiler_filter.cc -std=c++11 -o Debug/Memory_Profiler_filter.o
