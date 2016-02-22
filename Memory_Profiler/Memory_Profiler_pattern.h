@@ -29,12 +29,16 @@ private:
 public:
 	Pattern(string name){this->name =  name;}
 
-	Pattern(Pattern &&obj);
-	Pattern& operator=(Pattern &&obj);
+	bool operator==(const string Pattern_name){
+		if(name == Pattern_name) return true;
+		else return false;
+	}
 
 	const string Get_name() const {return this->name;}
 
 	void Print() const {cout << "Name: " << this->name;}
+
+	bool Check_process(Process_handler & process);
 
 	void Analyzer_register(shared_ptr<Analyzer> analyzer);
 	void Analyzer_deregister(unsigned int index);

@@ -26,43 +26,15 @@ Analyzer::Analyzer(unsigned int type_p){
 }
 
 
-bool Analyzer::Start(Process_handler &process){
-
+void Analyzer::Start(Process_handler &process){
 
 	ofstream log_file;
 	log_file.open(("Analyzation_output_"+ process.PID_string + ".txt").c_str(), ios::app);
 
-	try{
-		if(process.Is_shared_memory_initialized() == true){
-			if(process.Get_profiled() == true){
-				log_file << "Process "<< process.PID_string <<" is still being profiled, stop profiling first! "<< endl;
-				cout << "Process "<< process.PID_string <<" is still being profiled, stop profiling first! "<< endl;
-				throw false;
-			}
-			const memory_profiler_sm_object_class &shared_memory = *process.Get_shared_memory();
-			if(shared_memory.log_count == 0){
-				cout << endl << "shared_memory log_count = 0, no data to analyze!" << endl;
-				log_file << endl << "shared_memory log_count = 0, no data to analyze!" << endl;
-				throw false;
-			}
-		}
-		else{
-			cout << endl << "NO DATA AVAILABLE, shared memory has not been initialized!" << endl;
-			log_file << endl << "NO DATA AVAILABLE, shared memory has not been initialized!" << endl;
-			throw false;
-		}
-		throw true;
-	}
-	catch(bool b){
-		log_file.close();
-		if(b == true){
-			this->process = &process;
-			return true;
-		}
-		else {
-			return false;
-		}
-	}
+	cout << "Analyzer " << type_string << " starting..." << endl;
+	log_file << "Analyzer " << type_string << " starting..." << endl;
+
+	this->process = &process;
 }
 
 void Analyzer::Stop(){
@@ -70,8 +42,8 @@ void Analyzer::Stop(){
 	ofstream log_file;
 	log_file.open(("Analyzation_output_"+ process->PID_string + ".txt").c_str(), ios::app);
 
-	cout << endl << "Analyzation "<< type_string << " has finished!" << endl;
-	log_file << endl << "Analyzation "<< type_string << " has finished!" << endl;
+	cout << endl << "Analyzer "<< type_string << " has finished!" << endl;
+	log_file << endl << "Analyzer "<< type_string << " has finished!" << endl;
 
 	log_file.close();
 

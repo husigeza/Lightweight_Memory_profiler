@@ -71,7 +71,9 @@ command : PRINT PROCESS NUMBER '\n'      			{mem_prof.Print_process($3);}
 		| ADD ANALYZER DFREE '\n'					{mem_prof.Create_new_analyzer(make_shared<Double_Free_Analyzer>());}
 		| ADD FILTER SIZE NUMBER TEXT'\n'			{mem_prof.Create_new_filter_cli($4,$5);}
 		| ADD ANALYZER NUMBER PATTERN NUMBER '\n'	{mem_prof.Add_analyzer_to_pattern($3,$5);}
+		| ADD ANALYZER NUMBER PATTERN TEXT '\n'		{mem_prof.Add_analyzer_to_pattern_by_name($3,$5);}
 		| ADD FILTER NUMBER PATTERN NUMBER '\n'		{mem_prof.Add_filter_to_pattern($3,$5);}
+		| ADD FILTER NUMBER PATTERN TEXT '\n'		{mem_prof.Add_filter_to_pattern_by_name($3,$5);}
 		| PROCESS ALL ANALYZE PATTERN NUMBER '\n'	{mem_prof.Run_pattern_all_process($5);}
 		| PRINT ANALYZER ALL '\n'					{mem_prof.Print_analyzers();}
 		| PRINT PATTERN ALL '\n'					{mem_prof.Print_patterns();}

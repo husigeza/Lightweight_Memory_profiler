@@ -53,6 +53,7 @@ class Memory_Profiler {
         void Analyze_process_dummy_free(const pid_t PID);
 
         void Create_new_pattern(string name);
+        vector< unique_ptr<Pattern> >::iterator Find_pattern_by_name(string Pattern_name);
         void Print_patterns() const;
 
         void Create_new_analyzer(shared_ptr<Analyzer> analyzer);
@@ -63,7 +64,9 @@ class Memory_Profiler {
         void Print_filters() const;
 
         void Add_analyzer_to_pattern(unsigned int analyzer_index,unsigned int pattern_index);
+        void Add_analyzer_to_pattern_by_name(unsigned int analyzer_index,string pattern_name);
         void Add_filter_to_pattern(unsigned int filter_index,unsigned int pattern_index);
+        void Add_filter_to_pattern_by_name(unsigned int analyzer_index,string pattern_name);
 
         void Run_pattern(unsigned int pattern_index, Process_handler &process);
         void Run_pattern_all_process(unsigned int pattern_index);
