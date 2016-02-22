@@ -95,7 +95,8 @@ void Analyzer_Pattern::Run_analyzers(Process_handler &process){
 		if(analyzer->Start(process)){
 			Filter_entries(*process.Get_shared_memory());
 			analyzer->Analyze(log_entry_vector);
-			analyzer->Stop(log_entry_vector);
+			analyzer->Stop();
+			log_entry_vector.clear();
 		}
 	}
 }
