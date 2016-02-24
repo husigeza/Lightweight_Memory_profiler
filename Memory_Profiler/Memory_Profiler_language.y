@@ -69,7 +69,7 @@ command : PRINT PROCESS NUMBER '\n'      			{mem_prof.Print_process($3);}
 		| ADD PATTERN TEXT '\n'						{mem_prof.Create_new_pattern($3);}
 		| ADD ANALYZER LEAK '\n'					{mem_prof.Create_new_analyzer(unique_ptr<Memory_Leak_Analyzer> (new Memory_Leak_Analyzer()));}
 		| ADD ANALYZER DFREE '\n'					{mem_prof.Create_new_analyzer(unique_ptr<Double_Free_Analyzer> (new Double_Free_Analyzer()));}
-		| ADD FILTER SIZE NUMBER TEXT'\n'			{mem_prof.Create_new_filter_cli($4,$5);}
+		| ADD FILTER SIZE NUMBER TEXT'\n'			{mem_prof.Create_new_size_filter_cli($4,$5);}
 		| ADD ANALYZER NUMBER PATTERN NUMBER '\n'	{mem_prof.Add_analyzer_to_pattern($3,$5);}
 		| ADD ANALYZER NUMBER PATTERN TEXT '\n'		{mem_prof.Add_analyzer_to_pattern_by_name($3,$5);}
 		| REMOVE ANALYZER NUMBER '\n'				{mem_prof.Remove_analyzer($3);}
@@ -77,6 +77,9 @@ command : PRINT PROCESS NUMBER '\n'      			{mem_prof.Print_process($3);}
 		| REMOVE ANALYZER NUMBER PATTERN TEXT '\n'	{mem_prof.Remove_analyzer_from_pattern_by_name($3,$5);}
 		| ADD FILTER NUMBER PATTERN NUMBER '\n'		{mem_prof.Add_filter_to_pattern($3,$5);}
 		| ADD FILTER NUMBER PATTERN TEXT '\n'		{mem_prof.Add_filter_to_pattern_by_name($3,$5);}
+		| REMOVE FILTER NUMBER '\n'					{mem_prof.Remove_filter($3);}
+		| REMOVE FILTER NUMBER PATTERN NUMBER '\n'	{mem_prof.Remove_filter_from_pattern($3,$5);}
+		| REMOVE FILTER NUMBER PATTERN TEXT '\n'	{mem_prof.Remove_filter_from_pattern_by_name($3,$5);}
 		| PROCESS ALL ANALYZE PATTERN NUMBER '\n'	{mem_prof.Run_pattern_all_process($5);}
 		| PRINT ANALYZER ALL '\n'					{mem_prof.Print_analyzers();}
 		| PRINT PATTERN ALL '\n'					{mem_prof.Print_patterns();}
@@ -135,6 +138,9 @@ void Print_help(){
 	cout <<"remove analyzer index" << endl;
 	cout <<"remove analyzer index pattern index" << endl;
 	cout <<"remove analyzer index pattern name" << endl;
+	cout <<"remove filter index" << endl;
+	cout <<"remove filter index pattern index" << endl;
+	cout <<"remove filter index pattern name" << endl;
 	
 	cout<< endl;
 	

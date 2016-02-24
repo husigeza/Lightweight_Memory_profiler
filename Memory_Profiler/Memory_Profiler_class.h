@@ -25,7 +25,7 @@ class Memory_Profiler {
 
         vector< unique_ptr<Pattern> > Patterns_vector;
         vector< unique_ptr<Analyzer> > Analyzers_vector;
-        vector< shared_ptr<Filter_class> > Filters_vector;
+        vector< unique_ptr<Filter> > Filters_vector;
 
     public:
         Memory_Profiler();
@@ -61,8 +61,8 @@ class Memory_Profiler {
         void Create_new_analyzer(unique_ptr<Analyzer> analyzer);
         void Print_analyzers() const;
 
-        void Create_new_filter_cli(unsigned long size_p, string operation_p);
-        void Create_new_filter(shared_ptr<Filter_class> filter);
+        void Create_new_size_filter_cli(unsigned long size_p, string operation_p);
+        void Create_new_filter(unique_ptr<Filter> filter);
         void Print_filters() const;
 
         void Add_analyzer_to_pattern(unsigned int analyzer_index,unsigned int pattern_index);
@@ -73,6 +73,9 @@ class Memory_Profiler {
         void Remove_analyzer(unsigned int analyzer_index);
         void Remove_analyzer_from_pattern(unsigned int analyzer_index,unsigned int pattern_index);
         void Remove_analyzer_from_pattern_by_name(unsigned int analyzer_index,string pattern_name);
+        void Remove_filter(unsigned int filter_index);
+        void Remove_filter_from_pattern(unsigned int filter_index,unsigned int pattern_index);
+        void Remove_filter_from_pattern_by_name(unsigned int filter_index,string pattern_name);
 
         void Run_pattern(unsigned int pattern_index, Process_handler &process);
         void Run_pattern_all_process(unsigned int pattern_index);

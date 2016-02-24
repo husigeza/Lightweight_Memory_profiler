@@ -14,19 +14,20 @@
 using namespace std;
 
 class Analyzer;
-class Filter_class;
+class Filter;
 
 
 class Pattern{
 private:
 	string name;
 	vector< unique_ptr<Analyzer>* > Analyzer_vector;
-	vector< shared_ptr<Filter_class> > Filter_vector;
+	vector< unique_ptr<Filter>* > Filter_vector;
 
 	void Filter_entries(const memory_profiler_sm_object_class &shared_memory);
 	vector<const memory_profiler_sm_object_log_entry_class *> log_entry_vector;
 
 	void Notify_analyzer(unsigned int index);
+	void Notify_filter(unsigned int index);
 
 public:
 	Pattern(string name);
@@ -47,8 +48,10 @@ public:
 	void Analyzer_deregister(unsigned int index);
 	void Analyzer_deregister(const Analyzer &analyzer);
 
-	void Filter_register(shared_ptr<Filter_class> filter);
+	void Filter_register(unique_ptr<Filter>* filter);
+
 	void Filter_deregister(unsigned int index);
+	void Filter_deregister(const Filter &filter);
 
 	void Print_analyzers();
 	void Print_filters();

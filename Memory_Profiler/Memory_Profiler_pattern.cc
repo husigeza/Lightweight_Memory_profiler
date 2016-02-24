@@ -44,6 +44,11 @@ void Pattern::Notify_analyzer(unsigned int index){
 	(**Analyzer_vector[index]).Pattern_deregister(name);
 }
 
+void Pattern::Notify_filter(unsigned int index){
+
+	(**Filter_vector[index]).Pattern_deregister(name);
+}
+
 bool Pattern::Check_process(Process_handler & process){
 
 	ofstream log_file;
@@ -93,9 +98,15 @@ void Pattern::Analyzer_register(unique_ptr<Analyzer>* analyzer){
 	}
 }
 
-void Pattern::Filter_register(shared_ptr<Filter_class> filter){
+void Pattern::Filter_register(unique_ptr<Filter>* filter){
 
-	Filter_vector.push_back(filter);
+	auto it = find(Filter_vector.begin(),Filter_vector.end(),filter);
+		if(it == Filter_vector.end()){
+			Filter_vector.push_back(filter);
+		}
+		else {
+			cout << "This filter has been already added to this pattern!" << endl;
+		}
 }
 
 void Pattern::Analyzer_deregister(unsigned int index){
@@ -127,7 +138,29 @@ void Pattern::Analyzer_deregister(const Analyzer &analyzer){
 
 void Pattern::Filter_deregister(unsigned int index){
 
-	Filter_vector.erase(Filter_vector.begin() + index);
+	if(index >= Filter_vector.size()){
+		cout << "Wrong Filter ID" << endl;
+	}
+	else{
+		Notify_filter(index);
+		Filter_vector.erase(Filter_vector.begin() + index);
+	}
+}
+
+bool operator==(unique_ptr<Filter>* unq_filter, const Filter &filter){
+	if(&(**unq_filter) == &filter) return true;
+	else return false;
+}
+
+void Pattern::Filter_deregister(const Filter &filter){
+
+	vector< unique_ptr<Filter>* >::iterator it = find(Filter_vector.begin(),Filter_vector.end(),filter);
+	if(it != Filter_vector.end()){
+		Filter_vector.erase(it);
+	}
+	else {
+		//cout << "Filter has not been bounded to this pattern" << endl;
+	}
 }
 
 void Pattern::Print_analyzers(){
@@ -142,11 +175,11 @@ void Pattern::Print_analyzers(){
 
 void Pattern::Print_filters(){
 
-	vector<shared_ptr<Filter_class> >::iterator it;
+	vector<unique_ptr<Filter>* >::iterator it;
 
 	for(it = Filter_vector.begin(); it != Filter_vector.end(); it++){
 		cout <<"Index: " << dec << distance(Filter_vector.begin(), it) << endl;
-		(*it)->Print();
+		cout << "   " << (**it)->Get_type_string() << endl;
 	}
 }
 
@@ -156,7 +189,7 @@ void Pattern::Filter_entries(const memory_profiler_sm_object_class &shared_memor
 
 	for(unsigned long int i = 0; i < shared_memory.log_count ; ++i){
 		for(auto &filter_entry : Filter_vector){
-			filter &= filter_entry->Filter(shared_memory.log_entry[i]);
+			filter &= (**filter_entry).Filter_func(shared_memory.log_entry[i]);
 		}
 		if(filter){
 			log_entry_vector.push_back(&shared_memory.log_entry[i]);

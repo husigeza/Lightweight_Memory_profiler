@@ -428,10 +428,10 @@ void Memory_Profiler::Remove_analyzer(unsigned int analyzer_index){
 	}
 }
 
-void Memory_Profiler::Create_new_filter_cli(unsigned long size_p, string operation_p){
+void Memory_Profiler::Create_new_size_filter_cli(unsigned long size_p, string operation_p){
 
 	try{
-		Create_new_filter(make_shared<Size_filter>(size_p,operation_p));
+		Create_new_filter(unique_ptr<Size_filter> (new Size_filter(size_p,operation_p)));
 	}
 	catch(const bool v){
 		if( v == false){
@@ -441,9 +441,9 @@ void Memory_Profiler::Create_new_filter_cli(unsigned long size_p, string operati
 	}
 }
 
-void Memory_Profiler::Create_new_filter(shared_ptr<Filter_class> filter){
+void Memory_Profiler::Create_new_filter(unique_ptr<Filter> filter){
 
-	Filters_vector.push_back(filter);
+	Filters_vector.push_back(move(filter));
 }
 
 void Memory_Profiler::Create_new_pattern(string name){
@@ -539,7 +539,6 @@ void Memory_Profiler::Remove_analyzer_from_pattern(unsigned int analyzer_index,u
 
 void Memory_Profiler::Add_analyzer_to_pattern_by_name(unsigned int analyzer_index,string pattern_name){
 
-
 	auto pattern = Find_pattern_by_name(pattern_name);
 
 	if (pattern == Patterns_vector.end()){
@@ -562,6 +561,35 @@ void Memory_Profiler::Remove_analyzer_from_pattern_by_name(unsigned int analyzer
 
 }
 
+void Memory_Profiler::Remove_filter(unsigned int filter_index){
+
+	if(filter_index >= Filters_vector.size()){
+		cout << "Wrong filter index" << endl;
+	}
+	else{
+		Filters_vector.erase(Filters_vector.begin() + filter_index);
+	}
+}
+void Memory_Profiler::Remove_filter_from_pattern(unsigned int filter_index,unsigned int pattern_index){
+
+	if (pattern_index >= Patterns_vector.size()){
+			cout << "Wrong Pattern ID" << endl;
+	}
+	else if(filter_index >= (*Patterns_vector[pattern_index]).Get_number_of_analyzers()){
+		cout << "Wrong Filter ID" << endl;
+	}
+	else{
+		(*Patterns_vector[pattern_index]).Filter_deregister(filter_index);
+	}
+}
+
+void Memory_Profiler::Remove_filter_from_pattern_by_name(unsigned int filter_index,string pattern_name){
+
+	auto pattern = Find_pattern_by_name(pattern_name);
+
+	(**pattern).Filter_deregister(filter_index);
+}
+
 void Memory_Profiler::Add_filter_to_pattern(unsigned int filter_index,unsigned int pattern_index){
 
 	if(filter_index >= Filters_vector.size()){
@@ -571,7 +599,8 @@ void Memory_Profiler::Add_filter_to_pattern(unsigned int filter_index,unsigned i
 		cout << "Wrong Pattern ID" << endl;
 	}
 	else{
-		Patterns_vector[pattern_index]->Filter_register(Filters_vector[filter_index]);
+		(*Patterns_vector[pattern_index]).Filter_register(&Filters_vector[filter_index]);
+		(*Filters_vector[filter_index]).Pattern_register(&Patterns_vector[pattern_index]);
 	}
 }
 
@@ -587,7 +616,8 @@ void Memory_Profiler::Add_filter_to_pattern_by_name(unsigned int filter_index,st
 		cout << "Wrong Pattern name" << endl;
 	}
 	else{
-		(**pattern).Filter_register(Filters_vector[filter_index]);
+		(**pattern).Filter_register(&Filters_vector[filter_index]);
+		(*Filters_vector[filter_index]).Pattern_register(&(*pattern));
 	}
 }
 

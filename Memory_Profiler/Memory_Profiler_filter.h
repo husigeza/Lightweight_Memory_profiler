@@ -8,10 +8,12 @@
 #ifndef MEMORY_PROFILER_FILTER_H_
 #define MEMORY_PROFILER_FILTER_H_
 
-#include "Memory_Profiler_process.h"
-#include <iostream>
+
 
 using namespace std;
+
+class Pattern;
+
 
 enum filter_type{
 	size_filter = 1,
@@ -26,21 +28,30 @@ enum operation_type{
 	operation_type_unknown
 };
 
-class Filter_class {
+class Filter {
 private:
 	unsigned int filter_type;
+	vector<unique_ptr<Pattern>* > Pattern_vector;
 
 protected:
-	Filter_class(unsigned int filtertype, string type_string_p);
-	virtual ~Filter_class(){}
 	string type_string;
+	Filter(unsigned int filtertype, string type_string_p);
 
 public:
-	virtual bool Filter(const memory_profiler_sm_object_log_entry_class &log_entry) const = 0;
-	virtual void Print() const = 0;
+	virtual ~Filter();
+
+	unsigned int GetType()const;
+	string Get_type_string() const;
+	virtual void Print()const = 0;
+	void Print_patterns()const;
+
+	virtual bool Filter_func(const memory_profiler_sm_object_log_entry_class &log_entry) const = 0;
+
+	void Pattern_register(unique_ptr<Pattern>* pattern);
+	void Pattern_deregister(string name);
 };
 
-class Size_filter : public Filter_class{
+class Size_filter : public Filter{
 
 unsigned int operation;
 string operation_string;
@@ -57,7 +68,7 @@ public:
 
 	void Print() const override;
 
-	bool Filter(const memory_profiler_sm_object_log_entry_class &log_entry) const override;
+	bool Filter_func(const memory_profiler_sm_object_log_entry_class &log_entry) const override;
 };
 
 
