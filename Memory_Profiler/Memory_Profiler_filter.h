@@ -31,10 +31,9 @@ private:
 	unsigned int filter_type;
 
 protected:
-	Filter_class(unsigned int filtertype, string type_string_p) : filter_type(filtertype), type_string(type_string_p){}
+	Filter_class(unsigned int filtertype, string type_string_p);
 	virtual ~Filter_class(){}
 	string type_string;
-
 
 public:
 	virtual bool Filter(const memory_profiler_sm_object_log_entry_class &log_entry) const = 0;
@@ -51,10 +50,10 @@ public:
 	Size_filter(unsigned long size_p, string operation_p);
 	~Size_filter(){}
 
-	unsigned long Get_size()const {return size;}
-	void Set_size(unsigned long new_size) {size = new_size;}
+	unsigned long Get_size()const;
+	void Set_size(unsigned long new_size);
 
-	string Get_operation()const {return operation_string;}
+	string Get_operation()const;
 
 	void Print() const override;
 

@@ -413,9 +413,19 @@ void Memory_Profiler::Analyze_all_process(){
 	}
 }
 
-void Memory_Profiler::Create_new_analyzer(shared_ptr<Analyzer> analyzer){
+void Memory_Profiler::Create_new_analyzer(unique_ptr<Analyzer> analyzer){
 
-	Analyzers_vector.push_back(analyzer);
+	Analyzers_vector.push_back(move(analyzer));
+}
+
+void Memory_Profiler::Remove_analyzer(unsigned int analyzer_index){
+
+	if(analyzer_index >= Analyzers_vector.size()){
+		cout << "Wrong analyzer index" << endl;
+	}
+	else{
+		Analyzers_vector.erase(Analyzers_vector.begin() + analyzer_index);
+	}
 }
 
 void Memory_Profiler::Create_new_filter_cli(unsigned long size_p, string operation_p){
@@ -444,7 +454,7 @@ void Memory_Profiler::Create_new_pattern(string name){
 		cout << "Pattern with that name already exists!" << endl;
 	}
 	else{
-		Patterns_vector.push_back( move(unique_ptr<Pattern> (new Pattern(name))) );
+		Patterns_vector.push_back(unique_ptr<Pattern> (new Pattern(name)));
 	}
 }
 
@@ -509,22 +519,52 @@ void Memory_Profiler::Add_analyzer_to_pattern(unsigned int analyzer_index,unsign
 		cout << "Wrong Pattern ID" << endl;
 	}
 	else{
-		Patterns_vector[pattern_index]->Analyzer_register(Analyzers_vector[analyzer_index]);
+		(*Patterns_vector[pattern_index]).Analyzer_register(&Analyzers_vector[analyzer_index]);
+		(*Analyzers_vector[analyzer_index]).Pattern_register(&Patterns_vector[pattern_index]);
+	}
+}
+
+void Memory_Profiler::Remove_analyzer_from_pattern(unsigned int analyzer_index,unsigned int pattern_index){
+
+	if (pattern_index >= Patterns_vector.size()){
+			cout << "Wrong Pattern ID" << endl;
+	}
+	else if(analyzer_index >= (*Patterns_vector[pattern_index]).Get_number_of_analyzers()){
+		cout << "Wrong Analyzer ID" << endl;
+	}
+	else{
+		(*Patterns_vector[pattern_index]).Notify_analyzer(analyzer_index);
+		(*Patterns_vector[pattern_index]).Analyzer_deregister(analyzer_index);
 	}
 }
 
 void Memory_Profiler::Add_analyzer_to_pattern_by_name(unsigned int analyzer_index,string pattern_name){
 
+
 	auto pattern = Find_pattern_by_name(pattern_name);
 
-	if(analyzer_index >= Analyzers_vector.size()){
+	if (pattern == Patterns_vector.end()){
+		cout << "Wrong pattern name!" << endl;
+	}
+	else if(analyzer_index >= Analyzers_vector.size()){
 		cout << "Wrong Analyzer ID" << endl;
 	}
-	else if (pattern == Patterns_vector.end()){
-		cout << "Wrong Pattern name" << endl;
+	else{
+		(**pattern).Analyzer_register(&Analyzers_vector[analyzer_index]);
+		(*Analyzers_vector[analyzer_index]).Pattern_register(&(*pattern));
+	}
+}
+
+void Memory_Profiler::Remove_analyzer_from_pattern_by_name(unsigned int analyzer_index,string pattern_name){
+
+	auto pattern = Find_pattern_by_name(pattern_name);
+
+	if(analyzer_index >= (**pattern).Get_number_of_analyzers()){
+		cout << "Wrong Analyzer ID" << endl;
 	}
 	else{
-		(**pattern).Analyzer_register(Analyzers_vector[analyzer_index]);
+		(**pattern).Notify_analyzer(analyzer_index);
+		(**pattern).Analyzer_deregister(analyzer_index);
 	}
 }
 

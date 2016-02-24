@@ -2,9 +2,11 @@
 #define MEMORY_PROFILER_H_INCLUDED
 
 #include "Memory_Profiler_process.h"
-#include "Memory_Profiler_analyzer.h"
+
 #include <memory>
 
+#include "Memory_Profiler_analyzer.h"
+#include "Memory_Profiler_filter.h"
 #include "Memory_Profiler_pattern.h"
 
 class Memory_Profiler {
@@ -22,7 +24,7 @@ class Memory_Profiler {
         void Start_stop_profiling_all_processes();
 
         vector< unique_ptr<Pattern> > Patterns_vector;
-        vector< shared_ptr<Analyzer> > Analyzers_vector;
+        vector< unique_ptr<Analyzer> > Analyzers_vector;
         vector< shared_ptr<Filter_class> > Filters_vector;
 
     public:
@@ -56,7 +58,7 @@ class Memory_Profiler {
         vector< unique_ptr<Pattern> >::iterator Find_pattern_by_name(string Pattern_name);
         void Print_patterns() const;
 
-        void Create_new_analyzer(shared_ptr<Analyzer> analyzer);
+        void Create_new_analyzer(unique_ptr<Analyzer> analyzer);
         void Print_analyzers() const;
 
         void Create_new_filter_cli(unsigned long size_p, string operation_p);
@@ -67,6 +69,10 @@ class Memory_Profiler {
         void Add_analyzer_to_pattern_by_name(unsigned int analyzer_index,string pattern_name);
         void Add_filter_to_pattern(unsigned int filter_index,unsigned int pattern_index);
         void Add_filter_to_pattern_by_name(unsigned int analyzer_index,string pattern_name);
+
+        void Remove_analyzer(unsigned int analyzer_index);
+        void Remove_analyzer_from_pattern(unsigned int analyzer_index,unsigned int pattern_index);
+        void Remove_analyzer_from_pattern_by_name(unsigned int analyzer_index,string pattern_name);
 
         void Run_pattern(unsigned int pattern_index, Process_handler &process);
         void Run_pattern_all_process(unsigned int pattern_index);

@@ -1,9 +1,14 @@
+#include "Memory_Profiler_process.h"
 
-#include "Memory_Profiler_analyzer.h"
+
 #include <fstream>
 #include <iostream>
 #include <vector>
 #include <algorithm>
+
+
+#include "Memory_Profiler_pattern.h"
+#include "Memory_Profiler_analyzer.h"
 
 using namespace std;
 
@@ -15,7 +20,7 @@ Analyzer::Analyzer(unsigned int type_p){
 	break;
 	case 2:
 		type = dfree_analyzer;
-		type_string = "Memory Leak analyzer";
+		type_string = "Double free analyzer";
 	break;
 	default:
 		type = analyzer_type_unknown;
@@ -25,6 +30,44 @@ Analyzer::Analyzer(unsigned int type_p){
 	process = nullptr;
 }
 
+Analyzer::~Analyzer(){
+	for(auto &pattern : Pattern_vector){
+		(**pattern).Analyzer_deregister(*this);
+
+	}
+}
+
+unsigned int Analyzer::GetType(){
+	return type;
+}
+
+string Analyzer::Get_type_string() const{
+	return type_string;
+}
+
+void Analyzer::Pattern_register(unique_ptr<Pattern>* pattern){
+	Pattern_vector.push_back(pattern);
+}
+
+
+bool operator==(unique_ptr<Pattern>* pattern, string name){
+	if((**pattern).Get_name() == name ) return true;
+	else return false;
+}
+
+void Analyzer::Pattern_deregister(string name){
+	auto pattern = find(Pattern_vector.begin(), Pattern_vector.end(), name);
+	Pattern_vector.erase(pattern);
+}
+
+
+void Analyzer::Print() const{
+	cout << "   type: " << type_string << endl;
+	cout << "   Analyzer is bounded to patterns:" << endl;
+	for (auto pattern : Pattern_vector){
+		cout <<"      "<< (**pattern).Get_name() << endl;
+	}
+}
 
 void Analyzer::Start(Process_handler &process){
 

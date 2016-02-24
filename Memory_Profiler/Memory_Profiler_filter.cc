@@ -1,6 +1,8 @@
 #include "Memory_Profiler_filter.h"
 
 
+Filter_class::Filter_class(unsigned int filtertype, string type_string_p) : filter_type(filtertype), type_string(type_string_p){}
+
 Size_filter::Size_filter(unsigned long size_p, string operation_p) : Filter_class(size_filter,"Size filter"), size(size_p){
 
 	if(operation_p.find("equal") != string::npos){
@@ -20,7 +22,18 @@ Size_filter::Size_filter(unsigned long size_p, string operation_p) : Filter_clas
 		operation_string = "Unknown";
 		throw false;
 	}
+}
 
+unsigned long Size_filter::Get_size()const {
+	return size;
+}
+
+void Size_filter::Set_size(unsigned long new_size){
+	size = new_size;
+}
+
+string Size_filter::Get_operation()const {
+	return operation_string;
 }
 
 void Size_filter::Print() const{

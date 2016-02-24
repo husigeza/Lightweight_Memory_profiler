@@ -1,13 +1,47 @@
-
-#include "Memory_Profiler_pattern.h"
-
 #include "Memory_Profiler_process.h"
+
 #include <iostream>
 #include <iterator>
+#include <vector>
+#include <memory>
+#include <algorithm>
+
+
+#include "Memory_Profiler_analyzer.h"
+#include "Memory_Profiler_filter.h"
+#include "Memory_Profiler_pattern.h"
 
 using namespace std;
 
 
+Pattern::Pattern(string name){
+	this->name =  name;
+}
+
+bool Pattern::operator==(const string Pattern_name){
+	if(name == Pattern_name) return true;
+	else return false;
+}
+
+const string Pattern::Get_name() const {
+	return this->name;
+}
+
+void Pattern::Print() const {
+	cout << "Name: " << this->name;
+}
+
+unsigned int Pattern::Get_number_of_analyzers() {
+	return Analyzer_vector.size();
+}
+
+unsigned int Pattern::Get_number_of_filters() {
+	return Filter_vector.size();
+}
+
+void Pattern::Notify_analyzer(unsigned int index){
+	(**Analyzer_vector[index]).Pattern_deregister(name);
+}
 
 bool Pattern::Check_process(Process_handler & process){
 
@@ -47,7 +81,7 @@ bool Pattern::Check_process(Process_handler & process){
 }
 
 
-void Pattern::Analyzer_register(shared_ptr<Analyzer> analyzer){
+void Pattern::Analyzer_register(unique_ptr<Analyzer>* analyzer){
 
 	Analyzer_vector.push_back(analyzer);
 }
@@ -62,6 +96,17 @@ void Pattern::Analyzer_deregister(unsigned int index){
 	Analyzer_vector.erase(Analyzer_vector.begin() + index);
 }
 
+bool operator==(unique_ptr<Analyzer>* unq_analyzer, const Analyzer &analyzer){
+	if(&(**unq_analyzer) == &analyzer) return true;
+	else return false;
+}
+
+void Pattern::Analyzer_deregister(const Analyzer &analyzer){
+
+	vector< unique_ptr<Analyzer>* >::iterator it = find(Analyzer_vector.begin(),Analyzer_vector.end(),analyzer);
+	Analyzer_vector.erase(it);
+}
+
 void Pattern::Filter_deregister(unsigned int index){
 
 	Filter_vector.erase(Filter_vector.begin() + index);
@@ -69,11 +114,11 @@ void Pattern::Filter_deregister(unsigned int index){
 
 void Pattern::Print_analyzers(){
 
-	vector<shared_ptr<Analyzer> >::iterator it;
+	vector<unique_ptr<Analyzer>* >::iterator it;
 
 	for(it = Analyzer_vector.begin(); it != Analyzer_vector.end(); it++){
 		cout <<"Index: " << dec << distance(Analyzer_vector.begin(), it) << endl;
-		(*it)->Print();
+		cout << "   " << (**it)->Get_type_string() << endl;
 	}
 }
 
@@ -111,9 +156,9 @@ void Pattern::Run_analyzers(Process_handler &process){
 		Filter_entries(*process.Get_shared_memory());
 
 		for(auto &analyzer : Analyzer_vector){
-			analyzer->Start(process);
-			analyzer->Analyze(log_entry_vector);
-			analyzer->Stop();
+			(**analyzer).Start(process);
+			(**analyzer).Analyze(log_entry_vector);
+			(**analyzer).Stop();
 		}
 
 		log_entry_vector.clear();

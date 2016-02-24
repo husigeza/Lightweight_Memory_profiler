@@ -24,6 +24,7 @@ extern "C" {
 "on"				{return ON;}
 "off"				{return OFF;}
 "add"				{return ADD;}
+"remove"			{return REMOVE;}
 "analyzer"			{return ANALYZER;}
 "analyzers"			{return ANALYZERS;}
 "pattern"			{return PATTERN;}
