@@ -26,6 +26,8 @@ private:
 	void Filter_entries(const memory_profiler_sm_object_class &shared_memory);
 	vector<const memory_profiler_sm_object_log_entry_class *> log_entry_vector;
 
+	void Notify_analyzer(unsigned int index);
+
 public:
 	Pattern(string name);
 
@@ -44,8 +46,6 @@ public:
 
 	void Analyzer_deregister(unsigned int index);
 	void Analyzer_deregister(const Analyzer &analyzer);
-
-	void Notify_analyzer(unsigned int index);
 
 	void Filter_register(shared_ptr<Filter_class> filter);
 	void Filter_deregister(unsigned int index);

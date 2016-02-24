@@ -34,7 +34,7 @@ protected:
 public:
 	virtual ~Analyzer();
 
-	unsigned int GetType();
+	unsigned int GetType()const;
 	string Get_type_string() const;
 	virtual void Print()const;
 

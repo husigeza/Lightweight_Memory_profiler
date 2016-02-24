@@ -68,12 +68,13 @@ command : PRINT PROCESS NUMBER '\n'      			{mem_prof.Print_process($3);}
 		| PROCESS ALL ANALYZE '\n'					{mem_prof.Analyze_all_process();}
 		| ADD PATTERN TEXT '\n'						{mem_prof.Create_new_pattern($3);}
 		| ADD ANALYZER LEAK '\n'					{mem_prof.Create_new_analyzer(unique_ptr<Memory_Leak_Analyzer> (new Memory_Leak_Analyzer()));}
-		| REMOVE ANALYZER NUMBER '\n'				{mem_prof.Remove_analyzer($3);}
-		| REMOVE ANALYZER NUMBER PATTERN TEXT '\n'	{mem_prof.Remove_analyzer_from_pattern_by_name($3,$5);}
 		| ADD ANALYZER DFREE '\n'					{mem_prof.Create_new_analyzer(unique_ptr<Double_Free_Analyzer> (new Double_Free_Analyzer()));}
 		| ADD FILTER SIZE NUMBER TEXT'\n'			{mem_prof.Create_new_filter_cli($4,$5);}
 		| ADD ANALYZER NUMBER PATTERN NUMBER '\n'	{mem_prof.Add_analyzer_to_pattern($3,$5);}
 		| ADD ANALYZER NUMBER PATTERN TEXT '\n'		{mem_prof.Add_analyzer_to_pattern_by_name($3,$5);}
+		| REMOVE ANALYZER NUMBER '\n'				{mem_prof.Remove_analyzer($3);}
+		| REMOVE ANALYZER NUMBER PATTERN NUMBER '\n'{mem_prof.Remove_analyzer_from_pattern($3,$5);}
+		| REMOVE ANALYZER NUMBER PATTERN TEXT '\n'	{mem_prof.Remove_analyzer_from_pattern_by_name($3,$5);}
 		| ADD FILTER NUMBER PATTERN NUMBER '\n'		{mem_prof.Add_filter_to_pattern($3,$5);}
 		| ADD FILTER NUMBER PATTERN TEXT '\n'		{mem_prof.Add_filter_to_pattern_by_name($3,$5);}
 		| PROCESS ALL ANALYZE PATTERN NUMBER '\n'	{mem_prof.Run_pattern_all_process($5);}
@@ -115,16 +116,44 @@ void Print_help(){
 	cout <<"print process profiled" << endl;
 	cout <<"print process number bt" << endl;
 	cout <<"print process all bt" << endl;
+	cout <<"print analyzer all" << endl;
+	cout <<"print filter all" << endl;
+	cout <<"print pattern all" << endl;
+	
+	cout<< endl;
+	
+	cout <<"add analyzer type" << endl;
+	cout <<"add filter type params" << endl;
+	cout <<"add pattern name" << endl;
+	cout <<"add analyzer index pattern index" << endl;
+	cout <<"add analyzer index pattern name" << endl;
+	cout <<"add filter index pattern index" << endl;
+	cout <<"add filter index pattern name" << endl;
+		
+	cout<< endl;
+	
+	cout <<"remove analyzer index" << endl;
+	cout <<"remove analyzer index pattern index" << endl;
+	cout <<"remove analyzer index pattern name" << endl;
+	
+	cout<< endl;
+	
 	cout <<"save process number symbols" << endl;
 	cout <<"save process number map" << endl;
 	cout <<"save process number bt" << endl;
 	cout <<"save process all bt" << endl;
+		
+	cout<< endl;
+	
 	cout <<"process number profiled on" << endl;
 	cout <<"process number profiled off" << endl;
 	cout <<"process all profiled on" << endl;
 	cout <<"process all profiled off" << endl;
 	cout <<"process number analyze" << endl;
-	cout <<"process all analyze" << endl;
+	cout <<"process all analyze pattern index" << endl;
+		
+	cout<< endl;
+	
 	cout <<"help" << endl;
 	cout <<"exit" << endl;
 	cout << endl;

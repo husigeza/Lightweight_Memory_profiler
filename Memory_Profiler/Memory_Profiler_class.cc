@@ -533,7 +533,6 @@ void Memory_Profiler::Remove_analyzer_from_pattern(unsigned int analyzer_index,u
 		cout << "Wrong Analyzer ID" << endl;
 	}
 	else{
-		(*Patterns_vector[pattern_index]).Notify_analyzer(analyzer_index);
 		(*Patterns_vector[pattern_index]).Analyzer_deregister(analyzer_index);
 	}
 }
@@ -559,13 +558,8 @@ void Memory_Profiler::Remove_analyzer_from_pattern_by_name(unsigned int analyzer
 
 	auto pattern = Find_pattern_by_name(pattern_name);
 
-	if(analyzer_index >= (**pattern).Get_number_of_analyzers()){
-		cout << "Wrong Analyzer ID" << endl;
-	}
-	else{
-		(**pattern).Notify_analyzer(analyzer_index);
-		(**pattern).Analyzer_deregister(analyzer_index);
-	}
+	(**pattern).Analyzer_deregister(analyzer_index);
+
 }
 
 void Memory_Profiler::Add_filter_to_pattern(unsigned int filter_index,unsigned int pattern_index){

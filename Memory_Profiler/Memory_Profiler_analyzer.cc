@@ -33,11 +33,10 @@ Analyzer::Analyzer(unsigned int type_p){
 Analyzer::~Analyzer(){
 	for(auto &pattern : Pattern_vector){
 		(**pattern).Analyzer_deregister(*this);
-
 	}
 }
 
-unsigned int Analyzer::GetType(){
+unsigned int Analyzer::GetType() const{
 	return type;
 }
 
@@ -46,7 +45,15 @@ string Analyzer::Get_type_string() const{
 }
 
 void Analyzer::Pattern_register(unique_ptr<Pattern>* pattern){
-	Pattern_vector.push_back(pattern);
+
+	auto it = find(Pattern_vector.begin(),Pattern_vector.end(),pattern);
+
+	if(it == Pattern_vector.end()){
+		Pattern_vector.push_back(pattern);
+	}
+	else{
+		//cout << "Analyzer has been already added to the pattern!" << endl;
+	}
 }
 
 
@@ -57,7 +64,12 @@ bool operator==(unique_ptr<Pattern>* pattern, string name){
 
 void Analyzer::Pattern_deregister(string name){
 	auto pattern = find(Pattern_vector.begin(), Pattern_vector.end(), name);
-	Pattern_vector.erase(pattern);
+	if(pattern != Pattern_vector.end()){
+		Pattern_vector.erase(pattern);
+	}
+	else {
+		cout << "Pattern " << name << " has not been bounded to this analyzer" << endl;
+	}
 }
 
 

@@ -40,6 +40,7 @@ unsigned int Pattern::Get_number_of_filters() {
 }
 
 void Pattern::Notify_analyzer(unsigned int index){
+
 	(**Analyzer_vector[index]).Pattern_deregister(name);
 }
 
@@ -83,7 +84,13 @@ bool Pattern::Check_process(Process_handler & process){
 
 void Pattern::Analyzer_register(unique_ptr<Analyzer>* analyzer){
 
-	Analyzer_vector.push_back(analyzer);
+	auto it = find(Analyzer_vector.begin(),Analyzer_vector.end(),analyzer);
+	if(it == Analyzer_vector.end()){
+		Analyzer_vector.push_back(analyzer);
+	}
+	else {
+		cout << "This analyzer has been already added to this pattern!" << endl;
+	}
 }
 
 void Pattern::Filter_register(shared_ptr<Filter_class> filter){
@@ -93,7 +100,13 @@ void Pattern::Filter_register(shared_ptr<Filter_class> filter){
 
 void Pattern::Analyzer_deregister(unsigned int index){
 
-	Analyzer_vector.erase(Analyzer_vector.begin() + index);
+	if(index >= Analyzer_vector.size()){
+		cout << "Wrong Analyzer ID" << endl;
+	}
+	else{
+		Notify_analyzer(index);
+		Analyzer_vector.erase(Analyzer_vector.begin() + index);
+	}
 }
 
 bool operator==(unique_ptr<Analyzer>* unq_analyzer, const Analyzer &analyzer){
@@ -104,7 +117,12 @@ bool operator==(unique_ptr<Analyzer>* unq_analyzer, const Analyzer &analyzer){
 void Pattern::Analyzer_deregister(const Analyzer &analyzer){
 
 	vector< unique_ptr<Analyzer>* >::iterator it = find(Analyzer_vector.begin(),Analyzer_vector.end(),analyzer);
-	Analyzer_vector.erase(it);
+	if(it != Analyzer_vector.end()){
+		Analyzer_vector.erase(it);
+	}
+	else {
+		//cout << "Analyzer has not been bounded to this pattern" << endl;
+	}
 }
 
 void Pattern::Filter_deregister(unsigned int index){
