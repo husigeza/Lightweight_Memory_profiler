@@ -95,6 +95,7 @@ typedef struct memory_profiler_log_entry_s{
 
 typedef struct memory_profiler_struct_s {
 	long unsigned int log_count;
+	bool profiled;
 	memory_profiler_log_entry_t log_entry[1]; // Always has a bigger value with 1 than the real element number
 } memory_profiler_struct_t;
 
@@ -515,6 +516,7 @@ void set_profiling(bool value){
 
 	sem_wait(&enable_semaphore);
 		enable = value;
+		memory_profiler_struct->profiled = value;
 	sem_post(&enable_semaphore);
 }
 

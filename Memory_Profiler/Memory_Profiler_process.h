@@ -78,6 +78,7 @@ class memory_profiler_sm_object_class {
 public:
 
 	long unsigned int log_count; // Always has a bigger value with 1 than the real element number
+	bool profiled;
 	memory_profiler_sm_object_log_entry_class log_entry[1];
 };
 

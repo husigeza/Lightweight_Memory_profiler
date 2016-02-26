@@ -123,7 +123,8 @@ Process_handler::Process_handler(pid_t PID) {
 			shared_memory_initialized = true;
 
 			// If shared memory is already initialized until this point it means the process is being profiled at the moment
-			profiled = true;
+			profiled = memory_profiler_struct->profiled;
+
 
 			mapped_size_of_shared_memory = sizeof(memory_profiler_sm_object_class);
 		}
