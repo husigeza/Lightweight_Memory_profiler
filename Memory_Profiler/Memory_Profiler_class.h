@@ -48,12 +48,6 @@ class Memory_Profiler {
 
         bool Process_analyze_ready(const pid_t PID);
 
-        void Analyze_process(const pid_t PID);
-        void Analyze_all_process();
-
-        void Analyze_process_memory_leak(const pid_t PID);
-        void Analyze_process_dummy_free(const pid_t PID);
-
         void Create_new_pattern(string name);
         vector< unique_ptr<Pattern> >::iterator Find_pattern_by_name(string Pattern_name);
         void Print_patterns() const;
@@ -77,8 +71,10 @@ class Memory_Profiler {
         void Remove_filter_from_pattern(unsigned int filter_index,unsigned int pattern_index);
         void Remove_filter_from_pattern_by_name(unsigned int filter_index,string pattern_name);
 
-        void Run_pattern(unsigned int pattern_index, Process_handler &process);
+        void Run_pattern(unsigned int pattern_index, pid_t PID);
+        void Run_pattern(string pattern_name, pid_t PID);
         void Run_pattern_all_process(unsigned int pattern_index);
+        void Run_pattern_all_process(string name);
 
         void Print_process(const pid_t PID) const;
         void Print_all_processes() const;

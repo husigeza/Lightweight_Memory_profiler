@@ -1,14 +1,19 @@
 %{
 #include "stdio.h"
+#include <iostream>
 #include "Memory_Profiler_tab.tab.h"
 
-//#define YYSTYPE double
+using namespace std;
+
+
 
 extern "C" {
+
 	int yylex(void);
 	void yyerror(const char *s);
-	//extern YYSTYPE yylval;
 }
+
+
 
 %}
 

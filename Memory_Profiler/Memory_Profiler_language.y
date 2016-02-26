@@ -1,14 +1,5 @@
 %{
 
-extern "C" {    
-	int yylex(void);
-	void yyerror(const char *s);
-	int yyparse(void);
-	int yywrap(){
-	    return 1;
-	}
-}
-
 #include "../Memory_Profiler_class.h"
 
 #include <iostream>
@@ -17,7 +8,20 @@ extern "C" {
 #include <signal.h>
 #include <stdio.h>
 #include <memory>
+
 #include "../Memory_Profiler_analyzer.h"
+
+extern "C" {    
+	int yylex(void);
+	void yyerror(const char *s);
+	int yyparse(void);
+	int yywrap(){
+	    return 1;
+	}
+	
+	
+}
+
 
 %}
 
@@ -29,14 +33,17 @@ extern "C" {
 	char *text;
 }
 
-%token PRINT
-%token PROCESS ALL ALIVE PROFILED BT 
+%token <text> PRINT
+%token <text> PROCESS 
+%token <text> ALL 
+%token ALIVE PROFILED BT 
 %token ANALYZE ADD REMOVE ANALYZER ANALYZERS PATTERN FILTER SIZE
 %token LEAK DFREE
 %token SAVE SYMBOLS MAP
 %token ON OFF
 %token <number> NUMBER
 %token <text> TEXT
+%token PROMPT
 %token HELP
 %token EXIT_COMMAND
 %token UNRECOGNIZED_TOKEN
@@ -46,9 +53,9 @@ extern "C" {
 
 
 %%
-line 	 : command 
-		 | line command
-		 ;
+line 	 : command 									{cout << ">> ";}
+		 | line command								{cout << ">> ";}
+		 ;											
 
 command : PRINT PROCESS NUMBER '\n'      			{mem_prof.Print_process($3);}									 
 		| PRINT PROCESS ALL '\n' 					{mem_prof.Print_all_processes();}
@@ -64,8 +71,6 @@ command : PRINT PROCESS NUMBER '\n'      			{mem_prof.Print_process($3);}
 		| PROCESS NUMBER PROFILED OFF '\n'			{mem_prof.Remove_process_from_profiling($2);}
 		| PROCESS ALL PROFILED ON '\n'				{mem_prof.Add_all_process_to_profiling();}
 		| PROCESS ALL PROFILED OFF '\n'				{mem_prof.Remove_all_process_from_profiling();}
-		| PROCESS NUMBER ANALYZE '\n'				{mem_prof.Analyze_process($2);}
-		| PROCESS ALL ANALYZE '\n'					{mem_prof.Analyze_all_process();}
 		| ADD PATTERN TEXT '\n'						{mem_prof.Create_new_pattern($3);}
 		| ADD ANALYZER LEAK '\n'					{mem_prof.Create_new_analyzer(unique_ptr<Memory_Leak_Analyzer> (new Memory_Leak_Analyzer()));}
 		| ADD ANALYZER DFREE '\n'					{mem_prof.Create_new_analyzer(unique_ptr<Double_Free_Analyzer> (new Double_Free_Analyzer()));}
@@ -80,7 +85,10 @@ command : PRINT PROCESS NUMBER '\n'      			{mem_prof.Print_process($3);}
 		| REMOVE FILTER NUMBER '\n'					{mem_prof.Remove_filter($3);}
 		| REMOVE FILTER NUMBER PATTERN NUMBER '\n'	{mem_prof.Remove_filter_from_pattern($3,$5);}
 		| REMOVE FILTER NUMBER PATTERN TEXT '\n'	{mem_prof.Remove_filter_from_pattern_by_name($3,$5);}
+		| PROCESS NUMBER ANALYZE PATTERN NUMBER '\n'{mem_prof.Run_pattern($5,$2);}
+		| PROCESS NUMBER ANALYZE PATTERN TEXT '\n'	{mem_prof.Run_pattern($5,$2);}
 		| PROCESS ALL ANALYZE PATTERN NUMBER '\n'	{mem_prof.Run_pattern_all_process($5);}
+		| PROCESS ALL ANALYZE PATTERN TEXT '\n'		{mem_prof.Run_pattern_all_process($5);}
 		| PRINT ANALYZER ALL '\n'					{mem_prof.Print_analyzers();}
 		| PRINT PATTERN ALL '\n'					{mem_prof.Print_patterns();}
 		| PRINT FILTER ALL '\n'						{mem_prof.Print_filters();}
@@ -155,8 +163,11 @@ void Print_help(){
 	cout <<"process number profiled off" << endl;
 	cout <<"process all profiled on" << endl;
 	cout <<"process all profiled off" << endl;
-	cout <<"process number analyze" << endl;
+	
+	cout <<"process number analyze pattern index" << endl;
+	cout <<"process number analyze pattern name" << endl;
 	cout <<"process all analyze pattern index" << endl;
+	cout <<"process all analyze pattern name" << endl;
 		
 	cout<< endl;
 	
@@ -195,5 +206,6 @@ int main() {
 		cout << "Read_FIFO_thread created" << endl;
 	}
 
+	cout << ">> "; 
 	return yyparse();
 }
