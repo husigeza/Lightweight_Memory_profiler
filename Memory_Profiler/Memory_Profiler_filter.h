@@ -71,6 +71,8 @@ public:
 	bool Filter_func(const memory_profiler_sm_object_log_entry_class &log_entry) const override;
 };
 
+class Time_filter : public Filter{
 
+};
 
 #endif /* MEMORY_PROFILER_FILTER_H_ */

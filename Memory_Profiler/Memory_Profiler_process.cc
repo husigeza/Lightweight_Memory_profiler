@@ -36,6 +36,29 @@ void memory_profiler_sm_object_log_entry_class::Print(Process_handler *process, 
 	}
 }
 
+void memory_profiler_sm_object_log_entry_class::Print(Process_handler *process) const{
+
+
+	if(valid == true){
+		cout << endl <<"PID: " << (*process).PID_string << endl;
+		cout <<"Thread ID: " << dec << thread_id << endl;
+		char buffer[30];
+		strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(tval_before.tv_sec)));
+		cout <<"GMT before: " << buffer << dec << tval_before.tv_usec << endl;
+		strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(tval_after.tv_sec)));
+		cout <<"GMT after: " << buffer << dec << tval_after.tv_usec << endl;
+		cout <<"Call stack type: " << dec << type << endl;
+		cout <<"Address: 0x" << hex << address << endl;
+		cout <<"Allocation size: " << dec << size << endl;
+		cout <<"Call stack size: " << dec << backtrace_length << endl;
+		cout <<"Call stack: " << endl;
+		for(int  k=0; k < backtrace_length;k++){
+			cout << call_stack[k]<< " --- ";
+			cout << (*process).Find_function_name((uint64_t&)call_stack[k])<< endl;
+		}
+	}
+}
+
 
 Process_handler::Process_handler() {
 
@@ -677,8 +700,10 @@ void Process_handler::Print_shared_memory() const{
 			cout <<"index: " << dec <<j << endl;
 			cout <<"Thread ID: " << dec <<memory_profiler_struct->log_entry[j].thread_id << endl;
 			char buffer[30];
-			strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(memory_profiler_struct->log_entry[j].tval.tv_sec)));
-			cout <<"GMT: " << buffer << dec << memory_profiler_struct->log_entry[j].tval.tv_usec << endl;
+			strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(memory_profiler_struct->log_entry[j].tval_before.tv_sec)));
+			cout <<"GMT before: " << buffer << dec << memory_profiler_struct->log_entry[j].tval_before.tv_usec << endl;
+			strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(memory_profiler_struct->log_entry[j].tval_after.tv_sec)));
+			cout <<"GMT after: " << buffer << dec << memory_profiler_struct->log_entry[j].tval_after.tv_usec << endl;
 			cout <<"Call stack type: " << dec << memory_profiler_struct->log_entry[j].type << endl;
 			cout <<"Address: " << hex <<memory_profiler_struct->log_entry[j].address << endl;
 			cout <<"Allocation size: " << dec << memory_profiler_struct->log_entry[j].size << endl;
@@ -765,11 +790,13 @@ void Process_handler::Save_shared_memory_to_file(){
 			shared_memory_file <<"Shared_memory index: " << dec <<j << endl;
 			shared_memory_file <<"Thread ID: " << dec <<memory_profiler_struct->log_entry[j].thread_id << endl;
 			char buffer[30];
-			strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(memory_profiler_struct->log_entry[j].tval.tv_sec)));
-			shared_memory_file <<"GMT: " << buffer << dec << memory_profiler_struct->log_entry[j].tval.tv_usec << endl;
+			strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(memory_profiler_struct->log_entry[j].tval_before.tv_sec)));
+			shared_memory_file <<"GMT before: " << buffer << dec << memory_profiler_struct->log_entry[j].tval_before.tv_usec << endl;
+			strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(memory_profiler_struct->log_entry[j].tval_after.tv_sec)));
+			shared_memory_file <<"GMT after: " << buffer << dec << memory_profiler_struct->log_entry[j].tval_after.tv_usec << endl;
 			shared_memory_file <<"Call stack type: " << dec << memory_profiler_struct->log_entry[j].type << endl;
 			shared_memory_file <<"Address: " << hex <<memory_profiler_struct->log_entry[j].address << endl;
-			shared_memory_file <<"Call stack size: " << dec << memory_profiler_struct->log_entry[j].size << endl;
+			shared_memory_file <<"Allocation size: " << dec << memory_profiler_struct->log_entry[j].size << endl;
 			shared_memory_file <<"Call stack: " << endl;
 			for(int  k=0; k < memory_profiler_struct->log_entry[j].backtrace_length;k++){
 				shared_memory_file << memory_profiler_struct->log_entry[j].call_stack[k]<< " --- ";

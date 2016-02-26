@@ -63,7 +63,7 @@ Size_filter::Size_filter(unsigned long size_p, string operation_p) : Filter(size
 	}
 	else if (operation_p.find("less") != string::npos){
 		operation = less_eq;
-		operation_string = "less and equal";
+		operation_string = "less";
 	}
 	else {
 		operation = operation_type_unknown;
@@ -116,7 +116,7 @@ bool Size_filter::Filter_func(const memory_profiler_sm_object_log_entry_class &l
 
 	}
 	else if(operation == less_eq){
-		if(log_entry.size <= size){
+		if(log_entry.size < size){
 			return true;
 		}
 		else{

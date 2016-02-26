@@ -46,6 +46,10 @@ class memory_profiler_sm_object_log_entry_class{
 public:
 	memory_profiler_sm_object_log_entry_class() {
 		thread_id = 0;
+		tval_before.tv_sec = 0;
+		tval_before.tv_usec = 0;
+		tval_after.tv_sec = 0;
+		tval_after.tv_usec = 0;
 		type = 0;
 		size = 0;
 		backtrace_length = 0;
@@ -55,7 +59,8 @@ public:
 	}
 
 	pthread_t thread_id;
-	struct timeval tval;
+	struct timeval tval_before;
+	struct timeval tval_after;
 	int type; //malloc = 1, free = 2
 	size_t  size; // in case of malloc
 	int backtrace_length;
@@ -64,6 +69,7 @@ public:
 	bool valid;
 
 	void Print(Process_handler *process, ofstream &log_file) const;
+	void Print(Process_handler *process) const;
 
 };
 

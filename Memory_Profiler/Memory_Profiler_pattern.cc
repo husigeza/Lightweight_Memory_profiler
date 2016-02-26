@@ -132,7 +132,7 @@ void Pattern::Analyzer_deregister(const Analyzer &analyzer){
 		Analyzer_vector.erase(it);
 	}
 	else {
-		//cout << "Analyzer has not been bounded to this pattern" << endl;
+		cout << "Analyzer has not been bounded to this pattern" << endl;
 	}
 }
 
@@ -159,7 +159,7 @@ void Pattern::Filter_deregister(const Filter &filter){
 		Filter_vector.erase(it);
 	}
 	else {
-		//cout << "Filter has not been bounded to this pattern" << endl;
+		cout << "Filter has not been bounded to this pattern" << endl;
 	}
 }
 
@@ -187,7 +187,7 @@ void Pattern::Filter_entries(const memory_profiler_sm_object_class &shared_memor
 
 	bool filter = true;
 
-	for(unsigned long int i = 0; i < shared_memory.log_count ; ++i){
+	for(unsigned long int i = 0; i < shared_memory.log_count ; i++){
 		for(auto &filter_entry : Filter_vector){
 			filter &= (**filter_entry).Filter_func(shared_memory.log_entry[i]);
 		}

@@ -22,6 +22,10 @@ Analyzer::Analyzer(unsigned int type_p){
 		type = dfree_analyzer;
 		type_string = "Double free analyzer";
 	break;
+	case 3:
+		type = print_analyzer;
+		type_string = "Print analyzer";
+	break;
 	default:
 		type = analyzer_type_unknown;
 		type_string = "Unknown";
@@ -90,6 +94,8 @@ void Analyzer::Start(Process_handler &process){
 	log_file << "Analyzer " << type_string << " starting..." << endl;
 
 	this->process = &process;
+
+	log_file.close();
 }
 
 void Analyzer::Stop(){
@@ -103,6 +109,14 @@ void Analyzer::Stop(){
 	log_file.close();
 
 }
+
+void Print_Analyzer::Analyze(vector<const memory_profiler_sm_object_log_entry_class *> &entries) const {
+
+	for(auto &entry : entries){
+		(*entry).Print(process);
+	}
+}
+
 
 void Memory_Leak_Analyzer::Analyze(vector<const memory_profiler_sm_object_log_entry_class *> &entries) const {
 
@@ -142,8 +156,10 @@ void Memory_Leak_Analyzer::Analyze(vector<const memory_profiler_sm_object_log_en
 				log_file << endl << "Memory 0x" << std::hex << address << " has not been freed yet!" << endl;
 
 				char buffer[30];
-				strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&((**it).tval.tv_sec)));
-				log_file << "GMT: " << buffer << dec << (**it).tval.tv_usec << endl;
+				strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&((**it).tval_before.tv_sec)));
+				log_file << "GMT before: " << buffer << dec << (**it).tval_before.tv_usec << endl;
+				strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&((**it).tval_after.tv_sec)));
+				log_file << "GMT after: " << buffer << dec << (**it).tval_after.tv_usec << endl;
 
 				log_file << "Call stack: " << endl;
 				for(int  k = 0; k < (**it).backtrace_length; k++){

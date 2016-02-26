@@ -15,6 +15,7 @@ using namespace std;
 enum analyzer_type{
 	leak_analyzer = 1,
 	dfree_analyzer = 2,
+	print_analyzer = 3,
 	analyzer_type_unknown
 };
 
@@ -46,6 +47,15 @@ public:
 	void Pattern_deregister(string name);
 };
 
+class Print_Analyzer : public Analyzer{
+
+public:
+	Print_Analyzer() : Analyzer(print_analyzer){}
+	~Print_Analyzer(){}
+
+	void Analyze(vector<const memory_profiler_sm_object_log_entry_class *> &entries) const override;
+
+};
 
 class Memory_Leak_Analyzer : public Analyzer{
 

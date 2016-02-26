@@ -82,7 +82,8 @@ enum {
 
 typedef struct memory_profiler_log_entry_s{
 	pthread_t thread_id;
-	struct timeval tval;
+	struct timeval tval_before;
+	struct timeval tval_after;
 	int type; //malloc = 1, free = 2
 	size_t  size; // in case of malloc
 	int backtrace_length;
@@ -280,7 +281,6 @@ void free(void* pointer) {
 	sem_wait(&thread_semaphore);
 	if (profiling_allowed()) {
 
-			printf("This is from my free!\n");
 
 			if(shared_memory_size < (sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count) * sizeof(memory_profiler_log_entry_t))){
 
@@ -298,9 +298,12 @@ void free(void* pointer) {
 				}
 			}
 
+			gettimeofday(&memory_profiler_struct->log_entry[memory_profiler_struct->log_count].tval_before,NULL);
+			__libc_free(pointer);
+			gettimeofday(&memory_profiler_struct->log_entry[memory_profiler_struct->log_count].tval_after,NULL);
+
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].backtrace_length = backtrace(memory_profiler_struct->log_entry[memory_profiler_struct->log_count].call_stack,max_call_stack_depth);
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].thread_id = pthread_self();
-			gettimeofday(&memory_profiler_struct->log_entry[memory_profiler_struct->log_count].tval,NULL);
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].type = free_func;
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].size = 0;
 		    memory_profiler_struct->log_entry[memory_profiler_struct->log_count].address = (uint64_t)pointer;
@@ -308,12 +311,9 @@ void free(void* pointer) {
 
 		    memory_profiler_struct->log_count++;
 
-		    __libc_free(pointer);
-
 			if(sem_post(&thread_semaphore) == -1){
 				printf("Error in sem_post, errno: %d\n",errno);
 			}
-			printf("Free end\n");
 			return;
 		}
 	if(sem_post(&thread_semaphore) == -1){
@@ -334,8 +334,6 @@ void* malloc(size_t size) {
 		sem_wait(&thread_semaphore);
 		if (profiling_allowed()) {
 
-			printf("This is from my malloc!\n");
-
 			if(shared_memory_size < (sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count) * sizeof(memory_profiler_log_entry_t))){
 
 				munmap(memory_profiler_struct, shared_memory_size);
@@ -352,11 +350,13 @@ void* malloc(size_t size) {
 				}
 			}
 
+			gettimeofday(&memory_profiler_struct->log_entry[memory_profiler_struct->log_count].tval_before,NULL);
 			void* pointer = __libc_malloc(size);
+			gettimeofday(&memory_profiler_struct->log_entry[memory_profiler_struct->log_count].tval_after,NULL);
+
 
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].backtrace_length = backtrace(memory_profiler_struct->log_entry[memory_profiler_struct->log_count].call_stack,max_call_stack_depth);
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].thread_id = pthread_self();
-			gettimeofday(&memory_profiler_struct->log_entry[memory_profiler_struct->log_count].tval,NULL);
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].type = malloc_func;
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].size = size;
 			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].address = (uint64_t*)pointer;
@@ -367,7 +367,7 @@ void* malloc(size_t size) {
 			if(sem_post(&thread_semaphore) == -1){
 				printf("Error in sem_post, errno: %d\n",errno);
 			}
-			printf("Malloc end\n");
+
 			return pointer;
 		}
 		if(sem_post(&thread_semaphore) == -1){
@@ -493,9 +493,9 @@ void* Hearthbeat(void *arg) {
 
 			close(mem_prof_fifo);
 		} else {
-			printf("Failed opening the FIFO, errno: %d\n", errno);
-			sprintf(s,"Hearthbeat: Failed opening the FIFO, errno: %d\n", errno);
-			print_to_log(s);
+			//printf("Failed opening the FIFO, errno: %d\n", errno);
+			//sprintf(s,"Hearthbeat: Failed opening the FIFO, errno: %d\n", errno);
+			//print_to_log(s);
 		}
 		usleep(100);
 	}
