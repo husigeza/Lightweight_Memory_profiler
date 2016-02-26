@@ -118,8 +118,22 @@ void yyerror(const char *s){
 }
 
 void Print_help(){
-	cout << endl << "Recognized commands:" << endl;
+	
+	cout << "HELP:" << endl;
+	
 	cout << endl << "number = Process's PID" << endl;
+	cout << "bt = backtraces of the process" << endl;
+	
+	cout << endl << "Note for index value: " << endl << endl;
+	cout << "add analyzer/filter index to pattern ..." << endl;
+	cout <<	"remove analyzer/filter index" << endl;
+	cout << "In these cases index refers to the global analyzer/filter container" << endl << endl;
+	cout << "remove analyzer/filter index pattern ..." << endl;
+	cout << "In this case index refers to the corresponding pattern" << endl << endl;
+	cout << "index after pattern always refers to the global pattern index" << endl << endl;
+
+
+	cout << endl << "Recognized commands:" << endl;
 
 	cout <<"print process number" << endl;
 	cout <<"print process all" << endl;
