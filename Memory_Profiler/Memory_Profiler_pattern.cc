@@ -7,14 +7,43 @@
 #include <algorithm>
 
 
+#include "Memory_Profiler_handler_template.h"
+
 #include "Memory_Profiler_analyzer.h"
 #include "Memory_Profiler_filter.h"
 #include "Memory_Profiler_pattern.h"
 
+
+
 using namespace std;
 
+bool operator==(template_handler<Pattern> &pattern_1, const template_handler<Pattern> &pattern_2){
+	if(pattern_1.object == pattern_2.object) return true;
+	else return false;
+}
+
+bool operator==(template_handler<Analyzer> &analyzer_1, template_handler<Analyzer> &analyzer_2){
+	if(analyzer_1.object == analyzer_2.object) return true;
+	else return false;
+}
+
+bool operator==(template_handler<Analyzer> &analyzer, const Analyzer* analyzer_ptr){
+	if(analyzer.object == analyzer_ptr) return true;
+	else return false;
+}
+
+bool operator==(template_handler<Pattern> &pattern, const string s){
+	if(pattern.object->Get_name() == s) return true;
+	else return false;
+}
+
+Pattern::Pattern(){
+	cout << "Pattern default constructor, this: " << hex << this << endl;
+	name = "";
+}
 
 Pattern::Pattern(string name){
+	cout << "Pattern constructor, this: " << hex << this << endl;
 	this->name =  name;
 }
 
@@ -41,27 +70,27 @@ unsigned int Pattern::Get_number_of_filters() {
 
 void Pattern::Notify_analyzer(unsigned int index){
 
-	(**Analyzer_vector[index]).Pattern_deregister(name);
+	Analyzer_vector[index].object->Pattern_deregister(name);
 }
 
 void Pattern::Notify_filter(unsigned int index){
 
-	(**Filter_vector[index]).Pattern_deregister(name);
+	Filter_vector[index].object->Pattern_deregister(name);
 }
 
-bool Pattern::Check_process(Process_handler & process){
+bool Pattern::Check_process(template_handler<Process_handler> &process){
 
 	ofstream log_file;
-	log_file.open(("Analyzation_output_"+ process.PID_string + ".txt").c_str(), ios::app);
+	log_file.open(("Analyzation_output_"+ process.object->PID_string + ".txt").c_str(), ios::app);
 
 	try{
-		if(process.Is_shared_memory_initialized() == true){
-			if(process.Get_profiled() == true){
-				log_file << "Process "<< process.PID_string <<" is still being profiled, stop profiling first! "<< endl;
-				cout << "Process "<< process.PID_string <<" is still being profiled, stop profiling first! "<< endl;
+		if(process.object->Is_shared_memory_initialized() == true){
+			if(process.object->Get_profiled() == true){
+				log_file << "Process "<< process.object->PID_string <<" is still being profiled, stop profiling first! "<< endl;
+				cout << "Process "<< process.object->PID_string <<" is still being profiled, stop profiling first! "<< endl;
 				throw false;
 			}
-			const memory_profiler_sm_object_class &shared_memory = *process.Get_shared_memory();
+			const memory_profiler_sm_object_class &shared_memory = *process.object->Get_shared_memory();
 			if(shared_memory.log_count == 0){
 				cout << endl << "shared_memory log_count = 0, no data to analyze!" << endl;
 				log_file << endl << "shared_memory log_count = 0, no data to analyze!" << endl;
@@ -87,9 +116,9 @@ bool Pattern::Check_process(Process_handler & process){
 }
 
 
-void Pattern::Analyzer_register(unique_ptr<Analyzer>* analyzer){
+void Pattern::Analyzer_register(template_handler<Analyzer> &analyzer){
 
-	auto it = find(Analyzer_vector.begin(),Analyzer_vector.end(),analyzer);
+	vector< template_handler<Analyzer> >::iterator it = find(Analyzer_vector.begin(),Analyzer_vector.end(),analyzer);
 	if(it == Analyzer_vector.end()){
 		Analyzer_vector.push_back(analyzer);
 	}
@@ -98,9 +127,9 @@ void Pattern::Analyzer_register(unique_ptr<Analyzer>* analyzer){
 	}
 }
 
-void Pattern::Filter_register(unique_ptr<Filter>* filter){
+void Pattern::Filter_register(template_handler<Filter> &filter){
 
-	auto it = find(Filter_vector.begin(),Filter_vector.end(),filter);
+	vector<template_handler<Filter> >::iterator it = find(Filter_vector.begin(),Filter_vector.end(),filter);
 		if(it == Filter_vector.end()){
 			Filter_vector.push_back(filter);
 		}
@@ -120,14 +149,9 @@ void Pattern::Analyzer_deregister(unsigned int index){
 	}
 }
 
-bool operator==(unique_ptr<Analyzer>* unq_analyzer, const Analyzer &analyzer){
-	if(&(**unq_analyzer) == &analyzer) return true;
-	else return false;
-}
+void Pattern::Analyzer_deregister(const Analyzer *analyzer){
 
-void Pattern::Analyzer_deregister(const Analyzer &analyzer){
-
-	vector< unique_ptr<Analyzer>* >::iterator it = find(Analyzer_vector.begin(),Analyzer_vector.end(),analyzer);
+	vector< template_handler<Analyzer> >::iterator it = find(Analyzer_vector.begin(),Analyzer_vector.end(),analyzer);
 	if(it != Analyzer_vector.end()){
 		Analyzer_vector.erase(it);
 	}
@@ -147,14 +171,19 @@ void Pattern::Filter_deregister(unsigned int index){
 	}
 }
 
-bool operator==(unique_ptr<Filter>* unq_filter, const Filter &filter){
-	if(&(**unq_filter) == &filter) return true;
+bool operator==(template_handler<Filter> &filter_1, template_handler<Filter> &filter_2){
+	if(filter_1.object == filter_2.object) return true;
 	else return false;
 }
 
-void Pattern::Filter_deregister(const Filter &filter){
+bool operator==(template_handler<Filter> &filter, const Filter *filter_ptr){
+	if(filter.object == filter_ptr) return true;
+	else return false;
+}
 
-	vector< unique_ptr<Filter>* >::iterator it = find(Filter_vector.begin(),Filter_vector.end(),filter);
+void Pattern::Filter_deregister(const Filter *filter){
+
+	vector< template_handler<Filter> >::iterator it = find(Filter_vector.begin(),Filter_vector.end(),filter);
 	if(it != Filter_vector.end()){
 		Filter_vector.erase(it);
 	}
@@ -165,51 +194,54 @@ void Pattern::Filter_deregister(const Filter &filter){
 
 void Pattern::Print_analyzers(){
 
-	vector<unique_ptr<Analyzer>* >::iterator it;
+	vector<template_handler<Analyzer> >::iterator it;
 
 	for(it = Analyzer_vector.begin(); it != Analyzer_vector.end(); it++){
 		cout <<"Index: " << dec << distance(Analyzer_vector.begin(), it) << endl;
-		cout << "   " << (**it)->Get_type_string() << endl;
+		cout << "   " << it->object->Get_type_string() << endl;
 	}
 }
 
 void Pattern::Print_filters(){
 
-	vector<unique_ptr<Filter>* >::iterator it;
+	vector<template_handler<Filter> >::iterator it;
 
 	for(it = Filter_vector.begin(); it != Filter_vector.end(); it++){
 		cout <<"Index: " << dec << distance(Filter_vector.begin(), it) << endl;
-		cout << "   " << (**it)->Get_type_string() << endl;
+		cout << "   " << it->object->Get_type_string() << endl;
 	}
 }
 
-void Pattern::Filter_entries(const memory_profiler_sm_object_class &shared_memory){
+void Pattern::Filter_entries(template_handler<memory_profiler_sm_object_class> shared_memory){
 
 	bool filter = true;
 
-	for(unsigned long int i = 0; i < shared_memory.log_count ; i++){
-		for(auto &filter_entry : Filter_vector){
-			filter &= (**filter_entry).Filter_func(shared_memory.log_entry[i]);
+	for(unsigned long int i = 0; i < shared_memory.object->log_count ; i++){
+
+		template_handler<memory_profiler_sm_object_log_entry_class> log_entry(&(shared_memory.object->log_entry[i]));
+
+		for(vector<template_handler<Filter> >::iterator filter_entry = Filter_vector.begin();filter_entry != Filter_vector.end();filter_entry++){
+			filter &= filter_entry->object->Filter_func(log_entry);
 		}
 		if(filter){
-			log_entry_vector.push_back(&shared_memory.log_entry[i]);
+			log_entry_vector.push_back(log_entry);
 		}
 		filter = true;
 	}
 }
 
 
-void Pattern::Run_analyzers(Process_handler &process){
+void Pattern::Run_analyzers(template_handler<Process_handler> &process){
 
 
 	if(Check_process(process)){
 
-		Filter_entries(*process.Get_shared_memory());
+		Filter_entries(template_handler<memory_profiler_sm_object_class>(process.object->Get_shared_memory()));
 
-		for(auto &analyzer : Analyzer_vector){
-			(**analyzer).Start(process);
-			(**analyzer).Analyze(log_entry_vector);
-			(**analyzer).Stop();
+		for(vector<template_handler<Analyzer> >::iterator analyzer = Analyzer_vector.begin();analyzer != Analyzer_vector.end();analyzer++){
+			analyzer->object->Start(process);
+			analyzer->object->Analyze(log_entry_vector);
+			analyzer->object->Stop();
 		}
 
 		log_entry_vector.clear();

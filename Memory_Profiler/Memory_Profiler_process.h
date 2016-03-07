@@ -18,12 +18,15 @@
 #include <map>
 #include <time.h>
 #include <fstream>
+#include <iostream>
 
 #include "bfd.h"
 
 
 #include "Memory_Profiler_memory_map.h"
 #include "Memory_Profiler_symbol_table.h"
+
+#include "Memory_Profiler_handler_template.h"
 
 #include <sstream>
 #define SSTR( x ) dynamic_cast< std::ostringstream & >( std::ostringstream() << std::dec << x ).str()
@@ -45,6 +48,9 @@ class memory_profiler_sm_object_log_entry_class{
 
 public:
 	memory_profiler_sm_object_log_entry_class() {
+
+		cout << "log_entry_class default constructor, this: " << hex << this << endl;
+
 		thread_id = 0;
 		tval_before.tv_sec = 0;
 		tval_before.tv_usec = 0;
@@ -53,7 +59,7 @@ public:
 		type = 0;
 		size = 0;
 		backtrace_length = 0;
-		//call_stack = nullptr;
+		//call_stack = 0;
 		address = 0;
 		valid = false;
 	}
@@ -68,15 +74,18 @@ public:
 	uint64_t address;
 	bool valid;
 
-	void Print(Process_handler *process, ofstream &log_file) const;
-	void Print(Process_handler *process) const;
+	void Print(template_handler<Process_handler> process, ofstream &log_file) const;
+	void Print(template_handler<Process_handler> process) const;
 
 };
 
 class memory_profiler_sm_object_class {
 
 public:
-
+	memory_profiler_sm_object_class(){
+		log_count = 0;
+		profiled = false;
+	}
 	long unsigned int log_count; // Always has a bigger value with 1 than the real element number
 	bool profiled;
 	memory_profiler_sm_object_log_entry_class log_entry[1];
@@ -124,11 +133,8 @@ class Process_handler {
 
     bool Init_start_stop_semaphore();
 
-    ofstream symbol_file;
     string symbol_file_name;
-    ofstream memory_map_file;
 	string memory_map_file_name;
-    ofstream shared_memory_file;
 	string shared_memory_file_name;
 
     public:
@@ -139,8 +145,8 @@ class Process_handler {
 
         string PID_string;
 
-        Process_handler(Process_handler &&obj);
-        Process_handler& operator=(Process_handler &&obj);
+        //Process_handler(Process_handler &&obj);
+        //Process_handler& operator=(Process_handler &&obj);
 
         Process_handler(const Process_handler &obj);
         Process_handler& operator=(const Process_handler &obj);
@@ -158,7 +164,7 @@ class Process_handler {
         bool Init_shared_memory();
         bool Remap_shared_memory();
 
-        const memory_profiler_sm_object_class* Get_shared_memory() const;
+        memory_profiler_sm_object_class* Get_shared_memory() const;
         const bool Is_shared_memory_initialized() const {return shared_memory_initialized;} ;
 
         const string Find_function_name(uint64_t const address) const;

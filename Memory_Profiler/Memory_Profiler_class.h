@@ -2,6 +2,7 @@
 #define MEMORY_PROFILER_H_INCLUDED
 
 #include "Memory_Profiler_process.h"
+#include "Memory_Profiler_handler_template.h"
 
 #include <memory>
 
@@ -11,7 +12,7 @@
 
 class Memory_Profiler {
 
-        map<pid_t const,Process_handler> Processes;
+        map<pid_t const, template_handler<Process_handler> > Processes;
         string fifo_path;
         int mem_prof_fifo;
 
@@ -23,9 +24,9 @@ class Memory_Profiler {
         void Start_stop_profiling(const pid_t PID);
         void Start_stop_profiling_all_processes();
 
-        vector< unique_ptr<Pattern> > Patterns_vector;
-        vector< unique_ptr<Analyzer> > Analyzers_vector;
-        vector< unique_ptr<Filter> > Filters_vector;
+        vector< template_handler<Pattern> > Patterns_vector;
+        vector< template_handler<Analyzer> > Analyzers_vector;
+        vector< template_handler<Filter> > Filters_vector;
 
     public:
         Memory_Profiler();
@@ -49,14 +50,14 @@ class Memory_Profiler {
         bool Process_analyze_ready(const pid_t PID);
 
         void Create_new_pattern(string name);
-        vector< unique_ptr<Pattern> >::iterator Find_pattern_by_name(string Pattern_name);
+        vector< template_handler<Pattern> >::iterator Find_pattern_by_name(string Pattern_name);
         void Print_patterns() const;
 
-        void Create_new_analyzer(unique_ptr<Analyzer> analyzer);
+        void Create_new_analyzer(Analyzer* analyzer);
         void Print_analyzers() const;
 
         void Create_new_size_filter_cli(unsigned long size_p, string operation_p);
-        void Create_new_filter(unique_ptr<Filter> filter);
+        void Create_new_filter(Filter* filter);
         void Print_filters() const;
 
         void Add_analyzer_to_pattern(unsigned int analyzer_index,unsigned int pattern_index);

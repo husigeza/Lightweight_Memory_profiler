@@ -299,6 +299,8 @@ void free(void* pointer) {
 				}
 			}
 
+			printf("log_count: %d\n",memory_profiler_struct->log_count);
+
 			gettimeofday(&memory_profiler_struct->log_entry[memory_profiler_struct->log_count].tval_before,NULL);
 			__libc_free(pointer);
 			gettimeofday(&memory_profiler_struct->log_entry[memory_profiler_struct->log_count].tval_after,NULL);
@@ -350,6 +352,8 @@ void* malloc(size_t size) {
 					printf("Failed mapping the shared memory: %d \n", errno);
 				}
 			}
+
+			printf("log_count: %d\n",memory_profiler_struct->log_count);
 
 			gettimeofday(&memory_profiler_struct->log_entry[memory_profiler_struct->log_count].tval_before,NULL);
 			void* pointer = __libc_malloc(size);

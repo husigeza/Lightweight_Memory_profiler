@@ -25,25 +25,27 @@ class Analyzer {
 private:
 	unsigned int type;
 	string type_string;
-	vector<unique_ptr<Pattern>* > Pattern_vector;
+	vector<template_handler<Pattern> > Pattern_vector;
 
 protected:
 	Analyzer(unsigned int type_p);
 
-	Process_handler *process;
+	template_handler<Process_handler> process;
 
 public:
 	virtual ~Analyzer();
+	Analyzer(const Analyzer &obj);
+	Analyzer& operator=(const Analyzer &obj);
 
 	unsigned int GetType()const;
 	string Get_type_string() const;
 	virtual void Print()const;
 
-	void Start(Process_handler & process);
-	virtual void Analyze(vector<const memory_profiler_sm_object_log_entry_class *> &entries) const = 0;
+	void Start(template_handler<Process_handler> &process);
+	virtual void Analyze(vector<template_handler<memory_profiler_sm_object_log_entry_class> > &entries) const = 0;
 	void Stop();
 
-	void Pattern_register(unique_ptr<Pattern>* pattern);
+	void Pattern_register(template_handler<Pattern> &pattern);
 	void Pattern_deregister(string name);
 };
 
@@ -53,7 +55,7 @@ public:
 	Print_Analyzer() : Analyzer(print_analyzer){}
 	~Print_Analyzer(){}
 
-	void Analyze(vector<const memory_profiler_sm_object_log_entry_class *> &entries) const override;
+	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > &entries) const ;
 
 };
 
@@ -63,7 +65,7 @@ public:
 	Memory_Leak_Analyzer() : Analyzer(leak_analyzer){}
 	~Memory_Leak_Analyzer(){}
 
-	void Analyze(vector<const memory_profiler_sm_object_log_entry_class *> &entries) const override;
+	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > &entries) const ;
 };
 
 
@@ -73,9 +75,10 @@ public:
 	Double_Free_Analyzer() : Analyzer(dfree_analyzer){}
 	~Double_Free_Analyzer(){}
 
-	void Analyze(vector<const memory_profiler_sm_object_log_entry_class *> &entries) const override;
+	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > &entries) const ;
 
 };
 
+bool operator==(template_handler<Analyzer> &analyzer_1, const template_handler<Analyzer> &analyzer_2);
 
 #endif /* MEMORY_PROFILER_ANALYZER_H_ */

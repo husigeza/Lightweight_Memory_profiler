@@ -31,8 +31,8 @@ public:
 	symbol_table_entry_class(const symbol_table_entry_class &obj);
 	symbol_table_entry_class& operator=(const symbol_table_entry_class &obj);
 
-	symbol_table_entry_class(symbol_table_entry_class &&obj);
-	symbol_table_entry_class& operator=(symbol_table_entry_class &&obj);
+	//symbol_table_entry_class(symbol_table_entry_class &&obj);
+	//symbol_table_entry_class& operator=(symbol_table_entry_class &&obj);
 
 	bool operator==(const string& symbol_name) const {
 		    if(this->name.compare(symbol_name) == 0)return true;

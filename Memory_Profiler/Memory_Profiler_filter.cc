@@ -3,24 +3,46 @@
 #include <iostream>
 #include <memory>
 #include <algorithm>
+
+#include "Memory_Profiler_handler_template.h"
+
 #include "Memory_Profiler_pattern.h"
 #include "Memory_Profiler_filter.h"
 
 using namespace std;
 
+bool operator==(template_handler<Filter> &filter_1, const template_handler<Filter> &filter_2){
+	if(filter_1.object == filter_2.object) return true;
+	else return false;
+}
 
+Filter::Filter() {
+	filter_type = filter_type_unknown;
+	type_string = "";
+}
 
-Filter::Filter(unsigned int filtertype, string type_string_p) : filter_type(filtertype), type_string(type_string_p){}
+Filter::Filter(unsigned int filtertype, string type_string_p) {
+	filter_type = filtertype;
+	type_string = type_string_p;
+}
+
+Filter::Filter(const Filter &obj){
+	filter_type = obj.filter_type;
+	type_string = obj.type_string;
+}
 
 Filter::~Filter(){
-	for(auto &pattern : Pattern_vector){
-		(**pattern).Filter_deregister(*this);
+
+	cout << "Filter destructor, this: " << hex << this <<endl;
+
+	for(vector<template_handler<Pattern> >::iterator pattern = Pattern_vector.begin();pattern != Pattern_vector.end();pattern++){
+		pattern->object->Filter_deregister(this);
 	}
 }
 
-void Filter::Pattern_register(unique_ptr<Pattern>* pattern){
+void Filter::Pattern_register(template_handler<Pattern> &pattern){
 
-	auto it = find(Pattern_vector.begin(),Pattern_vector.end(),pattern);
+	vector<template_handler<Pattern> >::iterator it = find(Pattern_vector.begin(),Pattern_vector.end(),pattern);
 
 	if(it == Pattern_vector.end()){
 		Pattern_vector.push_back(pattern);
@@ -31,7 +53,7 @@ void Filter::Pattern_register(unique_ptr<Pattern>* pattern){
 }
 
 void Filter::Pattern_deregister(string name){
-	auto pattern = find(Pattern_vector.begin(), Pattern_vector.end(), name);
+	vector<template_handler<Pattern> >::iterator pattern = find(Pattern_vector.begin(), Pattern_vector.end(), name);
 	if(pattern != Pattern_vector.end()){
 		Pattern_vector.erase(pattern);
 	}
@@ -42,8 +64,8 @@ void Filter::Pattern_deregister(string name){
 
 void Filter::Print_patterns()const {
 	cout << "   Filter is bounded to patterns:" << endl;
-	for (auto pattern : Pattern_vector){
-		cout <<"      "<< (**pattern).Get_name() << endl;
+	for(vector<template_handler<Pattern> >::const_iterator pattern = Pattern_vector.begin();pattern != Pattern_vector.end();pattern++){
+		cout <<"      "<< pattern->object->Get_name() << endl;
 	}
 }
 
@@ -52,6 +74,8 @@ string Filter::Get_type_string() const{
 }
 
 Size_filter::Size_filter(unsigned long size_p, string operation_p) : Filter(size_filter,"Size filter"), size(size_p){
+
+	cout << "Size_filter constructor, this: "<< hex << this  << endl;
 
 	if(operation_p.find("equal") != string::npos){
 		operation = equal_op;
@@ -62,7 +86,7 @@ Size_filter::Size_filter(unsigned long size_p, string operation_p) : Filter(size
 		operation_string = "bigger";
 	}
 	else if (operation_p.find("less") != string::npos){
-		operation = less_eq;
+		operation = less_;
 		operation_string = "less";
 	}
 	else {
@@ -70,6 +94,14 @@ Size_filter::Size_filter(unsigned long size_p, string operation_p) : Filter(size
 		operation_string = "Unknown";
 		throw false;
 	}
+}
+
+Size_filter::Size_filter(const Size_filter &obj) :  Filter(obj){
+
+	cout << "Size_filter copy constructor, obj: " << hex << &obj << endl;
+	operation = obj.operation;
+	operation_string = obj.operation_string;
+	size = obj.size;
 }
 
 unsigned long Size_filter::Get_size()const {
@@ -92,14 +124,14 @@ void Size_filter::Print() const{
 	Print_patterns();
 }
 
-bool Size_filter::Filter_func(const memory_profiler_sm_object_log_entry_class &log_entry) const{
+bool Size_filter::Filter_func(template_handler< memory_profiler_sm_object_log_entry_class> &log_entry) const{
 
-	if(log_entry.type == free_func){
-		return true;
+	if(log_entry.object->type == free_func){
+		return false;
 	}
 
 	if(operation == equal_op){
-		if(log_entry.size == size){
+		if(log_entry.object->size == size){
 			return true;
 		}
 		else{
@@ -107,7 +139,7 @@ bool Size_filter::Filter_func(const memory_profiler_sm_object_log_entry_class &l
 		}
 	}
 	else if(operation == bigger){
-		if(log_entry.size > size){
+		if(log_entry.object->size > size){
 			return true;
 		}
 		else{
@@ -115,8 +147,8 @@ bool Size_filter::Filter_func(const memory_profiler_sm_object_log_entry_class &l
 		}
 
 	}
-	else if(operation == less_eq){
-		if(log_entry.size < size){
+	else if(operation == less_){
+		if(log_entry.object->size < size){
 			return true;
 		}
 		else{

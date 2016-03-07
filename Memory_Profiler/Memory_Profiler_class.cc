@@ -1,5 +1,3 @@
-#include "Memory_Profiler_class.h"
-
 #include <iostream>
 #include <sys/stat.h>
 #include <errno.h>
@@ -10,6 +8,10 @@
 #include <algorithm>
 #include <fstream>
 #include <time.h>
+
+#include "Memory_Profiler_handler_template.h"
+#include "Memory_Profiler_class.h"
+
 
 using namespace std;
 
@@ -46,7 +48,8 @@ bool Memory_Profiler::Add_Process_to_list(const pid_t PID) {
 	if (Processes.find(PID) == Processes.end()) {
 
 		try{
-		Processes.insert(pair<const pid_t,Process_handler> (PID,Process_handler(PID)));
+
+			Processes.insert(make_pair(PID,template_handler<Process_handler> (new Process_handler(PID))));
 		}
 		catch(const bool v){
 			if(v == false){
@@ -74,16 +77,16 @@ void Memory_Profiler::Add_process_to_profiling(const pid_t PID) {
 	//prevent the system to create unnecessary shared memories
 
 
-	map<const pid_t, Process_handler>::iterator it = Processes.find(PID);
+	map<const pid_t, template_handler<Process_handler> >::iterator it = Processes.find(PID);
 
-	if(it->second.Get_alive() == true){
-		if(it->second.Get_profiled() == true){
+	if(it->second.object->Get_alive() == true){
+		if(it->second.object->Get_profiled() == true){
 			cout << "Process " << dec << PID << " is already under profiling!"<< endl;
 			return;
 		}
-		if(it->second.Is_shared_memory_initialized() == false){
+		if(it->second.object->Is_shared_memory_initialized() == false){
 			cout << "Shared memory has not been initialized, initializing it... Process: " << dec << PID << endl;
-			if(it->second.Init_shared_memory() == false){
+			if(it->second.object->Init_shared_memory() == false){
 				cout << "Shared memory init unsuccessful, not added to profiled state." << endl;
 				return;
 			}
@@ -92,9 +95,9 @@ void Memory_Profiler::Add_process_to_profiling(const pid_t PID) {
 		else {
 			cout << "Shared memory has been initialized for process: " << dec << PID << endl;
 		}
-			it->second.Set_profiled(true);
-			it->second.Start_Stop_profiling();
-			cout << "Process " << dec << PID << " added to profiled state" << endl;
+		it->second.object->Set_profiled(true);
+		it->second.object->Start_Stop_profiling();
+		cout << "Process " << dec << PID << " added to profiled state" << endl;
 	}
 	else{
 		cout << "Process " << PID << " is not alive, not added to profiled state.!" << endl;
@@ -103,7 +106,7 @@ void Memory_Profiler::Add_process_to_profiling(const pid_t PID) {
 
 void Memory_Profiler::Add_all_process_to_profiling() {
 
-	map<const pid_t, Process_handler>::iterator it;
+	map<const pid_t, template_handler<Process_handler> >::iterator it;
 
 	for (it = Processes.begin(); it != Processes.end(); it++) {
 
@@ -113,29 +116,29 @@ void Memory_Profiler::Add_all_process_to_profiling() {
 
 void Memory_Profiler::Set_process_alive_flag(const pid_t PID, bool value){
 
-	Processes[PID].Set_alive(value);
+	Processes[PID].object->Set_alive(value);
 }
 
 bool Memory_Profiler::Get_process_alive_flag(const pid_t PID){
 
-	return Processes[PID].Get_alive();
+	return Processes[PID].object->Get_alive();
 }
 
 bool Memory_Profiler::Get_process_shared_memory_initilized_flag(const pid_t PID){
 
-	return Processes[PID].Is_shared_memory_initialized();
+	return Processes[PID].object->Is_shared_memory_initialized();
 }
 
 void Memory_Profiler::Remove_process_from_profiling(const pid_t PID){
 
-	if(Processes[PID].Get_profiled() == false){
+	if(Processes[PID].object->Get_profiled() == false){
 		cout << "Process " << dec << PID << "is not under profiling!"<< endl;
 		return;
 	}
 
-	if(Processes[PID].Remap_shared_memory()){
-		Processes[PID].Start_Stop_profiling();
-		Processes[PID].Set_profiled(false);
+	if(Processes[PID].object->Remap_shared_memory()){
+		Processes[PID].object->Start_Stop_profiling();
+		Processes[PID].object->Set_profiled(false);
 		cout << "Process " << dec << PID << " removed from profiled state!" << endl;
 	}
 	else{
@@ -148,7 +151,7 @@ void Memory_Profiler::Remove_process_from_profiling(const pid_t PID){
 
 void Memory_Profiler::Remove_all_process_from_profiling(){
 
-	map<const pid_t, Process_handler>::iterator it;
+	map<const pid_t, template_handler<Process_handler> >::iterator it;
 
 	for (it = Processes.begin(); it != Processes.end(); it++) {
 
@@ -160,17 +163,17 @@ void Memory_Profiler::Remove_all_process_from_profiling(){
 
 void Memory_Profiler::Start_stop_profiling(const pid_t PID){
 
-	Processes[PID].Start_Stop_profiling();
+	Processes[PID].object->Start_Stop_profiling();
 }
 
 
 void Memory_Profiler::Start_stop_profiling_all_processes(){
 
-	map<const pid_t, Process_handler>::iterator it;
+	map<const pid_t, template_handler<Process_handler> >::iterator it;
 
 	for (it = Processes.begin(); it != Processes.end(); it++) {
 
-		if (it->second.Get_profiled() == true) {
+		if (it->second.object->Get_profiled() == true) {
 			Start_stop_profiling(it->first);
 		}
 	}
@@ -178,17 +181,17 @@ void Memory_Profiler::Start_stop_profiling_all_processes(){
 
 bool Memory_Profiler::Remap_process_shared_memory(const pid_t PID){
 
-	return Processes[PID].Remap_shared_memory();
+	return Processes[PID].object->Remap_shared_memory();
 
 }
 
 void Memory_Profiler::Remap_all_process_shared_memory(){
 
-	map<const pid_t, Process_handler>::iterator it;
+	map<const pid_t, template_handler<Process_handler> >::iterator it;
 
 	for (it = Processes.begin(); it != Processes.end(); it++) {
 		//cout << "Remapping Process: " << it->first << endl;
-			if(it->second.Remap_shared_memory() == false){
+			if(it->second.object->Remap_shared_memory() == false){
 				cout << "Failed remapping process " << it->first << " shared memory " << endl;
 			}
 			else {
@@ -205,7 +208,7 @@ void Memory_Profiler::Read_FIFO() {
 	string buffer;
 	size_t buff_size = 6;
 	int res;
-	map<const pid_t, Process_handler>::iterator it;
+	map<const pid_t, template_handler<Process_handler> >::iterator it;
 
 	if (mem_prof_fifo != -1) {
 		while ((res = read(mem_prof_fifo, (char*)buffer.c_str(), buff_size/*sizeof(buffer)*/)) != 0) {
@@ -236,9 +239,10 @@ void Memory_Profiler::Read_FIFO() {
 }
 
 
-void Memory_Profiler::Create_new_analyzer(unique_ptr<Analyzer> analyzer){
+void Memory_Profiler::Create_new_analyzer(Analyzer* analyzer){
 
-	Analyzers_vector.push_back(move(analyzer));
+	//Analyzers_vector.push_back(move(analyzer));
+	Analyzers_vector.push_back(analyzer);
 }
 
 void Memory_Profiler::Remove_analyzer(unsigned int analyzer_index){
@@ -247,6 +251,7 @@ void Memory_Profiler::Remove_analyzer(unsigned int analyzer_index){
 		cout << "Wrong analyzer index" << endl;
 	}
 	else{
+		Analyzers_vector[analyzer_index].delete_object();
 		Analyzers_vector.erase(Analyzers_vector.begin() + analyzer_index);
 	}
 }
@@ -254,7 +259,7 @@ void Memory_Profiler::Remove_analyzer(unsigned int analyzer_index){
 void Memory_Profiler::Create_new_size_filter_cli(unsigned long size_p, string operation_p){
 
 	try{
-		Create_new_filter(unique_ptr<Size_filter> (new Size_filter(size_p,operation_p)));
+		Create_new_filter (new Size_filter(size_p,operation_p));
 	}
 	catch(const bool v){
 		if( v == false){
@@ -264,36 +269,37 @@ void Memory_Profiler::Create_new_size_filter_cli(unsigned long size_p, string op
 	}
 }
 
-void Memory_Profiler::Create_new_filter(unique_ptr<Filter> filter){
+void Memory_Profiler::Create_new_filter(Filter* filter){
 
-	Filters_vector.push_back(move(filter));
+	//Filters_vector.push_back(move(filter));
+	Filters_vector.push_back(template_handler<Filter>(filter));
 }
 
 void Memory_Profiler::Create_new_pattern(string name){
 
-	auto pattern = Find_pattern_by_name(name);
+	vector< template_handler<Pattern> >::iterator pattern = Find_pattern_by_name(name);
 
 	if(pattern != Patterns_vector.end()){
 		cout << "Pattern with that name already exists!" << endl;
 	}
 	else{
-		Patterns_vector.push_back(unique_ptr<Pattern> (new Pattern(name)));
+		Patterns_vector.push_back( template_handler<Pattern> (new Pattern(name)));
 	}
 }
 
 void Memory_Profiler::Print_patterns() const{
 
-	unsigned int i;
-	for(auto &a : Patterns_vector){
+	unsigned int i = 0;
+	for(vector< template_handler<Pattern> >::const_iterator pattern = Patterns_vector.begin();pattern != Patterns_vector.end();pattern++){
 		cout << endl;
 		cout <<"Index: " << dec << i << endl;
-		(*a).Print();
+		pattern->object->Print();
 		cout << endl;
 		cout << "Analyzers in the pattern: " << endl;
-		(*a).Print_analyzers();
+		pattern->object->Print_analyzers();
 		cout << endl;
 		cout << "Filters in the pattern: " << endl;
-		(*a).Print_filters();
+		pattern->object->Print_filters();
 		cout << endl << "-----------------------------" << endl;
 		i++;
 	}
@@ -301,33 +307,27 @@ void Memory_Profiler::Print_patterns() const{
 
 void Memory_Profiler::Print_filters() const{
 
-	unsigned int i;
-	for(auto &a : Filters_vector){
+	unsigned int i = 0;
+	for(vector< template_handler<Filter> >::const_iterator filter = Filters_vector.begin();filter != Filters_vector.end();filter++){
 		cout << endl;
 		cout <<"Index: " << dec << i << endl;
-		(*a).Print();
+		filter->object->Print();
 		i++;
 	}
 }
 
 void Memory_Profiler::Print_analyzers() const{
 
-	unsigned int i;
-	for(auto &a : Analyzers_vector){
+	unsigned int i = 0;
+	for(vector< template_handler<Analyzer> >::const_iterator analyzer = Analyzers_vector.begin();analyzer != Analyzers_vector.end();analyzer++){
 		cout << endl;
 		cout <<"Index: " << dec << i << endl;
-		(*a).Print();
+		analyzer->object->Print();
 		i++;
 	}
 }
 
-bool operator==(unique_ptr<Pattern> &p, string pattern_name){
-	if((*p).Get_name() == pattern_name) return true;
-	else return false;
-}
-
-
-vector< unique_ptr<Pattern> >::iterator Memory_Profiler::Find_pattern_by_name(string Pattern_name){
+vector< template_handler<Pattern> >::iterator Memory_Profiler::Find_pattern_by_name(string Pattern_name){
 
 	return find(Patterns_vector.begin(),Patterns_vector.end(),Pattern_name);
 
@@ -342,8 +342,8 @@ void Memory_Profiler::Add_analyzer_to_pattern(unsigned int analyzer_index,unsign
 		cout << "Wrong Pattern ID" << endl;
 	}
 	else{
-		(*Patterns_vector[pattern_index]).Analyzer_register(&Analyzers_vector[analyzer_index]);
-		(*Analyzers_vector[analyzer_index]).Pattern_register(&Patterns_vector[pattern_index]);
+		Patterns_vector[pattern_index].object->Analyzer_register(Analyzers_vector[analyzer_index]);
+		Analyzers_vector[analyzer_index].object->Pattern_register(Patterns_vector[pattern_index]);
 	}
 }
 
@@ -352,17 +352,17 @@ void Memory_Profiler::Remove_analyzer_from_pattern(unsigned int analyzer_index,u
 	if (pattern_index >= Patterns_vector.size()){
 			cout << "Wrong Pattern ID" << endl;
 	}
-	else if(analyzer_index >= (*Patterns_vector[pattern_index]).Get_number_of_analyzers()){
+	else if(analyzer_index >= Patterns_vector[pattern_index].object->Get_number_of_analyzers()){
 		cout << "Wrong Analyzer ID" << endl;
 	}
 	else{
-		(*Patterns_vector[pattern_index]).Analyzer_deregister(analyzer_index);
+		Patterns_vector[pattern_index].object->Analyzer_deregister(analyzer_index);
 	}
 }
 
 void Memory_Profiler::Add_analyzer_to_pattern_by_name(unsigned int analyzer_index,string pattern_name){
 
-	auto pattern = Find_pattern_by_name(pattern_name);
+	vector<template_handler<Pattern> >::iterator pattern = Find_pattern_by_name(pattern_name);
 
 	if (pattern == Patterns_vector.end()){
 		cout << "Wrong pattern name!" << endl;
@@ -371,16 +371,16 @@ void Memory_Profiler::Add_analyzer_to_pattern_by_name(unsigned int analyzer_inde
 		cout << "Wrong Analyzer ID" << endl;
 	}
 	else{
-		(**pattern).Analyzer_register(&Analyzers_vector[analyzer_index]);
-		(*Analyzers_vector[analyzer_index]).Pattern_register(&(*pattern));
+		pattern->object->Analyzer_register(Analyzers_vector[analyzer_index]);
+		Analyzers_vector[analyzer_index].object->Pattern_register(*pattern);
 	}
 }
 
 void Memory_Profiler::Remove_analyzer_from_pattern_by_name(unsigned int analyzer_index,string pattern_name){
 
-	auto pattern = Find_pattern_by_name(pattern_name);
+	vector< template_handler<Pattern> >::iterator pattern = Find_pattern_by_name(pattern_name);
 
-	(**pattern).Analyzer_deregister(analyzer_index);
+	pattern->object->Analyzer_deregister(analyzer_index);
 
 }
 
@@ -390,6 +390,7 @@ void Memory_Profiler::Remove_filter(unsigned int filter_index){
 		cout << "Wrong filter index" << endl;
 	}
 	else{
+		Filters_vector[filter_index].delete_object();
 		Filters_vector.erase(Filters_vector.begin() + filter_index);
 	}
 }
@@ -398,19 +399,19 @@ void Memory_Profiler::Remove_filter_from_pattern(unsigned int filter_index,unsig
 	if (pattern_index >= Patterns_vector.size()){
 			cout << "Wrong Pattern ID" << endl;
 	}
-	else if(filter_index >= (*Patterns_vector[pattern_index]).Get_number_of_analyzers()){
+	else if(filter_index >= Patterns_vector[pattern_index].object->Get_number_of_analyzers()){
 		cout << "Wrong Filter ID" << endl;
 	}
 	else{
-		(*Patterns_vector[pattern_index]).Filter_deregister(filter_index);
+		Patterns_vector[pattern_index].object->Filter_deregister(filter_index);
 	}
 }
 
 void Memory_Profiler::Remove_filter_from_pattern_by_name(unsigned int filter_index,string pattern_name){
 
-	auto pattern = Find_pattern_by_name(pattern_name);
+	vector< template_handler<Pattern> >::iterator pattern = Find_pattern_by_name(pattern_name);
 
-	(**pattern).Filter_deregister(filter_index);
+	pattern->object->Filter_deregister(filter_index);
 }
 
 void Memory_Profiler::Add_filter_to_pattern(unsigned int filter_index,unsigned int pattern_index){
@@ -422,15 +423,15 @@ void Memory_Profiler::Add_filter_to_pattern(unsigned int filter_index,unsigned i
 		cout << "Wrong Pattern ID" << endl;
 	}
 	else{
-		(*Patterns_vector[pattern_index]).Filter_register(&Filters_vector[filter_index]);
-		(*Filters_vector[filter_index]).Pattern_register(&Patterns_vector[pattern_index]);
+		Patterns_vector[pattern_index].object->Filter_register(Filters_vector[filter_index]);
+		Filters_vector[filter_index].object->Pattern_register(Patterns_vector[pattern_index]);
 	}
 }
 
 
 void Memory_Profiler::Add_filter_to_pattern_by_name(unsigned int filter_index,string pattern_name){
 
-	auto pattern = Find_pattern_by_name(pattern_name);
+	vector< template_handler<Pattern> >::iterator pattern = Find_pattern_by_name(pattern_name);
 
 	if(filter_index >= Filters_vector.size()){
 		cout << "Wrong Filter ID" << endl;
@@ -439,8 +440,8 @@ void Memory_Profiler::Add_filter_to_pattern_by_name(unsigned int filter_index,st
 		cout << "Wrong Pattern name" << endl;
 	}
 	else{
-		(**pattern).Filter_register(&Filters_vector[filter_index]);
-		(*Filters_vector[filter_index]).Pattern_register(&(*pattern));
+		pattern->object->Filter_register(Filters_vector[filter_index]);
+		Filters_vector[filter_index].object->Pattern_register(*pattern);
 	}
 }
 
@@ -450,19 +451,19 @@ void Memory_Profiler::Run_pattern(unsigned int pattern_index, pid_t PID){
 			cout << "Wrong pattern ID" << endl;
 	}
 	else{
-		Patterns_vector[pattern_index]->Run_analyzers(Processes[PID]);
+		Patterns_vector[pattern_index].object->Run_analyzers(Processes[PID]);
 	}
 }
 
 void Memory_Profiler::Run_pattern(string pattern_name, pid_t PID){
 
-	auto pattern = Find_pattern_by_name(pattern_name);
+	vector< template_handler<Pattern> >::iterator pattern = Find_pattern_by_name(pattern_name);
 
 	if (pattern == Patterns_vector.end()){
 			cout << "Wrong pattern name" << endl;
 	}
 	else{
-		(**pattern).Run_analyzers(Processes[PID]);
+		pattern->object->Run_analyzers(Processes[PID]);
 	}
 }
 
@@ -472,22 +473,22 @@ void  Memory_Profiler::Run_pattern_all_process(unsigned int pattern_index){
 		cout << "Wrong pattern ID" << endl;
 	}
 	else {
-		for(auto &process : Processes){
-			Run_pattern(pattern_index,process.first);
+		for(map<pid_t const,template_handler<Process_handler> >::iterator process = Processes.begin();process != Processes.end();process++){
+			Run_pattern(pattern_index,process->first);
 		}
 	}
 }
 
 void Memory_Profiler::Run_pattern_all_process(string name){
 
-	auto pattern = Find_pattern_by_name(name);
+	vector< template_handler<Pattern> >::iterator pattern = Find_pattern_by_name(name);
 
 	if (pattern == Patterns_vector.end()){
 		cout << "Wrong Pattern name" << endl;
 	}
 	else{
-		for(auto &process : Processes){
-			(**pattern).Run_analyzers(process.second);
+		for(map<pid_t const,template_handler<Process_handler> >::iterator process = Processes.begin();process != Processes.end();process++){
+			pattern->object->Run_analyzers(process->second);
 		}
 	}
 

@@ -33,8 +33,8 @@ public:
 	memory_map_table_entry_class(const memory_map_table_entry_class &obj);
 	memory_map_table_entry_class& operator=(const memory_map_table_entry_class &obj);
 
-	memory_map_table_entry_class(memory_map_table_entry_class &&obj);
-	memory_map_table_entry_class& operator=(memory_map_table_entry_class &&obj);
+	//memory_map_table_entry_class(memory_map_table_entry_class &&obj);
+	//memory_map_table_entry_class& operator=(memory_map_table_entry_class &&obj);
 
 	bool operator==(const string& path) const {
 	    if(this->path.compare(path) == 0)return true;

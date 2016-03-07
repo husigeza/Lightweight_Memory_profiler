@@ -23,7 +23,7 @@
 using namespace std;
 
 
-void memory_profiler_sm_object_log_entry_class::Print(Process_handler *process, ofstream &log_file) const{
+void memory_profiler_sm_object_log_entry_class::Print(template_handler<Process_handler> process, ofstream &log_file) const{
 
 	cout << "Backtrace: " << endl;
 	log_file << "Backtrace: " << endl;
@@ -31,16 +31,16 @@ void memory_profiler_sm_object_log_entry_class::Print(Process_handler *process, 
 	for(int  k = 0; k < backtrace_length; k++){
 		cout << call_stack[k]<< " --- ";
 		log_file << call_stack[k]<< " --- ";
-		cout << process->Find_function_name((uint64_t)call_stack[k]) << endl;
-		log_file << process->Find_function_name((uint64_t)call_stack[k]) << endl;
+		cout << process.object->Find_function_name((uint64_t)call_stack[k]) << endl;
+		log_file << process.object->Find_function_name((uint64_t)call_stack[k]) << endl;
 	}
 }
 
-void memory_profiler_sm_object_log_entry_class::Print(Process_handler *process) const{
+void memory_profiler_sm_object_log_entry_class::Print(template_handler<Process_handler> process) const{
 
 
 	if(valid == true){
-		cout << endl <<"PID: " << (*process).PID_string << endl;
+		cout << endl <<"PID: " << process.object->PID_string << endl;
 		cout <<"Thread ID: " << dec << thread_id << endl;
 		char buffer[30];
 		strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(tval_before.tv_sec)));
@@ -54,13 +54,15 @@ void memory_profiler_sm_object_log_entry_class::Print(Process_handler *process) 
 		cout <<"Call stack: " << endl;
 		for(int  k=0; k < backtrace_length;k++){
 			cout << call_stack[k]<< " --- ";
-			cout << (*process).Find_function_name((uint64_t&)call_stack[k])<< endl;
+			cout << process.object->Find_function_name((uint64_t)call_stack[k])<< endl;
 		}
 	}
 }
 
 
 Process_handler::Process_handler() {
+
+	cout << " Process_handler default constructor,this: " << hex << this << endl;
 
 	PID = 0;
 	PID_string = "";
@@ -79,9 +81,12 @@ Process_handler::Process_handler() {
 	symbol_file_name = "";
 	memory_map_file_name = "";
 	shared_memory_file_name = "";
+
 }
 
 Process_handler::Process_handler(pid_t PID) {
+
+	cout << " Process_handler constructor, this: " << hex << this << endl;
 
 	this->PID = PID;
 	PID_string = SSTR(PID);
@@ -101,6 +106,7 @@ Process_handler::Process_handler(pid_t PID) {
 	memory_map_file_name = "Memory_map_"+ PID_string + ".txt";
 	shared_memory_file_name = "Backtrace_"+ PID_string + ".txt";
 
+
 	// If the profiled process compiled with START_PROF_IMM flag, that means it starts putting data into shared memory immediately after startup
 	// In this case we have to map the memory area, set the profiled and initialized flags of the process true
 	// Check whether the process starts profiling at the beginning with checking the existence of the corresponding shared memory area
@@ -117,6 +123,8 @@ Process_handler::Process_handler(pid_t PID) {
 								shared_memory,
 								0);
 
+
+
 		if (memory_profiler_struct != MAP_FAILED) {
 
 			// Shared memory initalized by the profiled process
@@ -125,8 +133,14 @@ Process_handler::Process_handler(pid_t PID) {
 			// If shared memory is already initialized until this point it means the process is being profiled at the moment
 			profiled = memory_profiler_struct->profiled;
 
-
 			mapped_size_of_shared_memory = sizeof(memory_profiler_sm_object_class);
+
+			if(profiled == false){
+				Remap_shared_memory();
+			}
+		}
+		else {
+			cout << " shared memory mapping UNsuccesful, errno: " << dec << errno << endl;
 		}
 	}
 	else {
@@ -146,6 +160,9 @@ Process_handler::Process_handler(pid_t PID) {
 }
 
 Process_handler::Process_handler(const Process_handler &obj){
+
+	cout << " Process_handler copy constructor,this: "<< hex << this << " obj: " << hex << &obj << endl;
+
 	PID = obj.PID;
 	PID_string = obj.PID_string;
 	PID_mapping = obj.PID_mapping;
@@ -189,8 +206,10 @@ Process_handler& Process_handler::operator=(const Process_handler &obj){
 	}
 		return *this;
 }
-
+/*
 Process_handler::Process_handler(Process_handler &&obj){
+
+	cout << " Move construtor" << endl;
 
 	PID = obj.PID;
 	PID_string = obj.PID_string;
@@ -274,8 +293,10 @@ Process_handler& Process_handler::operator=(Process_handler&& obj){
 	}
 	return *this;
 }
-
+*/
 Process_handler::~Process_handler() {
+
+	cout << " Process_handler destructor, this: "<<hex << this << endl;
 
 	all_function_symbol_table.clear();
 
@@ -310,6 +331,9 @@ const string Process_handler::Find_function_name(const uint64_t address) const{
 		return "Symbol has not been found for this address";
 	}
 	else{
+		//cout << "Address: " << hex << address << endl;
+		//cout << "it_VMA->first.path: " << it_VMA->first.path << endl;
+		//cout << "it->name: " << it->name << endl;
 		return it->name;
 	}
 }
@@ -584,6 +608,8 @@ bool Process_handler::Init_start_stop_semaphore() {
 		return false;
 	}
 
+	cout << "Start stop semaphore initialized" << endl;
+
 	return true;
 }
 
@@ -636,6 +662,8 @@ bool Process_handler::Init_shared_memory() {
 
 bool Process_handler::Remap_shared_memory(){
 
+	cout << "Remapping shared memory" << endl;
+
 	if(shared_memory_initialized == false){
 		cout<<"Shared memory has not been initialized yet, cannot remap it!" << endl;
 		return false;
@@ -674,7 +702,7 @@ void Process_handler::Start_Stop_profiling() const {
 	sem_post(start_stop_semaphore);
 }
 
-const memory_profiler_sm_object_class* Process_handler::Get_shared_memory() const{
+memory_profiler_sm_object_class* Process_handler::Get_shared_memory() const{
 
 	return memory_profiler_struct;
 }
@@ -735,6 +763,8 @@ void Process_handler::Print_backtrace(unsigned int entry_num, ofstream &log_file
 
 void Process_handler::Save_symbol_table_to_file(){
 
+	ofstream symbol_file;
+
 	vector<symbol_table_entry_class>::const_iterator it2;
 	map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::const_iterator it;
 
@@ -753,6 +783,8 @@ void Process_handler::Save_symbol_table_to_file(){
 
 void Process_handler::Save_memory_mappings_to_file(){
 
+	ofstream memory_map_file;
+
 	map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::const_iterator it;
 
 	memory_map_file.open(memory_map_file_name.c_str(), ios::out);
@@ -766,6 +798,8 @@ void Process_handler::Save_memory_mappings_to_file(){
 }
 
 void Process_handler::Save_shared_memory_to_file(){
+
+	ofstream shared_memory_file;
 
 	cout << "Saving Process " << dec << PID << " backtrace..." << endl;
 	shared_memory_file.open(shared_memory_file_name.c_str(), ios::out);
@@ -788,7 +822,7 @@ void Process_handler::Save_shared_memory_to_file(){
 
 		if(memory_profiler_struct->log_entry[j].valid == true){
 			shared_memory_file << endl <<"Shared memory PID: " << dec << PID << endl;
-			shared_memory_file <<"Shared_memory index: " << dec <<j << endl;
+			shared_memory_file <<"Shared_memory index: " << dec << j << endl;
 			shared_memory_file <<"Thread ID: " << dec <<memory_profiler_struct->log_entry[j].thread_id << endl;
 			char buffer[30];
 			strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(memory_profiler_struct->log_entry[j].tval_before.tv_sec)));
@@ -801,7 +835,7 @@ void Process_handler::Save_shared_memory_to_file(){
 			shared_memory_file <<"Call stack: " << endl;
 			for(int  k=0; k < memory_profiler_struct->log_entry[j].backtrace_length;k++){
 				shared_memory_file << memory_profiler_struct->log_entry[j].call_stack[k]<< " --- ";
-				shared_memory_file << Find_function_name((uint64_t&)Get_shared_memory()->log_entry[j].call_stack[k])<< endl;
+				shared_memory_file << Find_function_name((uint64_t)memory_profiler_struct->log_entry[j].call_stack[k])<< endl;
 			}
 		}
 	}

@@ -23,7 +23,7 @@ memory_map_table_entry_class& memory_map_table_entry_class::operator=(const memo
 			return *this;
 	}
 
-memory_map_table_entry_class::memory_map_table_entry_class(memory_map_table_entry_class &&obj){
+/*memory_map_table_entry_class::memory_map_table_entry_class(memory_map_table_entry_class &&obj){
 		if(this != &obj) {
 			start_address = obj.start_address;
 			end_address = obj.end_address;
@@ -46,3 +46,4 @@ memory_map_table_entry_class& memory_map_table_entry_class::operator=(memory_map
 		}
 		return *this;
 	}
+*/
