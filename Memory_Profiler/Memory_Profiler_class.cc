@@ -241,7 +241,6 @@ void Memory_Profiler::Read_FIFO() {
 
 void Memory_Profiler::Create_new_analyzer(Analyzer* analyzer){
 
-	//Analyzers_vector.push_back(move(analyzer));
 	Analyzers_vector.push_back(analyzer);
 }
 
@@ -251,7 +250,6 @@ void Memory_Profiler::Remove_analyzer(unsigned int analyzer_index){
 		cout << "Wrong analyzer index" << endl;
 	}
 	else{
-		Analyzers_vector[analyzer_index].delete_object();
 		Analyzers_vector.erase(Analyzers_vector.begin() + analyzer_index);
 	}
 }
@@ -271,7 +269,6 @@ void Memory_Profiler::Create_new_size_filter_cli(unsigned long size_p, string op
 
 void Memory_Profiler::Create_new_filter(Filter* filter){
 
-	//Filters_vector.push_back(move(filter));
 	Filters_vector.push_back(template_handler<Filter>(filter));
 }
 
@@ -390,7 +387,6 @@ void Memory_Profiler::Remove_filter(unsigned int filter_index){
 		cout << "Wrong filter index" << endl;
 	}
 	else{
-		Filters_vector[filter_index].delete_object();
 		Filters_vector.erase(Filters_vector.begin() + filter_index);
 	}
 }

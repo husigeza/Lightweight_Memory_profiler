@@ -9,8 +9,9 @@
 #define MEMORY_PROFILER_ANALYZER_H_
 
 
-
 using namespace std;
+
+class Pattern;
 
 enum analyzer_type{
 	leak_analyzer = 1,
@@ -18,8 +19,6 @@ enum analyzer_type{
 	print_analyzer = 3,
 	analyzer_type_unknown
 };
-
-class Pattern;
 
 class Analyzer {
 private:
@@ -33,6 +32,7 @@ protected:
 	template_handler<Process_handler> process;
 
 public:
+
 	virtual ~Analyzer();
 	Analyzer(const Analyzer &obj);
 	Analyzer& operator=(const Analyzer &obj);

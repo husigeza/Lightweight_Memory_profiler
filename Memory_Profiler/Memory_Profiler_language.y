@@ -20,7 +20,6 @@ extern "C" {
 	    return 1;
 	}
 	
-	
 }
 
 
@@ -104,14 +103,12 @@ command : PRINT PROCESS NUMBER '\n'      			{mem_prof.Print_process($3);}
 %%
 
 
-
 #define path_to_FIFO "/dev/mem_prof_fifo"
 
 using namespace std;
 
 static Memory_Profiler mem_prof(path_to_FIFO);
 static pthread_t FIFO_read_thread_id;
-
 
 extern "C" {
 void yyerror(const char *s){

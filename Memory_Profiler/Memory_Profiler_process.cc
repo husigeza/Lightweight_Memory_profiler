@@ -22,7 +22,6 @@
 
 using namespace std;
 
-
 void memory_profiler_sm_object_log_entry_class::Print(template_handler<Process_handler> process, ofstream &log_file) const{
 
 	cout << "Backtrace: " << endl;

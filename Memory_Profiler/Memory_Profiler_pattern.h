@@ -8,8 +8,6 @@
 #ifndef MEMORY_PROFILER_PATTERN_H_
 #define MEMORY_PROFILER_PATTERN_H_
 
-#include <memory>
-
 
 using namespace std;
 
@@ -32,6 +30,7 @@ private:
 public:
 	Pattern();
 	Pattern(string name);
+	~Pattern();
 
 	bool operator==(const string Pattern_name);
 

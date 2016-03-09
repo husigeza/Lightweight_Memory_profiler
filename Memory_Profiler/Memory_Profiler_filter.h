@@ -9,7 +9,6 @@
 #define MEMORY_PROFILER_FILTER_H_
 
 
-
 using namespace std;
 
 class Pattern;
@@ -78,7 +77,6 @@ public:
 class Time_filter : public Filter{
 
 };
-
 
 bool operator==(template_handler<Filter> &filter_1, const template_handler<Filter> &filter_2);
 

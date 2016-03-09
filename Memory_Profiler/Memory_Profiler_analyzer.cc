@@ -1,18 +1,15 @@
-#include "Memory_Profiler_process.h"
-
-
 #include <fstream>
 #include <iostream>
 #include <vector>
 #include <algorithm>
 
+#include "Memory_Profiler_process.h"
 #include "Memory_Profiler_handler_template.h"
-
 #include "Memory_Profiler_pattern.h"
+
 #include "Memory_Profiler_analyzer.h"
 
 using namespace std;
-
 
 bool operator==(template_handler<Analyzer> &analyzer_1, const template_handler<Analyzer> &analyzer_2){
 	if(analyzer_1.object == analyzer_2.object) return true;

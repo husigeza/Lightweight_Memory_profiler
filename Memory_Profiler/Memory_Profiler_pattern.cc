@@ -13,8 +13,6 @@
 #include "Memory_Profiler_filter.h"
 #include "Memory_Profiler_pattern.h"
 
-
-
 using namespace std;
 
 bool operator==(template_handler<Pattern> &pattern_1, const template_handler<Pattern> &pattern_2){
@@ -41,6 +39,8 @@ Pattern::Pattern(){
 	cout << "Pattern default constructor, this: " << hex << this << endl;
 	name = "";
 }
+
+Pattern::~Pattern(){}
 
 Pattern::Pattern(string name){
 	cout << "Pattern constructor, this: " << hex << this << endl;
@@ -218,7 +218,7 @@ void Pattern::Filter_entries(template_handler<memory_profiler_sm_object_class> s
 
 	for(unsigned long int i = 0; i < shared_memory.object->log_count ; i++){
 
-		template_handler<memory_profiler_sm_object_log_entry_class> log_entry(&(shared_memory.object->log_entry[i]));
+		template_handler<memory_profiler_sm_object_log_entry_class> log_entry(&(shared_memory.object->log_entry[i]),false);
 
 		for(vector<template_handler<Filter> >::iterator filter_entry = Filter_vector.begin();filter_entry != Filter_vector.end();filter_entry++){
 			filter &= filter_entry->object->Filter_func(log_entry);
@@ -236,7 +236,7 @@ void Pattern::Run_analyzers(template_handler<Process_handler> &process){
 
 	if(Check_process(process)){
 
-		Filter_entries(template_handler<memory_profiler_sm_object_class>(process.object->Get_shared_memory()));
+		Filter_entries(template_handler<memory_profiler_sm_object_class>(process.object->Get_shared_memory(),false));
 
 		for(vector<template_handler<Analyzer> >::iterator analyzer = Analyzer_vector.begin();analyzer != Analyzer_vector.end();analyzer++){
 			analyzer->object->Start(process);
