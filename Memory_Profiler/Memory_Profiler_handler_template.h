@@ -26,14 +26,14 @@ public:
 
 	}
 
-	template_handler(class_template *object_p){
-		object = object_p;
+	template_handler(class_template &object_p){
+		object = &object_p;
 		delete_enable = true;
 		counter++;
 	}
 
-	template_handler(class_template *object_p, bool delete_enable_p){
-		object = object_p;
+	template_handler(class_template &object_p, bool delete_enable_p){
+		object = &object_p;
 		delete_enable = delete_enable_p;
 		counter++;
 	}
@@ -44,7 +44,6 @@ public:
 			delete_enable = obj.delete_enable;
 			counter++;
 		}
-		cout << "counter: " << dec << counter << endl;
 	}
 
 	template_handler& operator=(const template_handler &obj){
@@ -53,7 +52,6 @@ public:
 			delete_enable = obj.delete_enable;
 			counter++;
 		}
-		cout << "counter: " << dec << counter << endl;
 		return *this;
 	}
 

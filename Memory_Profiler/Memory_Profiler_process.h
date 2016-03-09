@@ -145,9 +145,6 @@ class Process_handler {
 
         string PID_string;
 
-        //Process_handler(Process_handler &&obj);
-        //Process_handler& operator=(Process_handler &&obj);
-
         Process_handler(const Process_handler &obj);
         Process_handler& operator=(const Process_handler &obj);
 

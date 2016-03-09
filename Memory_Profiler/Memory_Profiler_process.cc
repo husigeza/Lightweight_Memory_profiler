@@ -61,8 +61,6 @@ void memory_profiler_sm_object_log_entry_class::Print(template_handler<Process_h
 
 Process_handler::Process_handler() {
 
-	cout << " Process_handler default constructor,this: " << hex << this << endl;
-
 	PID = 0;
 	PID_string = "";
 	PID_mapping = "";
@@ -84,8 +82,6 @@ Process_handler::Process_handler() {
 }
 
 Process_handler::Process_handler(pid_t PID) {
-
-	cout << " Process_handler constructor, this: " << hex << this << endl;
 
 	this->PID = PID;
 	PID_string = SSTR(PID);
@@ -160,8 +156,6 @@ Process_handler::Process_handler(pid_t PID) {
 
 Process_handler::Process_handler(const Process_handler &obj){
 
-	cout << " Process_handler copy constructor,this: "<< hex << this << " obj: " << hex << &obj << endl;
-
 	PID = obj.PID;
 	PID_string = obj.PID_string;
 	PID_mapping = obj.PID_mapping;
@@ -205,97 +199,8 @@ Process_handler& Process_handler::operator=(const Process_handler &obj){
 	}
 		return *this;
 }
-/*
-Process_handler::Process_handler(Process_handler &&obj){
 
-	cout << " Move construtor" << endl;
-
-	PID = obj.PID;
-	PID_string = obj.PID_string;
-	PID_mapping = obj.PID_mapping;
-	profiled = obj.profiled;
-	alive = obj.alive;
-	memory_profiler_struct = obj.memory_profiler_struct;
-	shared_memory = obj.shared_memory;
-	shared_memory_name = obj.shared_memory_name;
-	mapped_size_of_shared_memory = obj.mapped_size_of_shared_memory;
-	start_stop_semaphore_shared_memory = obj.start_stop_semaphore_shared_memory;
-	start_stop_semaphore_name = obj.start_stop_semaphore_name;
-	start_stop_semaphore = obj.start_stop_semaphore;
-	elf_path = obj.elf_path;
-	shared_memory_initialized = obj.shared_memory_initialized;
-	all_function_symbol_table = obj.all_function_symbol_table;
-	symbol_file_name = obj.symbol_file_name;
-	memory_map_file_name = obj.memory_map_file_name;
-	shared_memory_file_name = obj.shared_memory_file_name;
-
-	obj.PID = 0;
-	obj.PID_string = "";
-	obj.PID_mapping = "";
-	obj.profiled = false;
-	obj.alive = false;
-	obj.memory_profiler_struct = 0;
-	obj.shared_memory = 0;
-	obj.shared_memory_name = "";
-	obj.mapped_size_of_shared_memory = 0;
-	obj.start_stop_semaphore_shared_memory = 0;
-	obj.start_stop_semaphore_name = "";
-	obj.start_stop_semaphore = 0;
-	obj.elf_path = "";
-	obj.shared_memory_initialized = false;
-	obj.all_function_symbol_table.clear();
-	obj.symbol_file_name = "";
-	obj.memory_map_file_name = "";
-	obj.shared_memory_file_name = "";
-}
-
-Process_handler& Process_handler::operator=(Process_handler&& obj){
-
-	if (this != &obj) {
-
-		PID = obj.PID;
-		PID_string = obj.PID_string;
-		PID_mapping = obj.PID_mapping;
-		profiled = obj.profiled;
-		alive = obj.alive;
-		memory_profiler_struct = obj.memory_profiler_struct;
-		shared_memory = obj.shared_memory;
-		shared_memory_name = obj.shared_memory_name;
-		mapped_size_of_shared_memory = obj.mapped_size_of_shared_memory;
-		start_stop_semaphore_shared_memory = obj.start_stop_semaphore_shared_memory;
-		start_stop_semaphore = obj.start_stop_semaphore;
-		start_stop_semaphore_name = obj.start_stop_semaphore_name;
-		elf_path = obj.elf_path;
-		shared_memory_initialized = obj.shared_memory_initialized;
-		all_function_symbol_table = obj.all_function_symbol_table;
-		symbol_file_name = obj.symbol_file_name;
-		memory_map_file_name = obj.memory_map_file_name;
-		shared_memory_file_name = obj.shared_memory_file_name;
-
-		obj.PID = 0;
-		obj.PID_string = "";
-		obj.profiled = false;
-		obj.alive = false;
-		obj.memory_profiler_struct = 0;
-		obj.shared_memory = 0;
-		obj.shared_memory_name = "";
-		obj.mapped_size_of_shared_memory = 0;
-		obj.start_stop_semaphore_shared_memory = 0;
-		obj.start_stop_semaphore_name = "";
-		obj.start_stop_semaphore = 0;
-		obj.elf_path = "";
-		obj.shared_memory_initialized = false;
-		obj.all_function_symbol_table.clear();
-		obj.symbol_file_name = "";
-		obj.memory_map_file_name = "";
-		obj.shared_memory_file_name = "";
-	}
-	return *this;
-}
-*/
 Process_handler::~Process_handler() {
-
-	cout << " Process_handler destructor, this: "<<hex << this << endl;
 
 	all_function_symbol_table.clear();
 
@@ -330,9 +235,6 @@ const string Process_handler::Find_function_name(const uint64_t address) const{
 		return "Symbol has not been found for this address";
 	}
 	else{
-		//cout << "Address: " << hex << address << endl;
-		//cout << "it_VMA->first.path: " << it_VMA->first.path << endl;
-		//cout << "it->name: " << it->name << endl;
 		return it->name;
 	}
 }
@@ -660,8 +562,6 @@ bool Process_handler::Init_shared_memory() {
 }
 
 bool Process_handler::Remap_shared_memory(){
-
-	cout << "Remapping shared memory" << endl;
 
 	if(shared_memory_initialized == false){
 		cout<<"Shared memory has not been initialized yet, cannot remap it!" << endl;

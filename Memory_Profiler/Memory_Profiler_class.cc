@@ -49,7 +49,7 @@ bool Memory_Profiler::Add_Process_to_list(const pid_t PID) {
 
 		try{
 
-			Processes.insert(make_pair(PID,template_handler<Process_handler> (new Process_handler(PID))));
+			Processes.insert(make_pair(PID,template_handler<Process_handler> (*(new Process_handler(PID)))));
 		}
 		catch(const bool v){
 			if(v == false){
@@ -239,7 +239,7 @@ void Memory_Profiler::Read_FIFO() {
 }
 
 
-void Memory_Profiler::Create_new_analyzer(Analyzer* analyzer){
+void Memory_Profiler::Create_new_analyzer(Analyzer& analyzer){
 
 	Analyzers_vector.push_back(analyzer);
 }
@@ -257,7 +257,7 @@ void Memory_Profiler::Remove_analyzer(unsigned int analyzer_index){
 void Memory_Profiler::Create_new_size_filter_cli(unsigned long size_p, string operation_p){
 
 	try{
-		Create_new_filter (new Size_filter(size_p,operation_p));
+		Create_new_filter (*(new Size_filter(size_p,operation_p)));
 	}
 	catch(const bool v){
 		if( v == false){
@@ -267,7 +267,7 @@ void Memory_Profiler::Create_new_size_filter_cli(unsigned long size_p, string op
 	}
 }
 
-void Memory_Profiler::Create_new_filter(Filter* filter){
+void Memory_Profiler::Create_new_filter(Filter& filter){
 
 	Filters_vector.push_back(template_handler<Filter>(filter));
 }
@@ -280,7 +280,7 @@ void Memory_Profiler::Create_new_pattern(string name){
 		cout << "Pattern with that name already exists!" << endl;
 	}
 	else{
-		Patterns_vector.push_back( template_handler<Pattern> (new Pattern(name)));
+		Patterns_vector.push_back( template_handler<Pattern> (*(new Pattern(name))));
 	}
 }
 

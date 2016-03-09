@@ -72,9 +72,9 @@ command : PRINT PROCESS NUMBER '\n'      			{mem_prof.Print_process($3);}
 		| PROCESS ALL PROFILED ON '\n'				{mem_prof.Add_all_process_to_profiling();}
 		| PROCESS ALL PROFILED OFF '\n'				{mem_prof.Remove_all_process_from_profiling();}
 		| ADD PATTERN TEXT '\n'						{mem_prof.Create_new_pattern($3);}
-		| ADD ANALYZER LEAK '\n'					{mem_prof.Create_new_analyzer(new Memory_Leak_Analyzer());}
-		| ADD ANALYZER DFREE '\n'					{mem_prof.Create_new_analyzer(new Double_Free_Analyzer());}
-		| ADD ANALYZER PRINT '\n'					{mem_prof.Create_new_analyzer(new Print_Analyzer());}
+		| ADD ANALYZER LEAK '\n'					{mem_prof.Create_new_analyzer(*(new Memory_Leak_Analyzer()));}
+		| ADD ANALYZER DFREE '\n'					{mem_prof.Create_new_analyzer(*(new Double_Free_Analyzer()));}
+		| ADD ANALYZER PRINT '\n'					{mem_prof.Create_new_analyzer(*(new Print_Analyzer()));}
 		| ADD FILTER SIZE NUMBER TEXT'\n'			{mem_prof.Create_new_size_filter_cli($4,$5);}
 		| ADD ANALYZER NUMBER PATTERN NUMBER '\n'	{mem_prof.Add_analyzer_to_pattern($3,$5);}
 		| ADD ANALYZER NUMBER PATTERN TEXT '\n'		{mem_prof.Add_analyzer_to_pattern_by_name($3,$5);}

@@ -53,11 +53,11 @@ class Memory_Profiler {
         vector< template_handler<Pattern> >::iterator Find_pattern_by_name(string Pattern_name);
         void Print_patterns() const;
 
-        void Create_new_analyzer(Analyzer* analyzer);
+        void Create_new_analyzer(Analyzer& analyzer);
         void Print_analyzers() const;
 
         void Create_new_size_filter_cli(unsigned long size_p, string operation_p);
-        void Create_new_filter(Filter* filter);
+        void Create_new_filter(Filter& filter);
         void Print_filters() const;
 
         void Add_analyzer_to_pattern(unsigned int analyzer_index,unsigned int pattern_index);

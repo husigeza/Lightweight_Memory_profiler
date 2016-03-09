@@ -218,7 +218,7 @@ void Pattern::Filter_entries(template_handler<memory_profiler_sm_object_class> s
 
 	for(unsigned long int i = 0; i < shared_memory.object->log_count ; i++){
 
-		template_handler<memory_profiler_sm_object_log_entry_class> log_entry(&(shared_memory.object->log_entry[i]),false);
+		template_handler<memory_profiler_sm_object_log_entry_class> log_entry(shared_memory.object->log_entry[i],false);
 
 		for(vector<template_handler<Filter> >::iterator filter_entry = Filter_vector.begin();filter_entry != Filter_vector.end();filter_entry++){
 			filter &= filter_entry->object->Filter_func(log_entry);
@@ -233,10 +233,9 @@ void Pattern::Filter_entries(template_handler<memory_profiler_sm_object_class> s
 
 void Pattern::Run_analyzers(template_handler<Process_handler> &process){
 
-
 	if(Check_process(process)){
 
-		Filter_entries(template_handler<memory_profiler_sm_object_class>(process.object->Get_shared_memory(),false));
+		Filter_entries(template_handler<memory_profiler_sm_object_class>((*process.object->Get_shared_memory()),false));
 
 		for(vector<template_handler<Analyzer> >::iterator analyzer = Analyzer_vector.begin();analyzer != Analyzer_vector.end();analyzer++){
 			analyzer->object->Start(process);

@@ -18,8 +18,6 @@ bool operator==(template_handler<Analyzer> &analyzer_1, const template_handler<A
 
 Analyzer::Analyzer(unsigned int type_p){
 
-	cout << "Analyzer constructor, this: " << hex << this << endl;
-
 	switch (type_p){
 	case 1:
 		type = leak_analyzer;
@@ -38,12 +36,10 @@ Analyzer::Analyzer(unsigned int type_p){
 		type_string = "Unknown";
 	break;
 	}
-	process = 0;
+	//process = 0;
 }
 
 Analyzer::~Analyzer(){
-
-	cout << "Analyzer destructor, this: " << hex << this<<endl;
 
 	for(vector<template_handler<Pattern> >::iterator pattern = Pattern_vector.begin();pattern != Pattern_vector.end();pattern++){
 		pattern->object->Analyzer_deregister(this);
@@ -52,8 +48,6 @@ Analyzer::~Analyzer(){
 
 Analyzer::Analyzer(const Analyzer &obj){
 
-	cout << "Analyzer copy constructor, this: "<< hex << this <<" obj: " << hex << &obj << endl;
-
 	type = obj.type;
 	type_string = obj.type_string;
 	process = obj.process;
@@ -61,7 +55,6 @@ Analyzer::Analyzer(const Analyzer &obj){
 
 }
 Analyzer& Analyzer::operator=(const Analyzer &obj){
-
 
 	type = obj.type;
 	type_string = obj.type_string;

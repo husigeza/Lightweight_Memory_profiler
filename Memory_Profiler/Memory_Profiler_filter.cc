@@ -35,8 +35,6 @@ Filter::Filter(const Filter &obj){
 
 Filter::~Filter(){
 
-	cout << "Filter destructor, this: " << hex << this <<endl;
-
 	for(vector<template_handler<Pattern> >::iterator pattern = Pattern_vector.begin();pattern != Pattern_vector.end();pattern++){
 		pattern->object->Filter_deregister(this);
 	}
