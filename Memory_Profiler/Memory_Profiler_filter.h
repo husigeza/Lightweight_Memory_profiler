@@ -46,9 +46,9 @@ public:
 	virtual void Print()const = 0;
 	void Print_patterns()const;
 
-	virtual bool Filter_func(template_handler< memory_profiler_sm_object_log_entry_class> &log_entry) const = 0;
+	virtual bool Filter_func(template_handler< memory_profiler_sm_object_log_entry_class> log_entry) const = 0;
 
-	void Pattern_register(template_handler<Pattern> &pattern);
+	void Pattern_register(template_handler<Pattern> pattern);
 	void Pattern_deregister(string name);
 };
 
@@ -71,13 +71,13 @@ public:
 
 	void Print() const ;
 
-	bool Filter_func(template_handler< memory_profiler_sm_object_log_entry_class> &log_entry) const ;
+	bool Filter_func(template_handler< memory_profiler_sm_object_log_entry_class> log_entry) const ;
 };
 
 class Time_filter : public Filter{
 
 };
 
-bool operator==(template_handler<Filter> &filter_1, const template_handler<Filter> &filter_2);
+bool operator==(template_handler<Filter> filter_1, const template_handler<Filter> filter_2);
 
 #endif /* MEMORY_PROFILER_FILTER_H_ */

@@ -15,22 +15,17 @@
 
 using namespace std;
 
-bool operator==(template_handler<Pattern> &pattern_1, const template_handler<Pattern> &pattern_2){
+bool operator==(template_handler<Pattern> pattern_1, const template_handler<Pattern> pattern_2){
 	if(pattern_1.object == pattern_2.object) return true;
 	else return false;
 }
 
-bool operator==(template_handler<Analyzer> &analyzer_1, template_handler<Analyzer> &analyzer_2){
-	if(analyzer_1.object == analyzer_2.object) return true;
-	else return false;
-}
-
-bool operator==(template_handler<Analyzer> &analyzer, const Analyzer* analyzer_ptr){
+bool operator==(template_handler<Analyzer> analyzer, const Analyzer* analyzer_ptr){
 	if(analyzer.object == analyzer_ptr) return true;
 	else return false;
 }
 
-bool operator==(template_handler<Pattern> &pattern, const string s){
+bool operator==(template_handler<Pattern> pattern, const string s){
 	if(pattern.object->Get_name() == s) return true;
 	else return false;
 }
@@ -76,7 +71,7 @@ void Pattern::Notify_filter(unsigned int index){
 	Filter_vector[index].object->Pattern_deregister(name);
 }
 
-bool Pattern::Check_process(template_handler<Process_handler> &process){
+bool Pattern::Check_process(template_handler<Process_handler> process){
 
 	ofstream log_file;
 	log_file.open(("Analyzation_output_"+ process.object->PID_string + ".txt").c_str(), ios::app);
@@ -114,7 +109,7 @@ bool Pattern::Check_process(template_handler<Process_handler> &process){
 }
 
 
-void Pattern::Analyzer_register(template_handler<Analyzer> &analyzer){
+void Pattern::Analyzer_register(template_handler<Analyzer> analyzer){
 
 	vector< template_handler<Analyzer> >::iterator it = find(Analyzer_vector.begin(),Analyzer_vector.end(),analyzer);
 	if(it == Analyzer_vector.end()){
@@ -125,7 +120,7 @@ void Pattern::Analyzer_register(template_handler<Analyzer> &analyzer){
 	}
 }
 
-void Pattern::Filter_register(template_handler<Filter> &filter){
+void Pattern::Filter_register(template_handler<Filter> filter){
 
 	vector<template_handler<Filter> >::iterator it = find(Filter_vector.begin(),Filter_vector.end(),filter);
 		if(it == Filter_vector.end()){
@@ -169,12 +164,8 @@ void Pattern::Filter_deregister(unsigned int index){
 	}
 }
 
-bool operator==(template_handler<Filter> &filter_1, template_handler<Filter> &filter_2){
-	if(filter_1.object == filter_2.object) return true;
-	else return false;
-}
 
-bool operator==(template_handler<Filter> &filter, const Filter *filter_ptr){
+bool operator==(template_handler<Filter> filter, const Filter *filter_ptr){
 	if(filter.object == filter_ptr) return true;
 	else return false;
 }
@@ -229,7 +220,7 @@ void Pattern::Filter_entries(template_handler<memory_profiler_sm_object_class> s
 }
 
 
-void Pattern::Run_analyzers(template_handler<Process_handler> &process){
+void Pattern::Run_analyzers(template_handler<Process_handler> process){
 
 	if(Check_process(process)){
 

@@ -13,7 +13,7 @@
 
 using namespace std;
 
-bool operator==(template_handler<Analyzer> &analyzer_1, const template_handler<Analyzer> &analyzer_2){
+bool operator==(template_handler<Analyzer> analyzer_1, const template_handler<Analyzer> analyzer_2){
 	if(analyzer_1.object == analyzer_2.object) return true;
 	else return false;
 }
@@ -56,7 +56,7 @@ string Analyzer::Get_type_string() const{
 	return type_string;
 }
 
-void Analyzer::Pattern_register(template_handler<Pattern> &pattern){
+void Analyzer::Pattern_register(template_handler<Pattern> pattern){
 
 	vector<template_handler<Pattern> >::iterator it = find(Pattern_vector.begin(),Pattern_vector.end(),pattern);
 
@@ -66,12 +66,6 @@ void Analyzer::Pattern_register(template_handler<Pattern> &pattern){
 	else{
 		//cout << "Analyzer has been already added to the pattern!" << endl;
 	}
-}
-
-
-bool operator==(const template_handler<Pattern> &pattern, string name){
-	if(pattern.object->Get_name() == name ) return true;
-	else return false;
 }
 
 void Analyzer::Pattern_deregister(string name){
@@ -93,7 +87,7 @@ void Analyzer::Print() const{
 	}
 }
 
-void Analyzer::Start(template_handler<Process_handler> &process){
+void Analyzer::Start(template_handler<Process_handler> process){
 
 	ofstream log_file;
 	log_file.open(("Analyzation_output_"+ process.object->PID_string + ".txt").c_str(), ios::app);
@@ -123,7 +117,7 @@ Print_Analyzer::Print_Analyzer(){
 	type_string = "Print analyzer";
 }
 
-void Print_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > &entries) const {
+void Print_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const {
 
 	for(vector<template_handler< memory_profiler_sm_object_log_entry_class> >::iterator entry = entries.begin();entry != entries.end();entry++){
 		entry->object->Print(process);
@@ -135,7 +129,7 @@ Memory_Leak_Analyzer::Memory_Leak_Analyzer(){
 	type_string = "Memory Leak analyzer";
 }
 
-void Memory_Leak_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > &entries) const {
+void Memory_Leak_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const {
 
 	ofstream log_file;
 	log_file.open(("Analyzation_output_"+ process.object->PID_string + ".txt").c_str(), ios::app);
@@ -153,7 +147,7 @@ void Memory_Leak_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_o
 	vector<template_handler< memory_profiler_sm_object_log_entry_class> >::iterator it;
 	for(it = entries.begin(); it != entries.end(); it++){
 
-		if(it->object->valid && it->object->type == malloc_func){
+		if(it->object->valid && (it->object->type == malloc_func || it->object->type == calloc_func || it->object->type == realloc_func)){
 
 			total_memory_allocated += it->object->size;
 			address = it->object->address;
@@ -214,7 +208,7 @@ Double_Free_Analyzer::Double_Free_Analyzer(){
 	type_string = "Double free analyzer";
 }
 
-void Double_Free_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > &entries) const {
+void Double_Free_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const {
 
 	ofstream log_file;
 	log_file.open(("Analyzation_output_"+ process.object->PID_string + ".txt").c_str(), ios::app);
@@ -228,7 +222,7 @@ void Double_Free_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_o
 	vector<template_handler< memory_profiler_sm_object_log_entry_class> >::iterator it;
 
 		for(it = entries.begin(); it != entries.end(); it++){
-			if(it->object->valid && it->object->type == malloc_func){
+			if(it->object->valid && (it->object->type == malloc_func || it->object->type == calloc_func || it->object->type == realloc_func)){
 				malloc_vector.push_back(it->object->address);
 		}
 		else if(it->object->valid && it->object->type == free_func){
@@ -254,7 +248,7 @@ Malloc_Counter_Analyzer::Malloc_Counter_Analyzer(){
 	type_string = "Malloc, calloc and realloc counter analyzer";
 }
 
-void Malloc_Counter_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > &entries) const {
+void Malloc_Counter_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const {
 
 	ofstream log_file;
 	log_file.open(("Analyzation_output_"+ process.object->PID_string + ".txt").c_str(), ios::app);

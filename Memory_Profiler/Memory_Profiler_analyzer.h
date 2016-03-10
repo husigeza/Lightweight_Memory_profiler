@@ -42,11 +42,11 @@ public:
 	string Get_type_string() const;
 	virtual void Print()const;
 
-	void Start(template_handler<Process_handler> &process);
-	virtual void Analyze(vector<template_handler<memory_profiler_sm_object_log_entry_class> > &entries) const = 0;
+	void Start(template_handler<Process_handler> process);
+	virtual void Analyze(vector<template_handler<memory_profiler_sm_object_log_entry_class> > entries) const = 0;
 	void Stop();
 
-	void Pattern_register(template_handler<Pattern> &pattern);
+	void Pattern_register(template_handler<Pattern> pattern);
 	void Pattern_deregister(string name);
 };
 
@@ -56,7 +56,7 @@ public:
 	Print_Analyzer();
 	~Print_Analyzer(){}
 
-	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > &entries) const ;
+	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const ;
 
 };
 
@@ -66,7 +66,7 @@ public:
 	Memory_Leak_Analyzer();
 	~Memory_Leak_Analyzer(){}
 
-	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > &entries) const ;
+	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const ;
 };
 
 
@@ -76,7 +76,7 @@ public:
 	Double_Free_Analyzer();
 	~Double_Free_Analyzer(){}
 
-	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > &entries) const ;
+	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const ;
 
 };
 
@@ -86,10 +86,10 @@ public:
 	Malloc_Counter_Analyzer();
 	~Malloc_Counter_Analyzer(){}
 
-	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > &entries) const ;
+	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const ;
 
 };
 
-bool operator==(template_handler<Analyzer> &analyzer_1, const template_handler<Analyzer> &analyzer_2);
+bool operator==(template_handler<Analyzer> analyzer_1, const template_handler<Analyzer> analyzer_2);
 
 #endif /* MEMORY_PROFILER_ANALYZER_H_ */

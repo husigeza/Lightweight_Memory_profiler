@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <execinfo.h>
 #include <string.h>
+#include <stdbool.h>
 
 
 pthread_t tid[3];
@@ -73,7 +74,10 @@ int main()
     while(1){
     	sleep(1);
     	pointer = realloc(pointer,sizeof(int));
+
+    	//set_user_profiling_flag(true);
     	func1();
+    	//set_user_profiling_flag(false);
    }
 
     return 0;

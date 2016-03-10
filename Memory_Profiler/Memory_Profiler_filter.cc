@@ -11,7 +11,7 @@
 
 using namespace std;
 
-bool operator==(template_handler<Filter> &filter_1, const template_handler<Filter> &filter_2){
+bool operator==(template_handler<Filter> filter_1, const template_handler<Filter> filter_2){
 	if(filter_1.object == filter_2.object) return true;
 	else return false;
 }
@@ -38,7 +38,7 @@ Filter::~Filter(){
 	}
 }
 
-void Filter::Pattern_register(template_handler<Pattern> &pattern){
+void Filter::Pattern_register(template_handler<Pattern> pattern){
 
 	vector<template_handler<Pattern> >::iterator it = find(Pattern_vector.begin(),Pattern_vector.end(),pattern);
 
@@ -119,7 +119,7 @@ void Size_filter::Print() const{
 	Print_patterns();
 }
 
-bool Size_filter::Filter_func(template_handler< memory_profiler_sm_object_log_entry_class> &log_entry) const{
+bool Size_filter::Filter_func(template_handler< memory_profiler_sm_object_log_entry_class> log_entry) const{
 
 	if(log_entry.object->type == free_func){
 		return false;

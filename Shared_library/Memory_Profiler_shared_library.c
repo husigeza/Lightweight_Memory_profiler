@@ -20,8 +20,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-
-#define _GNU_SOURCE         /* See feature_test_macros(7) */
 #include <dlfcn.h>
 
 //#define fifo_path "/home/egezhus/Memory_profiler/mem_prof_fifo"
@@ -29,11 +27,12 @@
 
 #define max_call_stack_depth 100
 
-//#define START_PROF_IMM
-
 
 extern void *__libc_malloc(size_t size);
 extern void *__libc_free(void *);
+extern void *__libc_calloc(size_t nmemb,size_t size);
+extern void *__libc_realloc(void *ptr,size_t size);
+
 
 static pthread_t hearthbeat_thread_id;
 static pthread_t memory_profiler_start_thread_id;
@@ -44,6 +43,12 @@ static pthread_t memory_profiler_start_thread_id;
 static bool init_done = false;
 
 static bool enable = false;
+
+#ifdef USERPROF
+static bool user_profiling_flag = false;
+#else
+static bool user_profiling_flag = true;
+#endif
 
 static char PID_string[6];
 static char PID_string_shared_mem[16];
@@ -108,7 +113,6 @@ void
 signal_callback_handler(int signum)
 {
 
-	//sem_destroy(&thread_semaphore);
 	sem_destroy(memory_profiler_start_semaphore);
 
 	munmap(memory_profiler_struct, sizeof(memory_profiler_struct_t));
@@ -282,7 +286,7 @@ void free(void* pointer) {
 
 	if(init_done){
 	sem_wait(&thread_semaphore);
-	if (profiling_allowed()) {
+	if (profiling_allowed() && get_user_profiling_flag()) {
 
 
 			if(shared_memory_size < (sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count) * sizeof(memory_profiler_log_entry_t))){
@@ -335,7 +339,7 @@ void* malloc(size_t size) {
 	if(init_done){
 
 		sem_wait(&thread_semaphore);
-		if (profiling_allowed()) {
+		if (profiling_allowed() && get_user_profiling_flag()) {
 
 			if(shared_memory_size < (sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count) * sizeof(memory_profiler_log_entry_t))){
 
@@ -387,7 +391,7 @@ void* calloc(size_t nmemb,size_t size) {
 	if(init_done){
 
 		sem_wait(&thread_semaphore);
-		if (profiling_allowed()) {
+		if (profiling_allowed() && get_user_profiling_flag()) {
 
 			if(shared_memory_size < (sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count) * sizeof(memory_profiler_log_entry_t))){
 
@@ -439,7 +443,7 @@ void* realloc(void *ptr,size_t size) {
 	if(init_done){
 
 		sem_wait(&thread_semaphore);
-		if (profiling_allowed()) {
+		if (profiling_allowed() && get_user_profiling_flag()) {
 
 			if(shared_memory_size < (sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count) * sizeof(memory_profiler_log_entry_t))){
 
@@ -625,3 +629,11 @@ void set_profiling(bool value){
 	sem_post(&enable_semaphore);
 }
 
+void set_user_profiling_flag(bool value){
+
+	user_profiling_flag = value;
+}
+
+bool get_user_profiling_flag(){
+	return user_profiling_flag;
+}

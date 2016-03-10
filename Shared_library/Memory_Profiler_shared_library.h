@@ -8,6 +8,9 @@ void* Hearthbeat(void *arg);
 bool profiling_allowed(void);
 void set_profiling(bool value);
 
+void set_user_profiling_flag(bool value);
+bool get_user_profiling_flag();
+
 bool Create_shared_memory();
 bool Open_shared_memory();
 
