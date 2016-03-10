@@ -196,7 +196,7 @@ void Pattern::Print_analyzers(){
 
 	for(it = Analyzer_vector.begin(); it != Analyzer_vector.end(); it++){
 		cout <<"Index: " << dec << distance(Analyzer_vector.begin(), it) << endl;
-		cout << "   " << it->object->Get_type_string() << endl;
+		it->object->Print();
 	}
 }
 
@@ -206,7 +206,7 @@ void Pattern::Print_filters(){
 
 	for(it = Filter_vector.begin(); it != Filter_vector.end(); it++){
 		cout <<"Index: " << dec << distance(Filter_vector.begin(), it) << endl;
-		cout << "   " << it->object->Get_type_string() << endl;
+		it->object->Print();
 	}
 }
 
