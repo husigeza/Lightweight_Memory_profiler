@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <memory>
 #include <stdlib.h>
+#include <string>
 
 #include "../Memory_Profiler_analyzer.h"
 
@@ -19,6 +20,8 @@ extern "C" {
 	int yywrap(){
 	    return 1;
 	}
+	
+	string remove_end(string s);
 	
 }
 
@@ -71,26 +74,26 @@ command : PRINT PROCESS NUMBER '\n'      			{mem_prof.Print_process($3);}
 		| PROCESS NUMBER PROFILED OFF '\n'			{mem_prof.Remove_process_from_profiling($2);}
 		| PROCESS ALL PROFILED ON '\n'				{mem_prof.Add_all_process_to_profiling();}
 		| PROCESS ALL PROFILED OFF '\n'				{mem_prof.Remove_all_process_from_profiling();}
-		| ADD PATTERN TEXT '\n'						{mem_prof.Create_new_pattern($3);}
+		| ADD PATTERN TEXT '\n'						{mem_prof.Create_new_pattern(remove_end($3));}
 		| ADD ANALYZER LEAK '\n'					{mem_prof.Create_new_analyzer(*(new Memory_Leak_Analyzer()));}
 		| ADD ANALYZER DFREE '\n'					{mem_prof.Create_new_analyzer(*(new Double_Free_Analyzer()));}
 		| ADD ANALYZER PRINT '\n'					{mem_prof.Create_new_analyzer(*(new Print_Analyzer()));}
 		| ADD ANALYZER ALLOC '\n'					{mem_prof.Create_new_analyzer(*(new Malloc_Counter_Analyzer()));}
 		| ADD FILTER SIZE NUMBER TEXT'\n'			{mem_prof.Create_new_size_filter_cli($4,$5);}
 		| ADD ANALYZER NUMBER PATTERN NUMBER '\n'	{mem_prof.Add_analyzer_to_pattern($3,$5);}
-		| ADD ANALYZER NUMBER PATTERN TEXT '\n'		{mem_prof.Add_analyzer_to_pattern_by_name($3,$5);}
+		| ADD ANALYZER NUMBER PATTERN TEXT '\n'		{mem_prof.Add_analyzer_to_pattern_by_name($3,remove_end($5));}
 		| REMOVE ANALYZER NUMBER '\n'				{mem_prof.Remove_analyzer($3);}
 		| REMOVE ANALYZER NUMBER PATTERN NUMBER '\n'{mem_prof.Remove_analyzer_from_pattern($3,$5);}
-		| REMOVE ANALYZER NUMBER PATTERN TEXT '\n'	{mem_prof.Remove_analyzer_from_pattern_by_name($3,$5);}
+		| REMOVE ANALYZER NUMBER PATTERN TEXT '\n'	{mem_prof.Remove_analyzer_from_pattern_by_name($3,remove_end($5));}
 		| ADD FILTER NUMBER PATTERN NUMBER '\n'		{mem_prof.Add_filter_to_pattern($3,$5);}
-		| ADD FILTER NUMBER PATTERN TEXT '\n'		{mem_prof.Add_filter_to_pattern_by_name($3,$5);}
+		| ADD FILTER NUMBER PATTERN TEXT '\n'		{mem_prof.Add_filter_to_pattern_by_name($3,remove_end($5));}
 		| REMOVE FILTER NUMBER '\n'					{mem_prof.Remove_filter($3);}
 		| REMOVE FILTER NUMBER PATTERN NUMBER '\n'	{mem_prof.Remove_filter_from_pattern($3,$5);}
-		| REMOVE FILTER NUMBER PATTERN TEXT '\n'	{mem_prof.Remove_filter_from_pattern_by_name($3,$5);}
+		| REMOVE FILTER NUMBER PATTERN TEXT '\n'	{mem_prof.Remove_filter_from_pattern_by_name($3,remove_end($5));}
 		| PROCESS NUMBER ANALYZE PATTERN NUMBER '\n'{mem_prof.Run_pattern($5,$2);}
 		| PROCESS NUMBER ANALYZE PATTERN TEXT '\n'	{mem_prof.Run_pattern($5,$2);}
 		| PROCESS ALL ANALYZE PATTERN NUMBER '\n'	{mem_prof.Run_pattern_all_process($5);}
-		| PROCESS ALL ANALYZE PATTERN TEXT '\n'		{mem_prof.Run_pattern_all_process($5);}
+		| PROCESS ALL ANALYZE PATTERN TEXT '\n'		{mem_prof.Run_pattern_all_process(remove_end($5));}
 		| PRINT ANALYZER ALL '\n'					{mem_prof.Print_analyzers();}
 		| PRINT PATTERN ALL '\n'					{mem_prof.Print_patterns();}
 		| PRINT FILTER ALL '\n'						{mem_prof.Print_filters();}
@@ -115,6 +118,11 @@ extern "C" {
 void yyerror(const char *s){
 		cout << s << endl;
 	}
+	
+string remove_end(string s){
+		s = s.substr(0, s.size()-1);
+		return s;
+	}	
 }
 
 void Print_help(){
