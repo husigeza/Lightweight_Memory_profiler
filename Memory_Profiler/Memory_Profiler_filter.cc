@@ -1,5 +1,3 @@
-
-
 #include <iostream>
 #include <memory>
 #include <algorithm>
@@ -75,8 +73,6 @@ string Filter::Get_type_string() const{
 
 Size_filter::Size_filter(unsigned long size_p, string operation_p) : Filter(size_filter,"Size filter"), size(size_p){
 
-	cout << "Size_filter constructor, this: "<< hex << this  << endl;
-
 	if(operation_p.find("equal") != string::npos){
 		operation = equal_op;
 		operation_string = "equal";
@@ -98,7 +94,6 @@ Size_filter::Size_filter(unsigned long size_p, string operation_p) : Filter(size
 
 Size_filter::Size_filter(const Size_filter &obj) :  Filter(obj){
 
-	cout << "Size_filter copy constructor, obj: " << hex << &obj << endl;
 	operation = obj.operation;
 	operation_string = obj.operation_string;
 	size = obj.size;

@@ -5,9 +5,11 @@
 
 #include "Memory_Profiler_process.h"
 #include "Memory_Profiler_handler_template.h"
-#include "Memory_Profiler_pattern.h"
 
 #include "Memory_Profiler_analyzer.h"
+#include "Memory_Profiler_pattern.h"
+
+
 
 using namespace std;
 
@@ -16,27 +18,9 @@ bool operator==(template_handler<Analyzer> &analyzer_1, const template_handler<A
 	else return false;
 }
 
-Analyzer::Analyzer(unsigned int type_p){
-
-	switch (type_p){
-	case 1:
-		type = leak_analyzer;
-		type_string = "Memory Leak analyzer";
-	break;
-	case 2:
-		type = dfree_analyzer;
-		type_string = "Double free analyzer";
-	break;
-	case 3:
-		type = print_analyzer;
-		type_string = "Print analyzer";
-	break;
-	default:
-		type = analyzer_type_unknown;
-		type_string = "Unknown";
-	break;
-	}
-	//process = 0;
+Analyzer::Analyzer(){
+	type = unknown_analyzer;
+	type_string = "Unknown type";
 }
 
 Analyzer::~Analyzer(){
@@ -134,6 +118,11 @@ void Analyzer::Stop(){
 
 }
 
+Print_Analyzer::Print_Analyzer(){
+	type = print_analyzer;
+	type_string = "Print analyzer";
+}
+
 void Print_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > &entries) const {
 
 	for(vector<template_handler< memory_profiler_sm_object_log_entry_class> >::iterator entry = entries.begin();entry != entries.end();entry++){
@@ -141,6 +130,10 @@ void Print_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_
 	}
 }
 
+Memory_Leak_Analyzer::Memory_Leak_Analyzer(){
+	type = leak_analyzer;
+	type_string = "Memory Leak analyzer";
+}
 
 void Memory_Leak_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > &entries) const {
 
@@ -216,6 +209,11 @@ void Memory_Leak_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_o
 
 }
 
+Double_Free_Analyzer::Double_Free_Analyzer(){
+	type = dfree_analyzer;
+	type_string = "Double free analyzer";
+}
+
 void Double_Free_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > &entries) const {
 
 	ofstream log_file;
@@ -249,4 +247,61 @@ void Double_Free_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_o
 
 	log_file.close();
 
+}
+
+Malloc_Counter_Analyzer::Malloc_Counter_Analyzer(){
+	type = malloc_counter_analyzer;
+	type_string = "Malloc, calloc and realloc counter analyzer";
+}
+
+void Malloc_Counter_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > &entries) const {
+
+	ofstream log_file;
+	log_file.open(("Analyzation_output_"+ process.object->PID_string + ".txt").c_str(), ios::app);
+
+	cout << endl << endl <<"Running malloc,calloc and realloc counting for Process: "<< process.object->PID_string<< endl;
+	log_file << endl << endl <<"Running malloc,calloc and realloc counting for Process: "<< process.object->PID_string<< endl;
+
+	unsigned long int malloc = 0;
+	unsigned long int malloc_size = 0;
+	unsigned long int realloc = 0;
+	unsigned long int realloc_size = 0;
+	unsigned long int calloc = 0;
+	unsigned long int calloc_size = 0;
+
+	vector<template_handler< memory_profiler_sm_object_log_entry_class> >::iterator it;
+
+	for(it = entries.begin(); it != entries.end(); it++){
+		if(it->object->valid){
+			if(it->object->type == malloc_func){
+				malloc++;
+				malloc_size += it->object->size;
+			}
+			else if(it->object->type == calloc_func){
+				calloc++;
+				calloc_size += it->object->size;
+			}
+			else if(it->object->type == realloc_func){
+				realloc++;
+				realloc_size += it->object->size;
+			}
+		}
+	}
+	cout << endl << "Number of mallocs: " << dec << malloc << endl;
+	log_file << endl << "Number of mallocs: " << dec << malloc << endl;
+	cout << endl << "Total memory allocated: " << dec << malloc_size << " bytes" << endl;
+	log_file << endl << "Total memory allocated: " << dec << malloc_size << " bytes" << endl;
+
+	cout << endl << "Number of callocs: " << dec << calloc << endl;
+	log_file << endl << "Number of callocs: " << dec << calloc << endl;
+	cout << endl << "Total memory allocated: " << dec << calloc_size << " bytes" << endl;
+	log_file << endl << "Total memory allocated: " << dec << calloc_size << " bytes" << endl;
+
+
+	cout << endl << "Number of reallocs: " << dec << realloc << endl;
+	log_file << endl << "Number of reallocs: " << dec << realloc << endl;
+	cout << endl << "Total memory allocated: " << dec << realloc_size << " bytes" << endl;
+	log_file << endl << "Total memory allocated: " << dec << realloc_size << " bytes" << endl;
+
+	log_file.close();
 }

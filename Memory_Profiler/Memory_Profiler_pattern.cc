@@ -36,14 +36,12 @@ bool operator==(template_handler<Pattern> &pattern, const string s){
 }
 
 Pattern::Pattern(){
-	cout << "Pattern default constructor, this: " << hex << this << endl;
 	name = "";
 }
 
 Pattern::~Pattern(){}
 
 Pattern::Pattern(string name){
-	cout << "Pattern constructor, this: " << hex << this << endl;
 	this->name =  name;
 }
 

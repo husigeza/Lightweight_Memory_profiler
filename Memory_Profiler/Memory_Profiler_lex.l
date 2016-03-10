@@ -35,6 +35,7 @@ extern "C" {
 "pattern"			{return PATTERN;}
 "leak"				{return LEAK;}
 "dfree"				{return DFREE;}
+"alloc"				{return ALLOC;}
 "analyze"			{return ANALYZE;}
 "filter"			{return FILTER;}
 "size"				{return SIZE;}

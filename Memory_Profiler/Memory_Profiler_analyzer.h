@@ -17,18 +17,19 @@ enum analyzer_type{
 	leak_analyzer = 1,
 	dfree_analyzer = 2,
 	print_analyzer = 3,
-	analyzer_type_unknown
+	malloc_counter_analyzer = 4,
+	unknown_analyzer
 };
 
 class Analyzer {
 private:
-	unsigned int type;
-	string type_string;
+
 	vector<template_handler<Pattern> > Pattern_vector;
 
 protected:
-	Analyzer(unsigned int type_p);
-
+	Analyzer();
+	unsigned int type;
+	string type_string;
 	template_handler<Process_handler> process;
 
 public:
@@ -52,7 +53,7 @@ public:
 class Print_Analyzer : public Analyzer{
 
 public:
-	Print_Analyzer() : Analyzer(print_analyzer){}
+	Print_Analyzer();
 	~Print_Analyzer(){}
 
 	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > &entries) const ;
@@ -62,7 +63,7 @@ public:
 class Memory_Leak_Analyzer : public Analyzer{
 
 public:
-	Memory_Leak_Analyzer() : Analyzer(leak_analyzer){}
+	Memory_Leak_Analyzer();
 	~Memory_Leak_Analyzer(){}
 
 	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > &entries) const ;
@@ -72,8 +73,18 @@ public:
 class Double_Free_Analyzer : public Analyzer{
 
 public:
-	Double_Free_Analyzer() : Analyzer(dfree_analyzer){}
+	Double_Free_Analyzer();
 	~Double_Free_Analyzer(){}
+
+	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > &entries) const ;
+
+};
+
+class Malloc_Counter_Analyzer : public Analyzer{
+
+public:
+	Malloc_Counter_Analyzer();
+	~Malloc_Counter_Analyzer(){}
 
 	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > &entries) const ;
 

@@ -38,7 +38,7 @@ extern "C" {
 %token <text> ALL 
 %token ALIVE PROFILED BT 
 %token ANALYZE ADD REMOVE ANALYZER ANALYZERS PATTERN FILTER SIZE
-%token LEAK DFREE
+%token LEAK DFREE ALLOC
 %token SAVE SYMBOLS MAP
 %token ON OFF
 %token <number> NUMBER
@@ -75,6 +75,7 @@ command : PRINT PROCESS NUMBER '\n'      			{mem_prof.Print_process($3);}
 		| ADD ANALYZER LEAK '\n'					{mem_prof.Create_new_analyzer(*(new Memory_Leak_Analyzer()));}
 		| ADD ANALYZER DFREE '\n'					{mem_prof.Create_new_analyzer(*(new Double_Free_Analyzer()));}
 		| ADD ANALYZER PRINT '\n'					{mem_prof.Create_new_analyzer(*(new Print_Analyzer()));}
+		| ADD ANALYZER ALLOC '\n'					{mem_prof.Create_new_analyzer(*(new Malloc_Counter_Analyzer()));}
 		| ADD FILTER SIZE NUMBER TEXT'\n'			{mem_prof.Create_new_size_filter_cli($4,$5);}
 		| ADD ANALYZER NUMBER PATTERN NUMBER '\n'	{mem_prof.Add_analyzer_to_pattern($3,$5);}
 		| ADD ANALYZER NUMBER PATTERN TEXT '\n'		{mem_prof.Add_analyzer_to_pattern_by_name($3,$5);}

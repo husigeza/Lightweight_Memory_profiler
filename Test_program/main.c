@@ -14,8 +14,8 @@ void dummy_malloc_1(int *pointer, int *i){
 
 	*i += 1;
 
-	pointer = (int *)malloc(3);
-	free(pointer);
+	pointer = (int *)calloc(3,sizeof(int));
+
 }
 
 void dummy_malloc_2(int *pointer, int *i){
@@ -23,7 +23,7 @@ void dummy_malloc_2(int *pointer, int *i){
 	*i += 1;
 
 	pointer = (int *)malloc(sizeof(int));
-	//free(pointer);
+	free(pointer);
 }
 
 void* Thread_1(void *arg)
@@ -69,8 +69,10 @@ int main()
    pthread_create(&(tid[1]), NULL, &Thread_2, (int*)2);
     printf("\nCreated Thread 2\n");
 
+    int *pointer = malloc(sizeof(int));
     while(1){
     	sleep(1);
+    	pointer = realloc(pointer,sizeof(int));
     	func1();
    }
 

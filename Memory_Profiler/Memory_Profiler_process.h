@@ -34,7 +34,9 @@
 
 enum {
 	malloc_func = 1,
-	free_func = 2
+	free_func = 2,
+	calloc_func = 3,
+	realloc_func = 4
 };
 
 using namespace std;
