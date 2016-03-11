@@ -108,11 +108,13 @@ command : PRINT PROCESS NUMBER '\n'      			{mem_prof.Print_process($3);}
 
 
 #define path_to_FIFO "/dev/mem_prof_fifo"
+#define path_to_overload_FIFO "/dev/mem_prof_fifo_overload"
 
 using namespace std;
 
-static Memory_Profiler mem_prof(path_to_FIFO);
+static Memory_Profiler mem_prof(path_to_FIFO,path_to_overload_FIFO);
 static pthread_t FIFO_read_thread_id;
+static pthread_t overload_FIFO_read_thread_id;
 
 extern "C" {
 void yyerror(const char *s){
@@ -211,7 +213,15 @@ void* Read_FIFO_thread(void *arg) {
 
 	while (true) {
 		mem_prof.Read_FIFO();
-		usleep(200);
+		usleep(300);
+	}
+	return 0;
+}
+
+void* Read_overload_FIFO_thread(void *arg) {
+
+	while (true) {
+		mem_prof.Read_overload_FIFO();
 	}
 	return 0;
 }
@@ -226,6 +236,13 @@ int main() {
 		cout << "Thread creation failed error: " << err << endl;
 	} else {
 		cout << "Read_FIFO_thread created" << endl;
+	}
+	
+	err = pthread_create(&overload_FIFO_read_thread_id, NULL, &Read_overload_FIFO_thread, NULL);
+	if (err) {
+		cout << "Thread creation failed error: " << err << endl;
+	} else {
+		cout << "Read_overload_FIFO_thread created" << endl;
 	}
 
 	cout << ">> "; 

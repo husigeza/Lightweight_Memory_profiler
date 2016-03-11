@@ -35,7 +35,7 @@ void* Thread_1(void *arg)
     while(1) {
        printf("Thread %d \n",(int*)arg);
         dummy_malloc_1(pointer,&i);
-        //usleep(3000);
+        //usleep(30);
         sleep(1);
     }
 
@@ -51,8 +51,8 @@ void* Thread_2(void *arg)
     while(1) {
         printf("Thread %d \n",(int*)arg);
         dummy_malloc_2(pointer,&i);
-        //usleep(3000);
-        sleep(1);
+       usleep(30);
+        //sleep(1);
     }
 
 

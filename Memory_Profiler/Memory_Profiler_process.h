@@ -41,6 +41,7 @@ enum {
 
 using namespace std;
 
+#define shared_memory_MAX_ENTRY 5000
 #define max_call_stack_depth 100
 
 class Process_handler;
@@ -50,8 +51,6 @@ class memory_profiler_sm_object_log_entry_class{
 
 public:
 	memory_profiler_sm_object_log_entry_class() {
-
-		cout << "log_entry_class default constructor, this: " << hex << this << endl;
 
 		thread_id = 0;
 		tval_before.tv_sec = 0;
@@ -87,10 +86,12 @@ public:
 	memory_profiler_sm_object_class(){
 		log_count = 0;
 		profiled = false;
+		active = false;
 	}
 	long unsigned int log_count; // Always has a bigger value with 1 than the real element number
 	bool profiled;
-	memory_profiler_sm_object_log_entry_class log_entry[1];
+	bool active;
+	memory_profiler_sm_object_log_entry_class log_entry[shared_memory_MAX_ENTRY];
 };
 
 struct memory_map_table_entry_class_comp {
@@ -109,7 +110,18 @@ class Process_handler {
     int shared_memory;
     string shared_memory_name;
     bool shared_memory_initialized;
+
     memory_profiler_sm_object_class *memory_profiler_struct;
+
+
+    int shared_memory_A;
+    int shared_memory_B;
+    string shared_memory_name_A;
+    string shared_memory_name_B;
+    memory_profiler_sm_object_class *memory_profiler_struct_A;
+    memory_profiler_sm_object_class *memory_profiler_struct_B;
+
+
     unsigned long mapped_size_of_shared_memory;
 
     int start_stop_semaphore_shared_memory;

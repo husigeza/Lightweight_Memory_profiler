@@ -15,7 +15,7 @@
 
 using namespace std;
 
-Memory_Profiler::Memory_Profiler(string fifo_path) {
+Memory_Profiler::Memory_Profiler(string fifo_path, string overload_fifo_path) {
 
 	this->fifo_path = fifo_path;
 
@@ -33,12 +33,30 @@ Memory_Profiler::Memory_Profiler(string fifo_path) {
 	}
 	mem_prof_fifo = open(fifo_path.c_str(), O_RDONLY | O_NONBLOCK );
 
+	mem_prof_overload_fifo_path = overload_fifo_path;
+
+	if (mkfifo(overload_fifo_path.c_str(), 0666) == -1) {
+
+			if (errno == EEXIST) {
+				cout << "overload FIFO already exists" << endl;
+			} else {
+				cout << "Failed creating FIFO" << "errno: " << errno << endl;
+				return;
+			}
+		}
+		else {
+		cout << "overload FIFO is created" << endl;
+		}
+		mem_prof_overload_fifo = open(overload_fifo_path.c_str(), O_RDONLY | O_NONBLOCK );
+
 }
 
 Memory_Profiler::~Memory_Profiler() {
 
 	close(mem_prof_fifo);
+	close(mem_prof_overload_fifo);
 	unlink(fifo_path.c_str());
+	unlink(mem_prof_overload_fifo_path.c_str());
 	Processes.clear();
 }
 
@@ -136,14 +154,14 @@ void Memory_Profiler::Remove_process_from_profiling(const pid_t PID){
 		return;
 	}
 
-	if(Processes[PID].object->Remap_shared_memory()){
+	//if(Processes[PID].object->Remap_shared_memory()){
 		Processes[PID].object->Start_Stop_profiling();
 		Processes[PID].object->Set_profiled(false);
 		cout << "Process " << dec << PID << " removed from profiled state!" << endl;
-	}
+	/*}
 	else{
 		cout << "Process " << dec << PID << " NOT removed from profiled state!" << endl;
-	}
+	}*/
 
 
 
@@ -211,7 +229,7 @@ void Memory_Profiler::Read_FIFO() {
 	map<const pid_t, template_handler<Process_handler> >::iterator it;
 
 	if (mem_prof_fifo != -1) {
-		while ((res = read(mem_prof_fifo, (char*)buffer.c_str(), buff_size/*sizeof(buffer)*/)) != 0) {
+		while ((res = read(mem_prof_fifo, (char*)buffer.c_str(), buff_size)) != 0) {
 
 			if (res > 0) {
 				pid = atol( buffer.c_str() );
@@ -236,6 +254,32 @@ void Memory_Profiler::Read_FIFO() {
 	} else {
 		cout << "Failed opening the FIFO, errno: " << errno << endl;
 	}
+}
+
+void Memory_Profiler::Read_overload_FIFO(){
+
+	pid_t pid;
+	int res;
+	string buffer;
+	size_t buff_size = 6;
+
+	if (mem_prof_overload_fifo != -1) {
+		while ((res = read(mem_prof_overload_fifo, (char*)buffer.c_str(), buff_size)) != 0) {
+
+			if (res > 0) {
+				pid = atol( buffer.c_str() );
+				Save_process_shared_memory(pid);
+			}
+		}
+	}
+	else {
+		cout << "Failed opening the overload FIFO, errno: " << errno << endl;
+	}
+
+}
+
+void Memory_Profiler::Save_process_shared_memory(pid_t PID){
+	//cout << "Saving " << dec << " process shm..." << endl;
 }
 
 

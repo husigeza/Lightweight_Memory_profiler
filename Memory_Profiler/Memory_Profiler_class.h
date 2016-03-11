@@ -14,7 +14,9 @@ class Memory_Profiler {
 
         map<pid_t const, template_handler<Process_handler> > Processes;
         string fifo_path;
+        string mem_prof_overload_fifo_path;
         int mem_prof_fifo;
+        int mem_prof_overload_fifo;
 
         void Set_process_alive_flag(const pid_t PID, bool value);
 
@@ -30,7 +32,7 @@ class Memory_Profiler {
 
     public:
         Memory_Profiler();
-        Memory_Profiler(string fifo_path);
+        Memory_Profiler(string fifo_path, string overload_fifo_path);
         ~Memory_Profiler();
 
         bool Add_Process_to_list(const pid_t PID);
@@ -46,6 +48,9 @@ class Memory_Profiler {
 
 
         void Read_FIFO();
+        void Read_overload_FIFO();
+
+        void Save_process_shared_memory(pid_t PID);
 
         bool Process_analyze_ready(const pid_t PID);
 

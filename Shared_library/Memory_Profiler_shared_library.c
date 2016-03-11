@@ -25,8 +25,11 @@
 //#define fifo_path "/home/egezhus/Memory_profiler/mem_prof_fifo"
 #define fifo_path "/dev/mem_prof_fifo"
 
+#define fifo_overload_path "/dev/mem_prof_fifo_overload"
+
 #define max_call_stack_depth 100
 
+#define shared_memory_MAX_ENTRY 5000
 
 extern void *__libc_malloc(size_t size);
 extern void *__libc_free(void *);
@@ -51,13 +54,15 @@ static bool user_profiling_flag = true;
 #endif
 
 static char PID_string[6];
-static char PID_string_shared_mem[16];
 static char PID_string_sem[16];
 
-static int shared_memory;
-static int mem_prof_fifo;
+enum {
+	shm_active_A = 0,
+	shm_active_B = 1
+};
 
-static long unsigned int shared_memory_size;
+static int mem_prof_fifo;
+static int mem_prof_overload_fifo;
 
 /**
  * Semaphore for defending the global variable starting/stopping the profiling
@@ -87,6 +92,7 @@ enum {
 	realloc_func = 4
 };
 
+
 typedef struct memory_profiler_log_entry_s{
 	pthread_t thread_id;
 	struct timeval tval_before;
@@ -103,11 +109,32 @@ typedef struct memory_profiler_log_entry_s{
 typedef struct memory_profiler_struct_s {
 	long unsigned int log_count;
 	bool profiled;
-	memory_profiler_log_entry_t log_entry[1]; // Always has a bigger value with 1 than the real element number
+	bool active;
+	memory_profiler_log_entry_t log_entry[shared_memory_MAX_ENTRY];
 } memory_profiler_struct_t;
 
-static memory_profiler_struct_t *memory_profiler_struct;
+typedef struct memory_profiler_pointer_handler_s {
+	memory_profiler_struct_t *pointer;
+	int active;
+}memory_profiler_pointer_handler_t;
 
+
+static int shared_memory_A;
+static int shared_memory_B;
+
+static char string_shared_mem_A[18];
+static char string_shared_mem_B[18];
+
+static const long unsigned int shared_memory_size_A = sizeof(memory_profiler_struct_t);
+static const long unsigned int shared_memory_size_B = sizeof(memory_profiler_struct_t);
+
+static memory_profiler_struct_t *memory_profiler_struct_A;
+static memory_profiler_struct_t *memory_profiler_struct_B;
+
+static memory_profiler_pointer_handler_t memory_profiler_struct_handler;
+
+
+unsigned long int entries_num = 0;
 
 void
 signal_callback_handler(int signum)
@@ -115,12 +142,13 @@ signal_callback_handler(int signum)
 
 	sem_destroy(memory_profiler_start_semaphore);
 
-	munmap(memory_profiler_struct, sizeof(memory_profiler_struct_t));
+	munmap(memory_profiler_struct_A, sizeof(memory_profiler_struct_t));
+	munmap(memory_profiler_struct_B, sizeof(memory_profiler_struct_t));
 	munmap(memory_profiler_start_semaphore, sizeof(sem_t));
 
 	shm_unlink(PID_string_sem);
-	shm_unlink(PID_string_shared_mem);
-	printf("Caught signal %d\n",signum);
+	shm_unlink(string_shared_mem_A);
+	shm_unlink(string_shared_mem_B);
 
 	// Terminate program
 	exit(signum);
@@ -176,9 +204,6 @@ void __attribute__ ((constructor)) Memory_profiler_shared_library_init() {
 	sprintf(s,"current process is: %s\n",PID_string);
 	print_to_log(s);
 
-	//sprintf(PID_string_shared_mem, "/%d", getpid());
-	sprintf(PID_string_shared_mem, "%d_mem_prof", getpid());
-
 	sprintf(PID_string_sem, "%d_start_sem", getpid());
 	semaphore_shared_memory = shm_open(PID_string_sem, O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
 	if (semaphore_shared_memory < 0) {
@@ -226,6 +251,9 @@ void __attribute__ ((constructor)) Memory_profiler_shared_library_init() {
 	//Calling a dummy backtrace because it calls malloc at its first run, avoid recursion
 	void *dummy_call_stack[1];
 	backtrace(dummy_call_stack,1);
+
+	sprintf(string_shared_mem_A, "%d_mem_prof_A", getpid());
+	sprintf(string_shared_mem_B, "%d_mem_prof_B", getpid());
 
 #ifdef START_PROF_IMM
 
@@ -275,57 +303,76 @@ void __attribute__ ((constructor)) Memory_profiler_shared_library_init() {
 void __attribute__ ((destructor)) Memory_profiler_shared_library_finit(){
 
 	printf("Closing shared lib\n");
-	shm_unlink(PID_string_shared_mem);
-	munmap(memory_profiler_struct, sizeof(memory_profiler_struct_t));
-	sem_destroy(&thread_semaphore);
+
+
+	sem_destroy(memory_profiler_start_semaphore);
+
+	munmap(memory_profiler_struct_A, sizeof(memory_profiler_struct_t));
+	munmap(memory_profiler_struct_B, sizeof(memory_profiler_struct_t));
+	munmap(memory_profiler_start_semaphore, sizeof(sem_t));
+
 	shm_unlink(PID_string_sem);
-	close(mem_prof_fifo);
+	shm_unlink(string_shared_mem_A);
+	shm_unlink(string_shared_mem_B);
 }
+
+inline void swap_shared_memory_pointers(){
+	if(memory_profiler_struct_handler.active == shm_active_A){
+		printf("Swapping shared memory from A to B \n");
+		indicate_shm_overload();
+		memory_profiler_struct_handler.pointer = memory_profiler_struct_B;
+		memory_profiler_struct_B->active = true;
+		memory_profiler_struct_handler.active = shm_active_B;
+	}
+	else {
+		printf("Swapping shared memory from B to A \n");
+		indicate_shm_overload();
+		memory_profiler_struct_handler.pointer = memory_profiler_struct_A;
+		memory_profiler_struct_A->active = true;
+		memory_profiler_struct_handler.active = shm_active_A;
+	}
+	memory_profiler_struct_handler.pointer->log_count = 0;
+}
+
+inline void check_and_set_shared_memory_size(){
+	if(memory_profiler_struct_handler.pointer->log_count == shared_memory_MAX_ENTRY) {
+		swap_shared_memory_pointers();
+	}
+}
+
 
 void free(void* pointer) {
 
 	if(init_done){
-	sem_wait(&thread_semaphore);
-	if (profiling_allowed() && get_user_profiling_flag()) {
+		sem_wait(&thread_semaphore);
+		if (profiling_allowed() && get_user_profiling_flag()) {
 
+			check_and_set_shared_memory_size();
 
-			if(shared_memory_size < (sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count) * sizeof(memory_profiler_log_entry_t))){
-
-				munmap(memory_profiler_struct, shared_memory_size);
-
-				shared_memory_size = 2*shared_memory_size;
-
-				int err = ftruncate(shared_memory, shared_memory_size);
-				if (err < 0) {
-					printf("Error while truncating shared memory: %d\n", errno);
-				}
-				memory_profiler_struct = (memory_profiler_struct_t*)mmap(NULL, shared_memory_size, PROT_WRITE, MAP_SHARED , shared_memory, 0);
-				if (memory_profiler_struct == MAP_FAILED) {
-					printf("Failed mapping the shared memory: %d \n", errno);
-				}
-			}
-
-			gettimeofday(&memory_profiler_struct->log_entry[memory_profiler_struct->log_count].tval_before,NULL);
+			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_before,NULL);
 			__libc_free(pointer);
-			gettimeofday(&memory_profiler_struct->log_entry[memory_profiler_struct->log_count].tval_after,NULL);
+			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_after,NULL);
 
-			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].backtrace_length = backtrace(memory_profiler_struct->log_entry[memory_profiler_struct->log_count].call_stack,max_call_stack_depth);
-			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].thread_id = pthread_self();
-			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].type = free_func;
-			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].size = 0;
-		    memory_profiler_struct->log_entry[memory_profiler_struct->log_count].address = (uint64_t)pointer;
-		    memory_profiler_struct->log_entry[memory_profiler_struct->log_count].valid = true;
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].backtrace_length = backtrace(memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].call_stack,max_call_stack_depth);
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].thread_id = pthread_self();
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].type = free_func;
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].size = 0;
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (uint64_t)pointer;
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid = true;
 
-		    memory_profiler_struct->log_count++;
+			memory_profiler_struct_handler.pointer->log_count++;
+
+			entries_num++;
+			printf("entries_num: %d\n",entries_num);
 
 			if(sem_post(&thread_semaphore) == -1){
 				printf("Error in sem_post, errno: %d\n",errno);
 			}
 			return;
 		}
-	if(sem_post(&thread_semaphore) == -1){
-		printf("Error in sem_post, errno: %d\n",errno);
-	}
+		if(sem_post(&thread_semaphore) == -1){
+			printf("Error in sem_post, errno: %d\n",errno);
+		}
 	}
 
 	__libc_free(pointer);
@@ -341,35 +388,23 @@ void* malloc(size_t size) {
 		sem_wait(&thread_semaphore);
 		if (profiling_allowed() && get_user_profiling_flag()) {
 
-			if(shared_memory_size < (sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count) * sizeof(memory_profiler_log_entry_t))){
+			check_and_set_shared_memory_size();
 
-				munmap(memory_profiler_struct, shared_memory_size);
-
-				shared_memory_size = 2*shared_memory_size;
-
-				int err = ftruncate(shared_memory, shared_memory_size);
-				if (err < 0) {
-					printf("Error while truncating shared memory: %d\n", errno);
-				}
-				memory_profiler_struct = (memory_profiler_struct_t*)mmap(NULL, shared_memory_size, PROT_WRITE, MAP_SHARED , shared_memory, 0);
-				if (memory_profiler_struct == MAP_FAILED) {
-					printf("Failed mapping the shared memory: %d \n", errno);
-				}
-			}
-
-			gettimeofday(&memory_profiler_struct->log_entry[memory_profiler_struct->log_count].tval_before,NULL);
+			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_before,NULL);
 			void* pointer = __libc_malloc(size);
-			gettimeofday(&memory_profiler_struct->log_entry[memory_profiler_struct->log_count].tval_after,NULL);
+			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_after,NULL);
 
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].backtrace_length = backtrace(memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].call_stack,max_call_stack_depth);
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].thread_id = pthread_self();
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].type = malloc_func;
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].size = size;
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (uint64_t*)pointer;
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid = true;
 
-			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].backtrace_length = backtrace(memory_profiler_struct->log_entry[memory_profiler_struct->log_count].call_stack,max_call_stack_depth);
-			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].thread_id = pthread_self();
-			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].type = malloc_func;
-			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].size = size;
-			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].address = (uint64_t*)pointer;
-			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].valid = true;
+			memory_profiler_struct_handler.pointer->log_count++;
 
-			memory_profiler_struct->log_count++;
+			entries_num++;
+			printf("entries_num: %d\n",entries_num);
 
 			if(sem_post(&thread_semaphore) == -1){
 				printf("Error in sem_post, errno: %d\n",errno);
@@ -393,35 +428,23 @@ void* calloc(size_t nmemb,size_t size) {
 		sem_wait(&thread_semaphore);
 		if (profiling_allowed() && get_user_profiling_flag()) {
 
-			if(shared_memory_size < (sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count) * sizeof(memory_profiler_log_entry_t))){
+			check_and_set_shared_memory_size();
 
-				munmap(memory_profiler_struct, shared_memory_size);
-
-				shared_memory_size = 2*shared_memory_size;
-
-				int err = ftruncate(shared_memory, shared_memory_size);
-				if (err < 0) {
-					printf("Error while truncating shared memory: %d\n", errno);
-				}
-				memory_profiler_struct = (memory_profiler_struct_t*)mmap(NULL, shared_memory_size, PROT_WRITE, MAP_SHARED , shared_memory, 0);
-				if (memory_profiler_struct == MAP_FAILED) {
-					printf("Failed mapping the shared memory: %d \n", errno);
-				}
-			}
-
-			gettimeofday(&memory_profiler_struct->log_entry[memory_profiler_struct->log_count].tval_before,NULL);
+			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_before,NULL);
 			void* pointer = __libc_calloc(nmemb,size);
-			gettimeofday(&memory_profiler_struct->log_entry[memory_profiler_struct->log_count].tval_after,NULL);
+			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_after,NULL);
 
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].backtrace_length = backtrace(memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].call_stack,max_call_stack_depth);
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].thread_id = pthread_self();
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].type = calloc_func;
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].size = nmemb*size;
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (uint64_t*)pointer;
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid = true;
 
-			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].backtrace_length = backtrace(memory_profiler_struct->log_entry[memory_profiler_struct->log_count].call_stack,max_call_stack_depth);
-			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].thread_id = pthread_self();
-			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].type = calloc_func;
-			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].size = nmemb*size;
-			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].address = (uint64_t*)pointer;
-			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].valid = true;
+			memory_profiler_struct_handler.pointer->log_count++;
 
-			memory_profiler_struct->log_count++;
+			entries_num++;
+			printf("entries_num: %d\n",entries_num);
 
 			if(sem_post(&thread_semaphore) == -1){
 				printf("Error in sem_post, errno: %d\n",errno);
@@ -445,35 +468,24 @@ void* realloc(void *ptr,size_t size) {
 		sem_wait(&thread_semaphore);
 		if (profiling_allowed() && get_user_profiling_flag()) {
 
-			if(shared_memory_size < (sizeof(memory_profiler_struct_t) + (memory_profiler_struct->log_count) * sizeof(memory_profiler_log_entry_t))){
+			check_and_set_shared_memory_size();
 
-				munmap(memory_profiler_struct, shared_memory_size);
-
-				shared_memory_size = 2*shared_memory_size;
-
-				int err = ftruncate(shared_memory, shared_memory_size);
-				if (err < 0) {
-					printf("Error while truncating shared memory: %d\n", errno);
-				}
-				memory_profiler_struct = (memory_profiler_struct_t*)mmap(NULL, shared_memory_size, PROT_WRITE, MAP_SHARED , shared_memory, 0);
-				if (memory_profiler_struct == MAP_FAILED) {
-					printf("Failed mapping the shared memory: %d \n", errno);
-				}
-			}
-
-			gettimeofday(&memory_profiler_struct->log_entry[memory_profiler_struct->log_count].tval_before,NULL);
+			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_before,NULL);
 			void* pointer = __libc_realloc(ptr,size);
-			gettimeofday(&memory_profiler_struct->log_entry[memory_profiler_struct->log_count].tval_after,NULL);
+			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_after,NULL);
 
 
-			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].backtrace_length = backtrace(memory_profiler_struct->log_entry[memory_profiler_struct->log_count].call_stack,max_call_stack_depth);
-			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].thread_id = pthread_self();
-			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].type = realloc_func;
-			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].size = size;
-			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].address = (uint64_t*)pointer;
-			memory_profiler_struct->log_entry[memory_profiler_struct->log_count].valid = true;
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].backtrace_length = backtrace(memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].call_stack,max_call_stack_depth);
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].thread_id = pthread_self();
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].type = realloc_func;
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].size = size;
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (uint64_t*)pointer;
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid = true;
 
-			memory_profiler_struct->log_count++;
+			memory_profiler_struct_handler.pointer->log_count++;
+
+			entries_num++;
+			printf("entries_num: %d\n",entries_num);
 
 			if(sem_post(&thread_semaphore) == -1){
 				printf("Error in sem_post, errno: %d\n",errno);
@@ -495,33 +507,63 @@ bool Create_shared_memory(){
 	sprintf(s,"Create_shared_memory: Creating shared memory for profiling\n");
 	print_to_log(s);
 
-	shared_memory_size = sizeof(memory_profiler_struct_t);
+	shared_memory_A = shm_open(string_shared_mem_A, O_CREAT | O_RDWR | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO);
+		if (shared_memory_A < 0) {
+			printf("Error while creating shared memory: %s, errno: %d \n",string_shared_mem_A, errno);
+			//shared_memory_size = 0;
+			sprintf(s,"Create_shared_memory: Error while creating shared memory: %s, errno: %d \n",string_shared_mem_A, errno);
+			print_to_log(s);
+			return false;
+		}
 
-	shared_memory = shm_open(PID_string_shared_mem, O_CREAT | O_RDWR | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO);
-	if (shared_memory < 0) {
-		printf("Error while creating the shared memory:%d \n", errno);
-		shared_memory_size = 0;
-		sprintf(s,"Create_shared_memory: Error while creating the shared memory:%d \n", errno);
-		print_to_log(s);
-		return false;
-	}
+	int err = ftruncate(shared_memory_A, shared_memory_size_A);
+		if (err < 0) {
+			printf("Error while truncating shared memory: %s, errno: %d\n",string_shared_mem_A, errno);
+			sprintf(s,"Create_shared_memory: Error while truncating shared memory: %s, errno: %d\n",string_shared_mem_A, errno);
+			print_to_log(s);
+			return false;
+		}
 
-	int err = ftruncate(shared_memory, shared_memory_size);
-	if (err < 0) {
-		printf("Error while truncating shared memory: %d\n", errno);
-		shared_memory_size = 0;
-		sprintf(s,"Create_shared_memory: Error while truncating shared memory: %d\n", errno);
-		print_to_log(s);
-		return false;
-	}
+	memory_profiler_struct_A = (memory_profiler_struct_t*)mmap(NULL, shared_memory_size_A, PROT_WRITE, MAP_SHARED , shared_memory_A, 0);
+		if (memory_profiler_struct_A == MAP_FAILED) {
+			printf("Failed mapping shared memory: %s, errno: %d \n",string_shared_mem_A, errno);
+			sprintf(s,"Create_shared_memory: Failed mapping shared memory: %s, errno: %d\n",string_shared_mem_A, errno);
+			print_to_log(s);
+			return false;
+		}
 
-	memory_profiler_struct = (memory_profiler_struct_t*)mmap(NULL, shared_memory_size, PROT_WRITE, MAP_SHARED , shared_memory, 0);
-	if (memory_profiler_struct == MAP_FAILED) {
-		printf("Failed mapping the shared memory: %d \n", errno);
-		sprintf(s,"Create_shared_memory: Failed mapping the shared memory: %d\n", errno);
-		print_to_log(s);
-		return false;
-	}
+	memory_profiler_struct_A->log_count = 0;
+
+	shared_memory_B = shm_open(string_shared_mem_B, O_CREAT | O_RDWR | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO);
+		if (shared_memory_B < 0) {
+			printf("Error while creating shared memory: %s, errno: %d \n",string_shared_mem_B, errno);
+			//shared_memory_size = 0;
+			sprintf(s,"Create_shared_memory: Error while creating shared memory: %s, errno: %d \n",string_shared_mem_B, errno);
+			print_to_log(s);
+			return false;
+		}
+
+	 err = ftruncate(shared_memory_B, shared_memory_size_B);
+		if (err < 0) {
+			printf("Error while truncating shared memory: %s, errno: %d\n",string_shared_mem_B, errno);
+			sprintf(s,"Create_shared_memory: Error while truncating shared memory: %s, errno: %d\n",string_shared_mem_B, errno);
+			print_to_log(s);
+			return false;
+		}
+
+	memory_profiler_struct_B = (memory_profiler_struct_t*)mmap(NULL, shared_memory_size_B, PROT_WRITE, MAP_SHARED , shared_memory_B, 0);
+		if (memory_profiler_struct_B == MAP_FAILED) {
+			printf("Failed mapping shared memory: %s, errno: %d \n",string_shared_mem_B, errno);
+			sprintf(s,"Create_shared_memory: Failed mapping shared memory: %s, errno: %d\n",string_shared_mem_B, errno);
+			print_to_log(s);
+			return false;
+		}
+
+	memory_profiler_struct_B->log_count = 0;
+	memory_profiler_struct_B->active = false;
+
+	memory_profiler_struct_handler.pointer = memory_profiler_struct_A;
+	memory_profiler_struct_handler.active = shm_active_A;
 
 	return true;
 }
@@ -532,25 +574,46 @@ bool Open_shared_memory(){
 	sprintf(s,"Open_shared_memory: Opening shared memory for profiling\n");
 	print_to_log(s);
 
-	if(shared_memory_size == 0){
-		shared_memory_size = sizeof(memory_profiler_struct_t);
-	}
-
-	shared_memory = shm_open(PID_string_shared_mem, O_RDWR, S_IRWXU | S_IRWXG | S_IRWXO);
-	if (shared_memory < 0) {
-		printf("Error while opening shared memory:%d \n", errno);
-		sprintf(s,"Open_shared_memory: Error while opening shared memory:%d \n", errno);
+	shared_memory_A = shm_open(string_shared_mem_A, O_RDWR, S_IRWXU | S_IRWXG | S_IRWXO);
+	if (shared_memory_A < 0) {
+		printf("Error while opening shared memory: %s, errno: %d \n",string_shared_mem_A, errno);
+		sprintf(s,"Open_shared_memory: Error while opening shared memory: %s, errno: %d\n",string_shared_mem_A, errno);
 		print_to_log(s);
 		return false;
 	}
 
-	memory_profiler_struct = (memory_profiler_struct_t*)mmap(NULL, shared_memory_size, PROT_WRITE, MAP_SHARED , shared_memory, 0);
-	if (memory_profiler_struct == MAP_FAILED) {
-		printf("Failed mapping the shared memory: %d \n", errno);
-		sprintf(s,"Open_shared_memory: Failed mapping the shared memory: %d \n", errno);
+	memory_profiler_struct_A = (memory_profiler_struct_t*)mmap(NULL, shared_memory_size_A, PROT_WRITE, MAP_SHARED , shared_memory_A, 0);
+	if (memory_profiler_struct_A == MAP_FAILED) {
+		printf("Failed mapping the shared memory: %s, errno: %d\n",string_shared_mem_A, errno);
+		sprintf(s,"Open_shared_memory: Failed mapping the shared memory: %s, errno: %d\n",string_shared_mem_A, errno);
 		print_to_log(s);
 		return false;
 	}
+
+	memory_profiler_struct_A->log_count = 0;
+	memory_profiler_struct_A->active = true;
+
+	shared_memory_B = shm_open(string_shared_mem_B, O_RDWR, S_IRWXU | S_IRWXG | S_IRWXO);
+	if (shared_memory_B < 0) {
+		printf("Error while opening shared memory: %s, errno: %d \n",string_shared_mem_B, errno);
+		sprintf(s,"Open_shared_memory: Error while opening shared memory: %s, errno: %d\n",string_shared_mem_B, errno);
+		print_to_log(s);
+		return false;
+	}
+
+	memory_profiler_struct_B = (memory_profiler_struct_t*)mmap(NULL, shared_memory_size_B, PROT_WRITE, MAP_SHARED , shared_memory_B, 0);
+	if (memory_profiler_struct_B == MAP_FAILED) {
+		printf("Failed mapping the shared memory: %s, errno: %d\n",string_shared_mem_B, errno);
+		sprintf(s,"Open_shared_memory: Failed mapping the shared memory: %s, errno: %d\n",string_shared_mem_B, errno);
+		print_to_log(s);
+		return false;
+	}
+
+	memory_profiler_struct_B->active = false;
+
+	memory_profiler_struct_handler.pointer = memory_profiler_struct_A;
+	memory_profiler_struct_handler.active = shm_active_A;
+
 	return true;
 }
 
@@ -578,11 +641,36 @@ void* Memory_profiler_start_thread(void *arg){
 			sem_wait(&thread_semaphore);
 				set_profiling(false);
 			sem_post(&thread_semaphore);
-			munmap(memory_profiler_struct, shared_memory_size);
+			munmap(memory_profiler_struct_A, shared_memory_size_A);
+			munmap(memory_profiler_struct_B, shared_memory_size_B);
 
 			sprintf(s,"Memory_profiler_start_thread: closing shared memory for profiling\n");
 			print_to_log(s);
 		}
+	}
+}
+
+void indicate_shm_overload(){
+
+	printf("Notifiing... %s\n",PID_string);
+
+	mem_prof_overload_fifo = open(fifo_overload_path, O_WRONLY);
+
+	if (mem_prof_overload_fifo != -1) {
+
+		printf("overload: %s\n",PID_string);
+
+		if (write(mem_prof_overload_fifo, &PID_string, sizeof(PID_string)) == -1) {
+
+			printf("Failed writing the overload FIFO\n");
+			sprintf(s,"Hearthbeat: Failed writing the overload FIFO\n");
+			print_to_log(s);
+		}
+		//printf("Profiler is notified\n");
+		close(mem_prof_overload_fifo);
+	}
+	else {
+		//printf("Failed opening the mem_prof_overload_fifo \n");
 	}
 }
 
@@ -625,7 +713,8 @@ void set_profiling(bool value){
 
 	sem_wait(&enable_semaphore);
 		enable = value;
-		memory_profiler_struct->profiled = value;
+		// always memory_profiler_struct_A contains the right value
+		memory_profiler_struct_A->profiled = value;
 	sem_post(&enable_semaphore);
 }
 
