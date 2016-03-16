@@ -41,7 +41,8 @@ enum {
 
 using namespace std;
 
-#define shared_memory_MAX_ENTRY 5000
+
+#define shared_memory_MAX_ENTRY 10
 #define max_call_stack_depth 100
 
 class Process_handler;
@@ -52,46 +53,90 @@ class memory_profiler_sm_object_log_entry_class{
 public:
 	memory_profiler_sm_object_log_entry_class() {
 
+		cout << "Constructor" << endl;
+
+		valid = false;
 		thread_id = 0;
-		tval_before.tv_sec = 0;
-		tval_before.tv_usec = 0;
-		tval_after.tv_sec = 0;
-		tval_after.tv_usec = 0;
 		type = 0;
 		size = 0;
 		backtrace_length = 0;
-		//call_stack = 0;
 		address = 0;
-		valid = false;
 	}
 
 	pthread_t thread_id;
 	struct timeval tval_before;
 	struct timeval tval_after;
-	int type; //malloc = 1, free = 2
-	size_t  size; // in case of malloc
-	int backtrace_length;
+	unsigned int type;
+	unsigned long int size;
+	unsigned int backtrace_length;
 	void *call_stack[max_call_stack_depth];
-	uint64_t address;
+	unsigned long int address;
 	bool valid;
+
+	void wite_to_file(ofstream &entriesfile);
+	void read_from_file(ofstream &entriesfile);
 
 	void Print(template_handler<Process_handler> process, ofstream &log_file) const;
 	void Print(template_handler<Process_handler> process) const;
 
 };
 
-class memory_profiler_sm_object_class {
+class memory_profiler_sm_object_class_base {
 
-public:
-	memory_profiler_sm_object_class(){
+protected:
+	memory_profiler_sm_object_class_base(){
 		log_count = 0;
 		profiled = false;
 		active = false;
 	}
-	long unsigned int log_count; // Always has a bigger value with 1 than the real element number
+
+	memory_profiler_sm_object_class_base(unsigned long int entry_count){
+		log_count = entry_count;
+		profiled = false;
+		active = false;
+	}
+
+public:
+	~memory_profiler_sm_object_class_base(){};
+
+	unsigned long int log_count; // Always has a bigger value with 1 than the real element number
 	bool profiled;
 	bool active;
+
+};
+
+class memory_profiler_sm_object_class_fix : public memory_profiler_sm_object_class_base{
+
+	void write_header_to_file(string filename, unsigned long int total_log_count);
+	void write_entries_to_file(string filename);
+
+public:
+	memory_profiler_sm_object_class_fix() : memory_profiler_sm_object_class_base(){}
+	~memory_profiler_sm_object_class_fix(){}
+
 	memory_profiler_sm_object_log_entry_class log_entry[shared_memory_MAX_ENTRY];
+
+	void write_to_binary_file(string PID,unsigned long int total_log_count);
+};
+
+
+class memory_profiler_sm_object_class : public memory_profiler_sm_object_class_base{
+
+	void read_header_from_file(string filename);
+	void read_entries_from_file(string filename);
+
+public:
+	memory_profiler_sm_object_class(unsigned long int entry_count) : memory_profiler_sm_object_class_base(entry_count){
+		log_entry = new memory_profiler_sm_object_log_entry_class[entry_count];
+	}
+
+	~memory_profiler_sm_object_class(){
+		delete[] log_entry;
+	}
+
+	memory_profiler_sm_object_log_entry_class *log_entry;
+
+	void read_from_binary_file(string PID);
 };
 
 struct memory_map_table_entry_class_comp {
@@ -111,15 +156,16 @@ class Process_handler {
     string shared_memory_name;
     bool shared_memory_initialized;
 
-    memory_profiler_sm_object_class *memory_profiler_struct;
+
 
 
     int shared_memory_A;
     int shared_memory_B;
     string shared_memory_name_A;
     string shared_memory_name_B;
-    memory_profiler_sm_object_class *memory_profiler_struct_A;
-    memory_profiler_sm_object_class *memory_profiler_struct_B;
+
+    string header;
+    string entries;
 
 
     unsigned long mapped_size_of_shared_memory;
@@ -157,6 +203,13 @@ class Process_handler {
         Process_handler(pid_t PID);
         ~Process_handler();
 
+        memory_profiler_sm_object_class_fix *memory_profiler_struct_A;
+        memory_profiler_sm_object_class_fix *memory_profiler_struct_B;
+
+        memory_profiler_sm_object_class *memory_profiler_struct;
+
+        unsigned long int total_entry_number;
+
         string PID_string;
 
         Process_handler(const Process_handler &obj);
@@ -175,6 +228,7 @@ class Process_handler {
         bool Init_shared_memory();
         bool Remap_shared_memory();
 
+        void Read_shared_memory();
         memory_profiler_sm_object_class* Get_shared_memory() const;
         const bool Is_shared_memory_initialized() const {return shared_memory_initialized;} ;
 

@@ -280,6 +280,22 @@ void Memory_Profiler::Read_overload_FIFO(){
 
 void Memory_Profiler::Save_process_shared_memory(pid_t PID){
 	//cout << "Saving " << dec << " process shm..." << endl;
+	template_handler<Process_handler> process = Processes[PID];
+
+	if(process.object->memory_profiler_struct_A->active == false){
+		cout << " Saving from segment A..." << endl;
+		cout << " segment A log count: " << process.object->memory_profiler_struct_A->log_count << endl;
+		process.object->total_entry_number += process.object->memory_profiler_struct_A->log_count;
+		process.object->memory_profiler_struct_A->write_to_binary_file(process.object->PID_string,process.object->total_entry_number);
+	}
+	else {
+		cout << " Saving from segment B..." << endl;
+		cout << " segment B log count: " << process.object->memory_profiler_struct_B->log_count << endl;
+		process.object->total_entry_number += process.object->memory_profiler_struct_B->log_count;
+		process.object->memory_profiler_struct_B->write_to_binary_file(process.object->PID_string,process.object->total_entry_number);
+	}
+
+	cout << dec << PID << " log count:  " << process.object->total_entry_number << endl;
 }
 
 
@@ -503,7 +519,9 @@ void Memory_Profiler::Run_pattern(string pattern_name, pid_t PID){
 			cout << "Wrong pattern name" << endl;
 	}
 	else{
+		Processes[PID].object->Read_shared_memory();
 		pattern->object->Run_analyzers(Processes[PID]);
+		delete Processes[PID].object->memory_profiler_struct;
 	}
 }
 
@@ -528,7 +546,9 @@ void Memory_Profiler::Run_pattern_all_process(string name){
 	}
 	else{
 		for(map<pid_t const,template_handler<Process_handler> >::iterator process = Processes.begin();process != Processes.end();process++){
+			process->second.object->Read_shared_memory();
 			pattern->object->Run_analyzers(process->second);
+			delete process->second.object->memory_profiler_struct;
 		}
 	}
 

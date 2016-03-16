@@ -29,7 +29,7 @@
 
 #define max_call_stack_depth 100
 
-#define shared_memory_MAX_ENTRY 5000
+#define shared_memory_MAX_ENTRY 10
 
 extern void *__libc_malloc(size_t size);
 extern void *__libc_free(void *);
@@ -53,6 +53,7 @@ static bool user_profiling_flag = false;
 static bool user_profiling_flag = true;
 #endif
 
+// TODO: set the proper size, need +1 for /0, changes are needed in memory profiler FIFO reading
 static char PID_string[6];
 static char PID_string_sem[16];
 
@@ -97,17 +98,17 @@ typedef struct memory_profiler_log_entry_s{
 	pthread_t thread_id;
 	struct timeval tval_before;
 	struct timeval tval_after;
-	int type; //malloc = 1, free = 2
-	size_t  size; // in case of malloc
-	int backtrace_length;
+	unsigned int type;
+	size_t size;
+	unsigned int backtrace_length;
 	void *call_stack[max_call_stack_depth];
-	uint64_t address;
+	unsigned long int address;
 	bool valid;
 }memory_profiler_log_entry_t;
 
 
 typedef struct memory_profiler_struct_s {
-	long unsigned int log_count;
+	unsigned long int log_count;
 	bool profiled;
 	bool active;
 	memory_profiler_log_entry_t log_entry[shared_memory_MAX_ENTRY];
@@ -125,8 +126,8 @@ static int shared_memory_B;
 static char string_shared_mem_A[18];
 static char string_shared_mem_B[18];
 
-static const long unsigned int shared_memory_size_A = sizeof(memory_profiler_struct_t);
-static const long unsigned int shared_memory_size_B = sizeof(memory_profiler_struct_t);
+static const unsigned long int shared_memory_size_A = sizeof(memory_profiler_struct_t);
+static const unsigned long int shared_memory_size_B = sizeof(memory_profiler_struct_t);
 
 static memory_profiler_struct_t *memory_profiler_struct_A;
 static memory_profiler_struct_t *memory_profiler_struct_B;
@@ -304,7 +305,6 @@ void __attribute__ ((destructor)) Memory_profiler_shared_library_finit(){
 
 	printf("Closing shared lib\n");
 
-
 	sem_destroy(memory_profiler_start_semaphore);
 
 	munmap(memory_profiler_struct_A, sizeof(memory_profiler_struct_t));
@@ -319,18 +319,20 @@ void __attribute__ ((destructor)) Memory_profiler_shared_library_finit(){
 inline void swap_shared_memory_pointers(){
 	if(memory_profiler_struct_handler.active == shm_active_A){
 		printf("Swapping shared memory from A to B \n");
-		indicate_shm_overload();
 		memory_profiler_struct_handler.pointer = memory_profiler_struct_B;
+		memory_profiler_struct_A->active = false;
 		memory_profiler_struct_B->active = true;
 		memory_profiler_struct_handler.active = shm_active_B;
 	}
 	else {
 		printf("Swapping shared memory from B to A \n");
-		indicate_shm_overload();
+
 		memory_profiler_struct_handler.pointer = memory_profiler_struct_A;
+		memory_profiler_struct_B->active = false;
 		memory_profiler_struct_A->active = true;
 		memory_profiler_struct_handler.active = shm_active_A;
 	}
+	indicate_shm_overload();
 	memory_profiler_struct_handler.pointer->log_count = 0;
 }
 
@@ -349,16 +351,18 @@ void free(void* pointer) {
 
 			check_and_set_shared_memory_size();
 
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].thread_id = pthread_self();
 			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_before,NULL);
 			__libc_free(pointer);
 			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_after,NULL);
-
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].backtrace_length = backtrace(memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].call_stack,max_call_stack_depth);
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].thread_id = pthread_self();
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].type = free_func;
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].size = 0;
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (uint64_t)pointer;
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].backtrace_length = (unsigned int)backtrace(memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].call_stack,max_call_stack_depth);
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (unsigned long int)pointer;
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid = true;
+
+			printf("valid: %d\n",memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid);
+			printf("address: %lx\n",memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address);
 
 			memory_profiler_struct_handler.pointer->log_count++;
 
@@ -390,21 +394,24 @@ void* malloc(size_t size) {
 
 			check_and_set_shared_memory_size();
 
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].thread_id = pthread_self();
 			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_before,NULL);
 			void* pointer = __libc_malloc(size);
 			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_after,NULL);
-
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].backtrace_length = backtrace(memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].call_stack,max_call_stack_depth);
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].thread_id = pthread_self();
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].type = malloc_func;
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].size = size;
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (uint64_t*)pointer;
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].backtrace_length = (unsigned int)backtrace(memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].call_stack,max_call_stack_depth);
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (unsigned long int)pointer;
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid = true;
 
-			memory_profiler_struct_handler.pointer->log_count++;
+
+			printf("valid: %d\n",memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid);
+			printf("address: %lx\n",memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address);
 
 			entries_num++;
 			printf("entries_num: %d\n",entries_num);
+
+			memory_profiler_struct_handler.pointer->log_count++;
 
 			if(sem_post(&thread_semaphore) == -1){
 				printf("Error in sem_post, errno: %d\n",errno);
@@ -430,18 +437,21 @@ void* calloc(size_t nmemb,size_t size) {
 
 			check_and_set_shared_memory_size();
 
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].thread_id = pthread_self();
 			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_before,NULL);
 			void* pointer = __libc_calloc(nmemb,size);
 			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_after,NULL);
-
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].backtrace_length = backtrace(memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].call_stack,max_call_stack_depth);
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].thread_id = pthread_self();
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].type = calloc_func;
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].size = nmemb*size;
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (uint64_t*)pointer;
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].backtrace_length = (unsigned int)backtrace(memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].call_stack,max_call_stack_depth);
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (unsigned long int)pointer;
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid = true;
 
 			memory_profiler_struct_handler.pointer->log_count++;
+			printf("valid: %d\n",memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid);
+
+			printf("address: %lx\n",memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address);
+
 
 			entries_num++;
 			printf("entries_num: %d\n",entries_num);
@@ -470,19 +480,22 @@ void* realloc(void *ptr,size_t size) {
 
 			check_and_set_shared_memory_size();
 
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].thread_id = pthread_self();
 			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_before,NULL);
 			void* pointer = __libc_realloc(ptr,size);
 			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_after,NULL);
-
-
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].backtrace_length = backtrace(memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].call_stack,max_call_stack_depth);
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].thread_id = pthread_self();
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].type = realloc_func;
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].size = size;
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (uint64_t*)pointer;
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].backtrace_length = (unsigned int)backtrace(memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].call_stack,max_call_stack_depth);
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (unsigned long int)ptr;
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid = true;
 
 			memory_profiler_struct_handler.pointer->log_count++;
+
+			printf("valid: %d\n",memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid);
+
+			printf("address: %lx\n",memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address);
+
 
 			entries_num++;
 			printf("entries_num: %d\n",entries_num);
@@ -640,6 +653,7 @@ void* Memory_profiler_start_thread(void *arg){
 			// because when we unmap the shared memory in the next instruction, and the thread may need it from malloc/free, we have to wait for it to finish
 			sem_wait(&thread_semaphore);
 				set_profiling(false);
+				swap_shared_memory_pointers();
 			sem_post(&thread_semaphore);
 			munmap(memory_profiler_struct_A, shared_memory_size_A);
 			munmap(memory_profiler_struct_B, shared_memory_size_B);
@@ -654,7 +668,7 @@ void indicate_shm_overload(){
 
 	printf("Notifiing... %s\n",PID_string);
 
-	mem_prof_overload_fifo = open(fifo_overload_path, O_WRONLY);
+	mem_prof_overload_fifo = open(fifo_overload_path, O_WRONLY | O_NONBLOCK);
 
 	if (mem_prof_overload_fifo != -1) {
 

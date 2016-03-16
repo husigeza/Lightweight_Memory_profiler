@@ -83,7 +83,7 @@ bool Pattern::Check_process(template_handler<Process_handler> process){
 				cout << "Process "<< process.object->PID_string <<" is still being profiled, stop profiling first! "<< endl;
 				throw false;
 			}
-			const memory_profiler_sm_object_class &shared_memory = *process.object->Get_shared_memory();
+			const memory_profiler_sm_object_class &shared_memory = *process.object->memory_profiler_struct;
 			if(shared_memory.log_count == 0){
 				cout << endl << "shared_memory log_count = 0, no data to analyze!" << endl;
 				log_file << endl << "shared_memory log_count = 0, no data to analyze!" << endl;

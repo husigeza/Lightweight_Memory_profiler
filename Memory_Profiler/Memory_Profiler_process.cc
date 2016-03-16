@@ -20,7 +20,88 @@
 #include <time.h>
 
 
+
 using namespace std;
+
+void memory_profiler_sm_object_class_fix::write_header_to_file(string filename, unsigned long int total_log_count){
+
+	ofstream headerfile;
+	// TODO: find a smarter way for this, don't add log_count before total_log_count already contains with in the current call chain...
+	unsigned long int count_to_write = total_log_count /*+ log_count*/;
+
+	headerfile.open(filename.c_str(), ios::binary | ios::out | ios::trunc);
+
+	headerfile.write((char*)&count_to_write, sizeof(log_count));
+
+	headerfile.close();
+
+}
+void memory_profiler_sm_object_class_fix::write_entries_to_file(string filename){
+
+	ofstream entriesfile;
+	entriesfile.open(filename.c_str(), ofstream::binary | ios::app);
+
+	if(entriesfile){
+		for(unsigned long i = 0; i < log_count; i++){
+			log_entry[i].wite_to_file(entriesfile);
+		}
+		entriesfile.close();
+	}
+
+}
+
+void memory_profiler_sm_object_class::read_header_from_file(string filename){
+
+	ifstream headerfile;
+	headerfile.open(filename.c_str(), ifstream::binary);
+
+	if(headerfile){
+		headerfile.read((char*)&log_count, sizeof(log_count));
+		headerfile.close();
+	}
+
+
+}
+void memory_profiler_sm_object_class::read_entries_from_file(string filename){
+
+	ifstream entriesfile;
+	entriesfile.open(filename.c_str(), ifstream::binary);
+
+	if(entriesfile){
+		entriesfile.seekg(0,entriesfile.end);
+		unsigned long int  length = entriesfile.tellg();
+		entriesfile.seekg(0, entriesfile.beg);
+
+	entriesfile.read((char*)log_entry, length);
+
+	entriesfile.close();
+	}
+}
+
+
+void memory_profiler_sm_object_class_fix::write_to_binary_file(string PID,unsigned long int total_log_count){
+
+	write_header_to_file(PID+"_shm_header.bin",total_log_count);
+	write_entries_to_file(PID+"_shm_entries.bin");
+}
+
+void memory_profiler_sm_object_class::read_from_binary_file(string PID){
+
+	read_header_from_file(PID + "_shm_header.bin");
+	read_entries_from_file(PID + "_shm_entries.bin");
+}
+
+/*
+ *
+ * entriesfile has to been opened before passing
+ */
+void memory_profiler_sm_object_log_entry_class::wite_to_file(ofstream &entriesfile){
+
+	cout << endl <<"valid: " << valid << endl;
+	cout << "address: " << hex << address << endl;
+
+	entriesfile.write((char*)this,sizeof(*this));
+}
 
 void memory_profiler_sm_object_log_entry_class::Print(template_handler<Process_handler> process, ofstream &log_file) const{
 
@@ -86,6 +167,9 @@ Process_handler::Process_handler() {
 	memory_profiler_struct_A = 0;
 	memory_profiler_struct_B = 0;
 
+	total_entry_number = 0;
+	header = "";
+	entries = "";
 }
 
 Process_handler::Process_handler(pid_t PID) {
@@ -108,9 +192,13 @@ Process_handler::Process_handler(pid_t PID) {
 	memory_map_file_name = "Memory_map_"+ PID_string + ".txt";
 	shared_memory_file_name = "Backtrace_"+ PID_string + ".txt";
 
-
 	shared_memory_name_A = PID_string + "_mem_prof_A";
 	shared_memory_name_B = PID_string + "_mem_prof_B";
+
+	total_entry_number = 0;
+
+	header = PID_string + "_header.bin";
+	entries = PID_string + "_entries.bin";
 
 
 	// If the profiled process compiled with START_PROF_IMM flag, that means it starts putting data into shared memory immediately after startup
@@ -121,9 +209,9 @@ Process_handler::Process_handler(pid_t PID) {
 		cout << "Shared memory: " << shared_memory_name_A << " exists, shared memory handler: " << shared_memory_A <<" errno: " << errno << endl;
 
 		// Map the shared memory because it exists
-		memory_profiler_struct_A = (memory_profiler_sm_object_class*) mmap(
+		memory_profiler_struct_A = (memory_profiler_sm_object_class_fix*) mmap(
 								NULL,
-								sizeof(memory_profiler_sm_object_class),
+								sizeof(memory_profiler_sm_object_class_fix),
 								PROT_READ,
 								MAP_SHARED,
 								shared_memory_A,
@@ -143,9 +231,9 @@ Process_handler::Process_handler(pid_t PID) {
 				cout << "Shared memory: " << shared_memory_name_B << " exists, shared memory handler: " << shared_memory_B <<" errno: " << errno << endl;
 
 				// Map the shared memory because it exists
-				memory_profiler_struct_B = (memory_profiler_sm_object_class*) mmap(
+				memory_profiler_struct_B = (memory_profiler_sm_object_class_fix*) mmap(
 										NULL,
-										sizeof(memory_profiler_sm_object_class),
+										sizeof(memory_profiler_sm_object_class_fix),
 										PROT_READ,
 										MAP_SHARED,
 										shared_memory_B,
@@ -205,6 +293,10 @@ Process_handler::Process_handler(const Process_handler &obj){
     shared_memory_name_B = obj.shared_memory_name_B;
     memory_profiler_struct_A = obj.memory_profiler_struct_A;
     memory_profiler_struct_B = obj.memory_profiler_struct_B;
+
+    total_entry_number = obj.total_entry_number;
+    header = obj.header;
+	entries = obj.entries;
 }
 Process_handler& Process_handler::operator=(const Process_handler &obj){
 	if (this != &obj) {
@@ -234,6 +326,11 @@ Process_handler& Process_handler::operator=(const Process_handler &obj){
 		    shared_memory_name_B = obj.shared_memory_name_B;
 		    memory_profiler_struct_A = obj.memory_profiler_struct_A;
 		    memory_profiler_struct_B = obj.memory_profiler_struct_B;
+
+		    total_entry_number = obj.total_entry_number;
+
+		    header = obj.header;
+			entries = obj.entries;
 	}
 		return *this;
 }
@@ -577,15 +674,15 @@ bool Process_handler::Init_shared_memory() {
 	}
 
 	// Truncate and map the shared memory if it has not existed before
-	int err = ftruncate(shared_memory_A, sizeof(memory_profiler_sm_object_class));
+	int err = ftruncate(shared_memory_A, sizeof(memory_profiler_sm_object_class_fix));
 	if (err < 0){
 		cout << "Error while truncating shared memory: " << errno << endl;
 		return false;
 	}
 
-	memory_profiler_struct_A = (memory_profiler_sm_object_class*) mmap(
+	memory_profiler_struct_A = (memory_profiler_sm_object_class_fix*) mmap(
 				NULL,
-				sizeof(memory_profiler_sm_object_class),
+				sizeof(memory_profiler_sm_object_class_fix),
 				PROT_READ,
 				MAP_SHARED,
 				shared_memory_A,
@@ -614,15 +711,15 @@ bool Process_handler::Init_shared_memory() {
 	}
 
 	// Truncate and map the shared memory if it has not existed before
-	err = ftruncate(shared_memory_B, sizeof(memory_profiler_sm_object_class));
+	err = ftruncate(shared_memory_B, sizeof(memory_profiler_sm_object_class_fix));
 	if (err < 0){
 		cout << "Error while truncating shared memory: " << errno << endl;
 		return false;
 	}
 
-	memory_profiler_struct_B = (memory_profiler_sm_object_class*) mmap(
+	memory_profiler_struct_B = (memory_profiler_sm_object_class_fix*) mmap(
 				NULL,
-				sizeof(memory_profiler_sm_object_class),
+				sizeof(memory_profiler_sm_object_class_fix),
 				PROT_READ,
 				MAP_SHARED,
 				shared_memory_B,
@@ -683,6 +780,24 @@ memory_profiler_sm_object_class* Process_handler::Get_shared_memory() const{
 	return memory_profiler_struct;
 }
 
+void Process_handler::Read_shared_memory(){
+
+	ifstream headerfile;
+
+	unsigned long int count;
+
+	headerfile.open((PID_string + "_shm_header.bin").c_str(), ios::binary | ios::in);
+
+	headerfile.read((char*)&count, sizeof(count));
+
+	headerfile.close();
+
+	cout << "Reading binary file..." << endl;
+
+	memory_profiler_struct = new memory_profiler_sm_object_class(count);
+	memory_profiler_struct->read_from_binary_file(PID_string);
+}
+
 
 void Process_handler::Print_shared_memory() const{
 
@@ -716,7 +831,7 @@ void Process_handler::Print_shared_memory() const{
 			cout <<"Call stack: " << endl;
 			for(int  k=0; k < memory_profiler_struct->log_entry[j].backtrace_length;k++){
 				cout << memory_profiler_struct->log_entry[j].call_stack[k]<< " --- ";
-				cout << Find_function_name((uint64_t&)Get_shared_memory()->log_entry[j].call_stack[k])<< endl;
+				cout << Find_function_name((uint64_t)Get_shared_memory()->log_entry[j].call_stack[k])<< endl;
 			}
 		}
 	}
@@ -777,6 +892,8 @@ void Process_handler::Save_shared_memory_to_file(){
 
 	ofstream shared_memory_file;
 
+	Read_shared_memory();
+
 	cout << "Saving Process " << dec << PID << " backtrace..." << endl;
 	shared_memory_file.open(shared_memory_file_name.c_str(), ios::out);
 
@@ -811,12 +928,15 @@ void Process_handler::Save_shared_memory_to_file(){
 			shared_memory_file <<"Call stack: " << endl;
 			for(int  k=0; k < memory_profiler_struct->log_entry[j].backtrace_length;k++){
 				shared_memory_file << memory_profiler_struct->log_entry[j].call_stack[k]<< " --- ";
-				shared_memory_file << Find_function_name((uint64_t)memory_profiler_struct->log_entry[j].call_stack[k])<< endl;
+				shared_memory_file << Find_function_name((uint64_t) memory_profiler_struct->log_entry[j].call_stack[k])<< endl;
 			}
 		}
 	}
 
 	cout << "Process " << dec << PID << " backtrace saved!" << endl;
+
+	delete memory_profiler_struct;
+
 	shared_memory_file.close();
 }
 

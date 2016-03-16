@@ -6,7 +6,7 @@ int i = 0;
 void __attribute__ ((constructor)) init324() {
 
 	printf("TRIAL lib init!\n");
-	int *ptr = (int*)malloc(sizeof(int));
+	//int *ptr = (int*)malloc(sizeof(int));
 
 }
 

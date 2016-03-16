@@ -22,28 +22,3 @@ memory_map_table_entry_class& memory_map_table_entry_class::operator=(const memo
 
 			return *this;
 	}
-
-/*memory_map_table_entry_class::memory_map_table_entry_class(memory_map_table_entry_class &&obj){
-		if(this != &obj) {
-			start_address = obj.start_address;
-			end_address = obj.end_address;
-			path = obj.path;
-
-			obj.start_address = 0;
-			obj.end_address = 0;
-			obj.path = "";
-		}
-	}
-memory_map_table_entry_class& memory_map_table_entry_class::operator=(memory_map_table_entry_class &&obj){
-		if(this != &obj) {
-			start_address = obj.start_address;
-			end_address = obj.end_address;
-			path = obj.path;
-
-			obj.start_address = 0;
-			obj.end_address = 0;
-			obj.path = "";
-		}
-		return *this;
-	}
-*/
