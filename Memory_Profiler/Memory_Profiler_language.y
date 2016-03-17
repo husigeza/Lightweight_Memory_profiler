@@ -138,7 +138,14 @@ void Print_help(){
 	cout << "remove analyzer/filter index pattern ..." << endl;
 	cout << "In this case index refers to the corresponding pattern" << endl << endl;
 	cout << "index after pattern always refers to the global pattern index" << endl << endl;
-
+	
+	cout <<"Analyzers: " << endl;
+	cout <<"leak"<< endl;
+	cout <<"print"<< endl;
+	cout <<"dfree"<< endl;
+	cout <<"save symbols"<< endl;
+	cout <<"save map"<< endl;
+	cout <<"save bt"<< endl << endl;
 
 	cout << endl << "Recognized commands:" << endl;
 
