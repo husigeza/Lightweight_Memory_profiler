@@ -20,15 +20,14 @@ class Memory_Profiler {
 
         void Set_process_alive_flag(const pid_t PID, bool value);
 
-        bool Remap_process_shared_memory(const pid_t PID);
-        void Remap_all_process_shared_memory();
-
         void Start_stop_profiling(const pid_t PID);
         void Start_stop_profiling_all_processes();
 
         vector< template_handler<Pattern> > Patterns_vector;
         vector< template_handler<Analyzer> > Analyzers_vector;
         vector< template_handler<Filter> > Filters_vector;
+
+        void Save_process_shared_memory(pid_t PID);
 
     public:
         Memory_Profiler();
@@ -49,8 +48,6 @@ class Memory_Profiler {
 
         void Read_FIFO();
         void Read_overload_FIFO();
-
-        void Save_process_shared_memory(pid_t PID);
 
         bool Process_analyze_ready(const pid_t PID);
 
@@ -86,13 +83,7 @@ class Memory_Profiler {
         void Print_all_processes() const;
         void Print_alive_processes() const;
         void Print_profiled_processes() const;
-        void Print_process_shared_memory(const pid_t PID) const;
-        void Print_all_processes_shared_memory() const;
 
-        void Save_process_symbol_table_to_file(const pid_t PID);
-        void Save_process_memory_mapping_to_file(const pid_t PID);
-        void Save_process_shared_memory_to_file(const pid_t PID);
-        void Save_all_process_shared_memory_to_file();
 
 };
 

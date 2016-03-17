@@ -15,7 +15,7 @@ void dummy_malloc_1(int *pointer, int *i){
 
 	*i += 1;
 
-	//pointer = (int *)calloc(3,sizeof(int));
+	pointer = (int *)calloc(3,sizeof(int));
 
 }
 
@@ -35,8 +35,8 @@ void* Thread_1(void *arg)
     while(1) {
        printf("Thread %d \n",(int*)arg);
         dummy_malloc_1(pointer,&i);
-        //usleep(30);
-        sleep(1);
+        usleep(30);
+        //sleep(1);
     }
 
     return NULL;
@@ -51,8 +51,8 @@ void* Thread_2(void *arg)
     while(1) {
         printf("Thread %d \n",(int*)arg);
         dummy_malloc_2(pointer,&i);
-       //usleep(30);
-        sleep(1);
+       usleep(30);
+        //sleep(1);
     }
 
 
@@ -64,20 +64,19 @@ void* Thread_2(void *arg)
 int main()
 {
 
-    /*pthread_create(&(tid[0]), NULL, &Thread_1, (int*)1);
+    pthread_create(&(tid[0]), NULL, &Thread_1, (int*)1);
     printf("\nCreated Thread 1\n");
 
    pthread_create(&(tid[1]), NULL, &Thread_2, (int*)2);
-    printf("\nCreated Thread 2\n");*/
+    printf("\nCreated Thread 2\n");
 
     int *pointer = malloc(sizeof(int));
     while(1){
     	sleep(1);
-    	//pointer = realloc(pointer,sizeof(int));
+    	pointer = realloc(pointer,sizeof(int));
 
-    	pointer = malloc(sizeof(int));
     	//set_user_profiling_flag(true);
-    	//func1();
+    	func1();
     	//set_user_profiling_flag(false);
    }
 

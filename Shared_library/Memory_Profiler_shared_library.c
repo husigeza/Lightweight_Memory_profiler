@@ -29,7 +29,7 @@
 
 #define max_call_stack_depth 100
 
-#define shared_memory_MAX_ENTRY 10
+#define shared_memory_MAX_ENTRY 100000
 
 extern void *__libc_malloc(size_t size);
 extern void *__libc_free(void *);
@@ -134,27 +134,6 @@ static memory_profiler_struct_t *memory_profiler_struct_B;
 
 static memory_profiler_pointer_handler_t memory_profiler_struct_handler;
 
-
-unsigned long int entries_num = 0;
-
-void
-signal_callback_handler(int signum)
-{
-
-	sem_destroy(memory_profiler_start_semaphore);
-
-	munmap(memory_profiler_struct_A, sizeof(memory_profiler_struct_t));
-	munmap(memory_profiler_struct_B, sizeof(memory_profiler_struct_t));
-	munmap(memory_profiler_start_semaphore, sizeof(sem_t));
-
-	shm_unlink(PID_string_sem);
-	shm_unlink(string_shared_mem_A);
-	shm_unlink(string_shared_mem_B);
-
-	// Terminate program
-	exit(signum);
-}
-
 FILE *pfile;
 char s[1000];
 char file[50];
@@ -164,6 +143,12 @@ void print_to_log(char *text){
 	fputs(text,pfile);
 	memset(text,0,sizeof(text));
 	fclose(pfile);
+}
+
+void
+signal_callback_handler(int signum)
+{
+	exit(signum);
 }
 
 
@@ -305,12 +290,11 @@ void __attribute__ ((destructor)) Memory_profiler_shared_library_finit(){
 
 	printf("Closing shared lib\n");
 
-	sem_destroy(memory_profiler_start_semaphore);
+	if(profiling_allowed() && get_user_profiling_flag()){
+		swap_shared_memory_pointers();
+	}
 
-	munmap(memory_profiler_struct_A, sizeof(memory_profiler_struct_t));
-	munmap(memory_profiler_struct_B, sizeof(memory_profiler_struct_t));
-	munmap(memory_profiler_start_semaphore, sizeof(sem_t));
-
+	//sem_destroy(memory_profiler_start_semaphore);
 	shm_unlink(PID_string_sem);
 	shm_unlink(string_shared_mem_A);
 	shm_unlink(string_shared_mem_B);
@@ -361,13 +345,7 @@ void free(void* pointer) {
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (unsigned long int)pointer;
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid = true;
 
-			printf("valid: %d\n",memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid);
-			printf("address: %lx\n",memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address);
-
 			memory_profiler_struct_handler.pointer->log_count++;
-
-			entries_num++;
-			printf("entries_num: %d\n",entries_num);
 
 			if(sem_post(&thread_semaphore) == -1){
 				printf("Error in sem_post, errno: %d\n",errno);
@@ -403,13 +381,6 @@ void* malloc(size_t size) {
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].backtrace_length = (unsigned int)backtrace(memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].call_stack,max_call_stack_depth);
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (unsigned long int)pointer;
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid = true;
-
-
-			printf("valid: %d\n",memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid);
-			printf("address: %lx\n",memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address);
-
-			entries_num++;
-			printf("entries_num: %d\n",entries_num);
 
 			memory_profiler_struct_handler.pointer->log_count++;
 
@@ -448,13 +419,6 @@ void* calloc(size_t nmemb,size_t size) {
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid = true;
 
 			memory_profiler_struct_handler.pointer->log_count++;
-			printf("valid: %d\n",memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid);
-
-			printf("address: %lx\n",memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address);
-
-
-			entries_num++;
-			printf("entries_num: %d\n",entries_num);
 
 			if(sem_post(&thread_semaphore) == -1){
 				printf("Error in sem_post, errno: %d\n",errno);
@@ -491,14 +455,6 @@ void* realloc(void *ptr,size_t size) {
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid = true;
 
 			memory_profiler_struct_handler.pointer->log_count++;
-
-			printf("valid: %d\n",memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid);
-
-			printf("address: %lx\n",memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address);
-
-
-			entries_num++;
-			printf("entries_num: %d\n",entries_num);
 
 			if(sem_post(&thread_semaphore) == -1){
 				printf("Error in sem_post, errno: %d\n",errno);

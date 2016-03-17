@@ -197,28 +197,6 @@ void Memory_Profiler::Start_stop_profiling_all_processes(){
 	}
 }
 
-bool Memory_Profiler::Remap_process_shared_memory(const pid_t PID){
-
-	return Processes[PID].object->Remap_shared_memory();
-
-}
-
-void Memory_Profiler::Remap_all_process_shared_memory(){
-
-	map<const pid_t, template_handler<Process_handler> >::iterator it;
-
-	for (it = Processes.begin(); it != Processes.end(); it++) {
-		//cout << "Remapping Process: " << it->first << endl;
-			if(it->second.object->Remap_shared_memory() == false){
-				cout << "Failed remapping process " << it->first << " shared memory " << endl;
-			}
-			else {
-				//cout << "Remapping successful "<< endl;
-			}
-		}
- }
-
-
 void Memory_Profiler::Read_FIFO() {
 
 	vector<pid_t> alive_processes;
@@ -507,7 +485,9 @@ void Memory_Profiler::Run_pattern(unsigned int pattern_index, pid_t PID){
 			cout << "Wrong pattern ID" << endl;
 	}
 	else{
+		Processes[PID].object->Read_shared_memory();
 		Patterns_vector[pattern_index].object->Run_analyzers(Processes[PID]);
+		delete Processes[PID].object->memory_profiler_struct;
 	}
 }
 
@@ -532,7 +512,9 @@ void  Memory_Profiler::Run_pattern_all_process(unsigned int pattern_index){
 	}
 	else {
 		for(map<pid_t const,template_handler<Process_handler> >::iterator process = Processes.begin();process != Processes.end();process++){
+			process->second.object->Read_shared_memory();
 			Run_pattern(pattern_index,process->first);
+			delete process->second.object->memory_profiler_struct;
 		}
 	}
 }

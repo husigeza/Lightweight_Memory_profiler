@@ -97,9 +97,6 @@ void memory_profiler_sm_object_class::read_from_binary_file(string PID){
  */
 void memory_profiler_sm_object_log_entry_class::wite_to_file(ofstream &entriesfile){
 
-	cout << endl <<"valid: " << valid << endl;
-	cout << "address: " << hex << address << endl;
-
 	entriesfile.write((char*)this,sizeof(*this));
 }
 
@@ -220,10 +217,6 @@ Process_handler::Process_handler(pid_t PID) {
 
 
 		if (memory_profiler_struct_A != MAP_FAILED) {
-			// Shared memory initalized by the profiled process
-			shared_memory_initialized = true;
-			// If shared memory is already initialized until this point it means the process is being profiled at the moment
-			profiled = memory_profiler_struct_A->profiled;
 
 			shared_memory_B = shm_open(shared_memory_name_B.c_str(),  O_RDWR , S_IRWXU | S_IRWXG | S_IRWXO);
 			if (shared_memory_B >= 0){
@@ -243,6 +236,12 @@ Process_handler::Process_handler(pid_t PID) {
 				cout << shared_memory_name_B << " shared memory mapping UNsuccesful, errno: " << dec << errno << endl;
 				throw false;
 			}
+
+			// Shared memory initalized by the profiled process if both shared memory area can be mapped
+			shared_memory_initialized = true;
+			// If shared memory is already initialized until this point it means the process is being profiled at the moment
+			// Shared memory area A contains correct profiling information
+			profiled = memory_profiler_struct_A->profiled;
 
 		}
 		else {
@@ -340,11 +339,11 @@ Process_handler::~Process_handler() {
 	all_function_symbol_table.clear();
 
 	munmap(start_stop_semaphore, sizeof(sem_t));
-	munmap(memory_profiler_struct, sizeof(memory_profiler_sm_object_log_entry_class));
+	munmap(memory_profiler_struct_A,sizeof(memory_profiler_sm_object_class_fix));
+	munmap(memory_profiler_struct_B,sizeof(memory_profiler_sm_object_class_fix));
 
-	munmap(memory_profiler_struct_A, sizeof(memory_profiler_sm_object_log_entry_class));
-	munmap(memory_profiler_struct_B, sizeof(memory_profiler_sm_object_log_entry_class));
 
+	delete memory_profiler_struct;
 }
 
 
@@ -614,9 +613,8 @@ bool Process_handler::Read_virtual_memory_mapping() {
 			}
 		}
 		catch(const std::out_of_range& oor){
-			// Thrown by substring when no "/" character is in the line, drop that line
-				//cout << "Line without /" << endl;
-				//cout << line << endl;
+			// Thrown by substring when no "/" character is in the line, drop that line = do nothing
+
 			}
 		catch(const exception & e){
 			//Any other exceptions
@@ -636,15 +634,25 @@ bool Process_handler::Read_virtual_memory_mapping() {
 
 bool Process_handler::Init_start_stop_semaphore() {
 
-	start_stop_semaphore_shared_memory = shm_open(start_stop_semaphore_name.c_str(), O_RDWR,S_IRWXU | S_IRWXG | S_IRWXO);
+	start_stop_semaphore_shared_memory = shm_open(start_stop_semaphore_name.c_str(), O_CREAT | O_RDWR | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO);
 	if (start_stop_semaphore_shared_memory < 0){
-		cout << "Error while opening start_stop_semaphore shared memory: " << errno << endl;
+		if (errno == EEXIST){
+			cout << "Start stop semaphore already exists, do not re-create it! Trying to open it...  errno: " << errno << endl;
+			start_stop_semaphore_shared_memory = shm_open(start_stop_semaphore_name.c_str(),  O_RDWR , S_IRWXU | S_IRWXG | S_IRWXO);
+			if(start_stop_semaphore_shared_memory <= 0){
+				cout << "Error while opening start_stop_semaphore shared memory: " << dec << errno << endl;
+				return false;
+			}
+		}
+		else {
+		cout << "Error while opening start_stop_semaphore shared memory: " << dec << errno << endl;
 		return false;
+		}
 	}
 
 	start_stop_semaphore = (sem_t*) mmap(NULL, sizeof(sem_t), PROT_WRITE, MAP_SHARED,start_stop_semaphore_shared_memory, 0);
 	if (start_stop_semaphore == MAP_FAILED){
-		cout << "Failed mapping the start_stop_semaphore shared memory: " << errno << endl;
+		cout << "Failed mapping the start_stop_semaphore shared memory: " << dec << errno << endl;
 		return false;
 	}
 
@@ -735,49 +743,10 @@ bool Process_handler::Init_shared_memory() {
 	return true;
 }
 
-bool Process_handler::Remap_shared_memory(){
-
-	if(shared_memory_initialized == false){
-		cout<<"Shared memory has not been initialized yet, cannot remap it!" << endl;
-		return false;
-	}
-
-	unsigned long real_size = sizeof(memory_profiler_sm_object_class) + (memory_profiler_struct->log_count-1)*sizeof(memory_profiler_sm_object_log_entry_class);
-
-	// Unmap it first to prevent too much mapping
-	int err = munmap(memory_profiler_struct, mapped_size_of_shared_memory);
-	if(err < 0){
-		cout << "Failed unmapping shared memory for Process "<< PID << " , errno: " << errno << endl;
-		return false;
-	}
-
-	memory_profiler_struct = (memory_profiler_sm_object_class*) mmap(
-							NULL,
-							real_size,
-							PROT_READ,
-							MAP_SHARED,
-							shared_memory,
-							0);
-
-	if (memory_profiler_struct == MAP_FAILED) {
-		cout << "Failed re-mapping the shared memory: " << errno << endl;
-		return false;
-	}
-
-	mapped_size_of_shared_memory = real_size;
-
-	return true;
-
-}
 
 void Process_handler::Start_Stop_profiling() const {
 
 	sem_post(start_stop_semaphore);
-}
-
-memory_profiler_sm_object_class* Process_handler::Get_shared_memory() const{
-
-	return memory_profiler_struct;
 }
 
 void Process_handler::Read_shared_memory(){
@@ -796,147 +765,5 @@ void Process_handler::Read_shared_memory(){
 
 	memory_profiler_struct = new memory_profiler_sm_object_class(count);
 	memory_profiler_struct->read_from_binary_file(PID_string);
-}
-
-
-void Process_handler::Print_shared_memory() const{
-
-	cout << endl <<"Backtrace for Process  " << dec << PID << endl;
-
-	if(Is_shared_memory_initialized() == false){
-		cout << "Shared memory has not been initialized yet!" << endl;
-		return;
-	}
-
-	if(memory_profiler_struct->log_count == 0){
-		cout << "No entry is found in shared memory!" << endl;
-		return;
-	}
-
-	for (unsigned int j = 0; j <= memory_profiler_struct->log_count-1; j++) {
-
-		if(memory_profiler_struct->log_entry[j].valid == true){
-			cout << endl <<"PID: " << dec << PID << endl;
-			cout <<"index: " << dec <<j << endl;
-			cout <<"Thread ID: " << dec <<memory_profiler_struct->log_entry[j].thread_id << endl;
-			char buffer[30];
-			strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(memory_profiler_struct->log_entry[j].tval_before.tv_sec)));
-			cout <<"GMT before: " << buffer << dec << memory_profiler_struct->log_entry[j].tval_before.tv_usec << endl;
-			strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(memory_profiler_struct->log_entry[j].tval_after.tv_sec)));
-			cout <<"GMT after: " << buffer << dec << memory_profiler_struct->log_entry[j].tval_after.tv_usec << endl;
-			cout <<"Call stack type: " << dec << memory_profiler_struct->log_entry[j].type << endl;
-			cout <<"Address: " << hex <<memory_profiler_struct->log_entry[j].address << endl;
-			cout <<"Allocation size: " << dec << memory_profiler_struct->log_entry[j].size << endl;
-			cout <<"Call stack size: " << dec << memory_profiler_struct->log_entry[j].backtrace_length << endl;
-			cout <<"Call stack: " << endl;
-			for(int  k=0; k < memory_profiler_struct->log_entry[j].backtrace_length;k++){
-				cout << memory_profiler_struct->log_entry[j].call_stack[k]<< " --- ";
-				cout << Find_function_name((uint64_t)Get_shared_memory()->log_entry[j].call_stack[k])<< endl;
-			}
-		}
-	}
-
-	cout << "Finished!" << endl;
-}
-
-void Process_handler::Print_backtrace(unsigned int entry_num, ofstream &log_file) const{
-
-	cout << "Backtrace: " << endl;
-	log_file << "Backtrace: " << endl;
-	for(int  k = 0; k < memory_profiler_struct->log_entry[entry_num].backtrace_length; k++){
-		cout << memory_profiler_struct->log_entry[entry_num].call_stack[k]<< " --- ";
-		log_file << memory_profiler_struct->log_entry[entry_num].call_stack[k]<< " --- ";
-		cout << Find_function_name((uint64_t)memory_profiler_struct->log_entry[entry_num].call_stack[k]) << endl;
-		log_file << Find_function_name((uint64_t)memory_profiler_struct->log_entry[entry_num].call_stack[k]) << endl;
-	}
-}
-
-
-void Process_handler::Save_symbol_table_to_file(){
-
-	ofstream symbol_file;
-
-	vector<symbol_table_entry_class>::const_iterator it2;
-	map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::const_iterator it;
-
-	symbol_file.open(symbol_file_name.c_str(), ios::out);
-
-	for (it = all_function_symbol_table.begin(); it != all_function_symbol_table.end(); it++) {
-		symbol_file << endl << endl << it->first.path << endl;
- 		for(it2 = it->second.begin(); it2 != it->second.end(); it2++){
-			symbol_file << it2->name << " ---- " << "0x" << std::hex << it2->address << endl;
-		}
-	}
-
-	cout << "Process " << dec << PID << " symbol table saved!" << endl;
-	symbol_file.close();
-}
-
-void Process_handler::Save_memory_mappings_to_file(){
-
-	ofstream memory_map_file;
-
-	map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::const_iterator it;
-
-	memory_map_file.open(memory_map_file_name.c_str(), ios::out);
-
-	memory_map_file << "MEMORY MAP from /proc/" + PID_string + "/maps:" << endl << endl;
-	for(it = all_function_symbol_table.begin(); it != all_function_symbol_table.end(); it++){
-		memory_map_file << "0x" << std::hex << it->first.start_address << "--" << "0x" << std::hex << it->first.end_address << "   " << it->first.path <<endl;
-	}
-	cout << "Process " << dec << PID << " memory mappings saved!" << endl;
-	memory_map_file.close();
-}
-
-void Process_handler::Save_shared_memory_to_file(){
-
-	ofstream shared_memory_file;
-
-	Read_shared_memory();
-
-	cout << "Saving Process " << dec << PID << " backtrace..." << endl;
-	shared_memory_file.open(shared_memory_file_name.c_str(), ios::out);
-
-	if(Is_shared_memory_initialized() == false){
-		shared_memory_file << "Shared memory has not been initialized yet, backtrace not saved!" << endl;
-		cout << "Shared memory has not been initialized yet, backtrace not saved!" << endl;
-		shared_memory_file.close();
-		return;
-	}
-
-	if(memory_profiler_struct->log_count == 0){
-		shared_memory_file << "No entry is found in shared memory, backtrace not saved!" << endl;
-		cout << "No entry is found in shared memory, backtrace not saved!" << endl;
-		shared_memory_file.close();
-		return;
-	}
-
-	for (unsigned int j = 0; j <= memory_profiler_struct->log_count-1; j++) {
-
-		if(memory_profiler_struct->log_entry[j].valid == true){
-			shared_memory_file << endl <<"Shared memory PID: " << dec << PID << endl;
-			shared_memory_file <<"Shared_memory index: " << dec << j << endl;
-			shared_memory_file <<"Thread ID: " << dec <<memory_profiler_struct->log_entry[j].thread_id << endl;
-			char buffer[30];
-			strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(memory_profiler_struct->log_entry[j].tval_before.tv_sec)));
-			shared_memory_file <<"GMT before: " << buffer << dec << memory_profiler_struct->log_entry[j].tval_before.tv_usec << endl;
-			strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(memory_profiler_struct->log_entry[j].tval_after.tv_sec)));
-			shared_memory_file <<"GMT after: " << buffer << dec << memory_profiler_struct->log_entry[j].tval_after.tv_usec << endl;
-			shared_memory_file <<"Call stack type: " << dec << memory_profiler_struct->log_entry[j].type << endl;
-			shared_memory_file <<"Address: " << hex <<memory_profiler_struct->log_entry[j].address << endl;
-			shared_memory_file <<"Allocation size: " << dec << memory_profiler_struct->log_entry[j].size << endl;
-			shared_memory_file <<"Call stack: " << endl;
-			for(int  k=0; k < memory_profiler_struct->log_entry[j].backtrace_length;k++){
-				shared_memory_file << memory_profiler_struct->log_entry[j].call_stack[k]<< " --- ";
-				shared_memory_file << Find_function_name((uint64_t) memory_profiler_struct->log_entry[j].call_stack[k])<< endl;
-			}
-		}
-	}
-
-	cout << "Process " << dec << PID << " backtrace saved!" << endl;
-
-	delete memory_profiler_struct;
-
-	shared_memory_file.close();
 }
 

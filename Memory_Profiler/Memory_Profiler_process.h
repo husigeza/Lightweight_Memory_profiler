@@ -42,7 +42,7 @@ enum {
 using namespace std;
 
 
-#define shared_memory_MAX_ENTRY 10
+#define shared_memory_MAX_ENTRY 100000
 #define max_call_stack_depth 100
 
 class Process_handler;
@@ -52,8 +52,6 @@ class memory_profiler_sm_object_log_entry_class{
 
 public:
 	memory_profiler_sm_object_log_entry_class() {
-
-		cout << "Constructor" << endl;
 
 		valid = false;
 		thread_id = 0;
@@ -131,6 +129,7 @@ public:
 	}
 
 	~memory_profiler_sm_object_class(){
+		cout << " log_entry destructor" << endl;
 		delete[] log_entry;
 	}
 
@@ -156,9 +155,6 @@ class Process_handler {
     string shared_memory_name;
     bool shared_memory_initialized;
 
-
-
-
     int shared_memory_A;
     int shared_memory_B;
     string shared_memory_name_A;
@@ -176,9 +172,6 @@ class Process_handler {
 
     string elf_path;
 
-    // This container stores the local symbols and symbols from shared libraries
-    map<memory_map_table_entry_class,vector<symbol_table_entry_class>, memory_map_table_entry_class_comp> all_function_symbol_table;
-
     bfd* Open_ELF() const;
     bfd* Open_ELF(string ELF_path) const;
 
@@ -193,15 +186,18 @@ class Process_handler {
 
     bool Init_start_stop_semaphore();
 
-    string symbol_file_name;
-	string memory_map_file_name;
-	string shared_memory_file_name;
-
     public:
 
     	Process_handler();
         Process_handler(pid_t PID);
         ~Process_handler();
+
+        string symbol_file_name;
+    	string memory_map_file_name;
+    	string shared_memory_file_name;
+
+        // This container stores the local symbols and symbols from shared libraries
+        map<memory_map_table_entry_class,vector<symbol_table_entry_class>, memory_map_table_entry_class_comp> all_function_symbol_table;
 
         memory_profiler_sm_object_class_fix *memory_profiler_struct_A;
         memory_profiler_sm_object_class_fix *memory_profiler_struct_B;
@@ -215,7 +211,6 @@ class Process_handler {
         Process_handler(const Process_handler &obj);
         Process_handler& operator=(const Process_handler &obj);
 
-        const pid_t GetPID() const {return PID;};
 
         void Set_profiled(bool value){this->profiled = value;};
         bool Get_profiled() const {return profiled;};
@@ -226,20 +221,12 @@ class Process_handler {
         void Start_Stop_profiling() const;
 
         bool Init_shared_memory();
-        bool Remap_shared_memory();
 
         void Read_shared_memory();
-        memory_profiler_sm_object_class* Get_shared_memory() const;
+
         const bool Is_shared_memory_initialized() const {return shared_memory_initialized;} ;
 
         const string Find_function_name(uint64_t const address) const;
-
-        void Print_shared_memory() const;
-        void Print_backtrace(unsigned int entry_num,ofstream &log_file) const;
-
-        void Save_symbol_table_to_file();
-        void Save_memory_mappings_to_file();
-        void Save_shared_memory_to_file();
 
 };
 

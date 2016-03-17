@@ -18,6 +18,9 @@ enum analyzer_type{
 	dfree_analyzer = 2,
 	print_analyzer = 3,
 	malloc_counter_analyzer = 4,
+	save_symbol_table_analyzer = 5,
+	save_memory_mappings_analyzer = 6,
+	save_shared_memory_analyzer = 7,
 	unknown_analyzer
 };
 
@@ -77,7 +80,6 @@ public:
 	~Double_Free_Analyzer(){}
 
 	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const ;
-
 };
 
 class Malloc_Counter_Analyzer : public Analyzer{
@@ -87,7 +89,33 @@ public:
 	~Malloc_Counter_Analyzer(){}
 
 	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const ;
+};
 
+class Save_symbol_table_Analyzer : public Analyzer{
+
+public:
+	Save_symbol_table_Analyzer();
+	~Save_symbol_table_Analyzer(){}
+
+	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const ;
+};
+
+class Save_memory_mappings_Analyzer : public Analyzer{
+
+public:
+	Save_memory_mappings_Analyzer();
+	~Save_memory_mappings_Analyzer(){}
+
+	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const ;
+};
+
+class Save_shared_memory_Analyzer : public Analyzer{
+
+public:
+	Save_shared_memory_Analyzer();
+	~Save_shared_memory_Analyzer(){}
+
+	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const ;
 };
 
 bool operator==(template_handler<Analyzer> analyzer_1, const template_handler<Analyzer> analyzer_2);

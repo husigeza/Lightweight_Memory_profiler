@@ -64,12 +64,6 @@ command : PRINT PROCESS NUMBER '\n'      			{mem_prof.Print_process($3);}
 		| PRINT PROCESS ALL '\n' 					{mem_prof.Print_all_processes();}
 		| PRINT PROCESS ALIVE '\n'					{mem_prof.Print_alive_processes();}	
 		| PRINT PROCESS PROFILED '\n'				{mem_prof.Print_profiled_processes();}
-		| PRINT PROCESS NUMBER BT '\n'				{mem_prof.Print_process_shared_memory($3);}
-		| PRINT PROCESS ALL BT '\n'					{mem_prof.Print_all_processes_shared_memory();}
-		| SAVE PROCESS NUMBER SYMBOLS '\n'			{mem_prof.Save_process_symbol_table_to_file($3);}
-		| SAVE PROCESS NUMBER MAP '\n'				{mem_prof.Save_process_memory_mapping_to_file($3);}
-		| SAVE PROCESS NUMBER BT '\n'				{mem_prof.Save_process_shared_memory_to_file($3);}
-		| SAVE PROCESS ALL BT '\n'				    {mem_prof.Save_all_process_shared_memory_to_file();}
 		| PROCESS NUMBER PROFILED ON '\n'			{mem_prof.Add_process_to_profiling($2);}
 		| PROCESS NUMBER PROFILED OFF '\n'			{mem_prof.Remove_process_from_profiling($2);}
 		| PROCESS ALL PROFILED ON '\n'				{mem_prof.Add_all_process_to_profiling();}
@@ -79,6 +73,9 @@ command : PRINT PROCESS NUMBER '\n'      			{mem_prof.Print_process($3);}
 		| ADD ANALYZER DFREE '\n'					{mem_prof.Create_new_analyzer(*(new Double_Free_Analyzer()));}
 		| ADD ANALYZER PRINT '\n'					{mem_prof.Create_new_analyzer(*(new Print_Analyzer()));}
 		| ADD ANALYZER ALLOC '\n'					{mem_prof.Create_new_analyzer(*(new Malloc_Counter_Analyzer()));}
+		| ADD ANALYZER SAVE MAP '\n'				{mem_prof.Create_new_analyzer(*(new Save_memory_mappings_Analyzer()));}
+		| ADD ANALYZER SAVE SYMBOLS '\n'			{mem_prof.Create_new_analyzer(*(new Save_symbol_table_Analyzer()));}
+		| ADD ANALYZER SAVE BT '\n'					{mem_prof.Create_new_analyzer(*(new Save_shared_memory_Analyzer()));}
 		| ADD FILTER SIZE NUMBER TEXT'\n'			{mem_prof.Create_new_size_filter_cli($4,$5);}
 		| ADD ANALYZER NUMBER PATTERN NUMBER '\n'	{mem_prof.Add_analyzer_to_pattern($3,$5);}
 		| ADD ANALYZER NUMBER PATTERN TEXT '\n'		{mem_prof.Add_analyzer_to_pattern_by_name($3,remove_end($5));}
@@ -149,8 +146,6 @@ void Print_help(){
 	cout <<"print process all" << endl;
 	cout <<"print process alive" << endl;
 	cout <<"print process profiled" << endl;
-	cout <<"print process number bt" << endl;
-	cout <<"print process all bt" << endl;
 	cout <<"print analyzer all" << endl;
 	cout <<"print filter all" << endl;
 	cout <<"print pattern all" << endl;
@@ -173,14 +168,7 @@ void Print_help(){
 	cout <<"remove filter index" << endl;
 	cout <<"remove filter index pattern index" << endl;
 	cout <<"remove filter index pattern name" << endl;
-	
-	cout<< endl;
-	
-	cout <<"save process number symbols" << endl;
-	cout <<"save process number map" << endl;
-	cout <<"save process number bt" << endl;
-	cout <<"save process all bt" << endl;
-		
+			
 	cout<< endl;
 	
 	cout <<"process number profiled on" << endl;

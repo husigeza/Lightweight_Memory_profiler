@@ -299,3 +299,90 @@ void Malloc_Counter_Analyzer::Analyze(vector<template_handler< memory_profiler_s
 
 	log_file.close();
 }
+
+Save_symbol_table_Analyzer::Save_symbol_table_Analyzer(){
+	type = save_symbol_table_analyzer;
+	type_string = "Saving symbol table";
+}
+
+void Save_symbol_table_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const {
+
+	ofstream symbol_file;
+
+	vector<symbol_table_entry_class>::const_iterator it2;
+	map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::const_iterator it;
+
+	symbol_file.open(process.object->symbol_file_name.c_str(), ofstream::trunc);
+
+	for (it = process.object->all_function_symbol_table.begin(); it != process.object->all_function_symbol_table.end(); it++) {
+		symbol_file << endl << endl << it->first.path << endl;
+			for(it2 = it->second.begin(); it2 != it->second.end(); it2++){
+			symbol_file << it2->name << " ---- " << "0x" << std::hex << it2->address << endl;
+		}
+	}
+
+	cout << "Process " << process.object->PID_string << " symbol table saved!" << endl;
+	symbol_file.close();
+
+}
+
+Save_memory_mappings_Analyzer::Save_memory_mappings_Analyzer(){
+	type = save_memory_mappings_analyzer;
+	type_string = "Saving virtual memory mapping";
+}
+
+void Save_memory_mappings_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const {
+
+	ofstream memory_map_file;
+
+	map<memory_map_table_entry_class const,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::const_iterator it;
+
+	memory_map_file.open(process.object->memory_map_file_name.c_str(), ofstream::trunc);
+
+	memory_map_file << "MEMORY MAP from /proc/" + process.object->PID_string + "/maps:" << endl << endl;
+	for(it = process.object->all_function_symbol_table.begin(); it != process.object->all_function_symbol_table.end(); it++){
+		memory_map_file << "0x" << std::hex << it->first.start_address << "--" << "0x" << std::hex << it->first.end_address << "   " << it->first.path <<endl;
+	}
+	cout << "Process " << dec << process.object->PID_string << " memory mappings saved!" << endl;
+	memory_map_file.close();
+
+}
+
+Save_shared_memory_Analyzer::Save_shared_memory_Analyzer(){
+	type = save_shared_memory_analyzer;
+	type_string = "Saving backtrace";
+}
+
+void Save_shared_memory_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const {
+
+	ofstream shared_memory_file;
+
+	cout << "Saving Process " << process.object->PID_string << " backtrace..." << endl;
+	shared_memory_file.open(process.object->shared_memory_file_name.c_str(), ofstream::app);
+
+	for (unsigned int j = 0; j < entries.size(); j++) {
+
+		if(entries[j].object->valid == true){
+			shared_memory_file << endl <<"Shared memory PID: " << process.object->PID_string << endl;
+			shared_memory_file <<"Shared_memory index: " << dec << j << endl;
+			shared_memory_file <<"Thread ID: " << dec << entries[j].object->thread_id << endl;
+			char buffer[30];
+			strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(entries[j].object->tval_before.tv_sec)));
+			shared_memory_file <<"GMT before: " << buffer << dec << entries[j].object->tval_before.tv_usec << endl;
+			strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(entries[j].object->tval_after.tv_sec)));
+			shared_memory_file <<"GMT after: " << buffer << dec << entries[j].object->tval_after.tv_usec << endl;
+			shared_memory_file <<"Call stack type: " << dec << entries[j].object->type << endl;
+			shared_memory_file <<"Address: " << hex <<entries[j].object->address << endl;
+			shared_memory_file <<"Allocation size: " << dec << entries[j].object->size << endl;
+			shared_memory_file <<"Call stack: " << endl;
+			for(int  k=0; k < entries[j].object->backtrace_length;k++){
+				shared_memory_file << entries[j].object->call_stack[k]<< " --- ";
+				shared_memory_file << process.object->Find_function_name((uint64_t) entries[j].object->call_stack[k])<< endl;
+			}
+		}
+	}
+
+	cout << "Process " << process.object->PID_string << " backtrace saved!" << endl;
+
+	shared_memory_file.close();
+}

@@ -224,7 +224,7 @@ void Pattern::Run_analyzers(template_handler<Process_handler> process){
 
 	if(Check_process(process)){
 
-		Filter_entries(template_handler<memory_profiler_sm_object_class>((*process.object->Get_shared_memory()),false));
+		Filter_entries(template_handler<memory_profiler_sm_object_class>((*process.object->memory_profiler_struct),false));
 
 		for(vector<template_handler<Analyzer> >::iterator analyzer = Analyzer_vector.begin();analyzer != Analyzer_vector.end();analyzer++){
 			analyzer->object->Start(process);
