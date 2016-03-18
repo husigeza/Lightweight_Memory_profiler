@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 int i = 0;
+static int *pointer;
 
 void __attribute__ ((constructor)) init324() {
 
@@ -11,8 +12,8 @@ void __attribute__ ((constructor)) init324() {
 }
 
 int func5(){
-	int *ptr = (int*)malloc(i*sizeof(int));
-	free (ptr);
+	pointer = (int *)realloc(pointer,sizeof(int));
+	//free (ptr);
 
 	i++;
 

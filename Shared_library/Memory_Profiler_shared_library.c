@@ -448,12 +448,29 @@ void* realloc(void *ptr,size_t size) {
 			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_before,NULL);
 			void* pointer = __libc_realloc(ptr,size);
 			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_after,NULL);
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].type = realloc_func;
+
+			//realloc behaves like malloc
+			if(ptr == NULL && size != 0){
+				printf("Realloc as malloc\n");
+				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].type = malloc_func;
+				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (unsigned long int)pointer;
+			}
+			//realloc behaves like free
+			else if(size == 0 && ptr != NULL){
+				printf("Realloc as free\n");
+				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].type = free_func;
+				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (unsigned long int)ptr;
+			}
+			//realloc behaves like realloc
+			else {
+				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].type = realloc_func;
+				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (unsigned long int)pointer;
+			}
+			//if ptr == NULL and size == 0, than behavior is undefined
+
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].size = size;
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].backtrace_length = (unsigned int)backtrace(memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].call_stack,max_call_stack_depth);
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (unsigned long int)ptr;
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid = true;
-
 			memory_profiler_struct_handler.pointer->log_count++;
 
 			if(sem_post(&thread_semaphore) == -1){
