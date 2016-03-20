@@ -23,6 +23,22 @@
 
 using namespace std;
 
+string find_alloc_type(int type){
+	switch (type) {
+	case 1:
+		return "malloc";
+	case 2:
+		return "free";
+	case 3:
+		return "calloc";
+	case 4:
+		return "realloc";
+	default:
+		return "unknown";
+	}
+}
+
+
 void memory_profiler_sm_object_class_fix::write_header_to_file(string filename, unsigned long int total_log_count){
 
 	ofstream headerfile;
@@ -102,7 +118,7 @@ void memory_profiler_sm_object_log_entry_class::wite_to_file(ofstream &entriesfi
 
 void memory_profiler_sm_object_log_entry_class::Print(template_handler<Process_handler> process, ofstream &log_file) const{
 
-	cout << "Backtrace: " << endl;
+	/*cout << "Backtrace: " << endl;
 	log_file << "Backtrace: " << endl;
 
 	for(int  k = 0; k < backtrace_length; k++){
@@ -110,6 +126,26 @@ void memory_profiler_sm_object_log_entry_class::Print(template_handler<Process_h
 		log_file << call_stack[k]<< " --- ";
 		cout << process.object->Find_function_name((uint64_t)call_stack[k]) << endl;
 		log_file << process.object->Find_function_name((uint64_t)call_stack[k]) << endl;
+	}*/
+
+	log_file << endl <<"PID: " << process.object->PID_string << endl;
+	log_file <<"Thread ID: " << dec << thread_id << endl;
+	char buffer[30];
+	strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(tval_before.tv_sec)));
+	log_file <<"GMT before: " << buffer << dec << tval_before.tv_usec << endl;
+	strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(tval_after.tv_sec)));
+	log_file <<"GMT after: " << buffer << dec << tval_after.tv_usec << endl;
+	log_file <<"Call stack type: " << find_alloc_type(type) << endl;
+	log_file <<"Address: 0x" << hex << address << endl;
+	if(type == realloc_func){
+		log_file <<"Realloc parameter address: 0x" << hex << realloc_address << endl;
+	}
+	log_file <<"Allocation size: " << dec << size << endl;
+	log_file <<"Call stack size: " << dec << backtrace_length << endl;
+	log_file <<"Call stack: " << endl;
+	for(int  k=0; k < backtrace_length;k++){
+		log_file << call_stack[k]<< " --- ";
+		log_file << process.object->Find_function_name((uint64_t)call_stack[k])<< endl;
 	}
 }
 

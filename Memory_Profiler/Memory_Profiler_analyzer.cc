@@ -137,6 +137,9 @@ void Memory_Leak_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_o
 	cout << endl << endl <<"Running memory leak analyzation for Process: "<< process.object->PID_string<< endl;
 	log_file << endl << endl <<"Running memory leak analyzation for Process: "<< process.object->PID_string<< endl;
 
+	unsigned long long int counter = 0;
+	unsigned long long int entries_size = entries.size();
+
 	unsigned long long int malloc_counter = 0;
 	unsigned long long int free_counter = 0;
 	unsigned long long int realloc_counter = 0;
@@ -150,34 +153,48 @@ void Memory_Leak_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_o
 	vector<template_handler< memory_profiler_sm_object_log_entry_class> >::iterator it;
 	for(it = entries.begin(); it != entries.end(); it++){
 
+		++counter;
+		cout <<"Total entries processed: " << dec << counter << " / " << dec << entries_size
+				<< " (" << dec << (int)((double)counter/((double)entries_size)*100) << "%)" << '\r';
+
+		// Catch only mallocs and callocs here, because isf realloc is used as malloc its type is malloc_func
 		if(it->object->valid && (it->object->type == malloc_func || it->object->type == calloc_func )){
 
 			total_memory_allocated += it->object->size;
 			malloc_counter++;
 			address = it->object->address;
 			size_to_free = it->object->size;
-			realloc_size = it->object->size;
 
 			vector<template_handler< memory_profiler_sm_object_log_entry_class> >::iterator it2 = it;
+			// Iterate through the remaining items looking for free or realloc
 			for(; it2 != entries.end(); it2++){
 				if(it2->object->valid){
-					if(it2->object->address == address){
+					if(it2->object->address == address || it2->object->realloc_address == address){
 						if (it2->object->type == free_func){
 							total_memory_freed += size_to_free;
 							size_to_free = 0;
 							break;
 						}
 						else if(it2->object->type == realloc_func){
-							if(it2->object->size != realloc_size){
-								total_memory_allocated -= realloc_size;
+							// If size in realloc and size from malloc/calloc do not equal
+							// it means the allocated space is expanded (reduced) with (new size - original size) bytes
+							if(it2->object->size != size_to_free){
+								total_memory_allocated -= size_to_free;
 								total_memory_allocated += it2->object->size;
-								realloc_size = it2->object->size;
-							}
-							if(address == it2->object->address){
+								// The realloc will contain the new allocated size
 								size_to_free = it2->object->size;
 							}
-							else{
-								size_to_free = it2->object->size;
+							 /*
+							  * In case of realloc both address field is interpreted:
+							  * address: realloc returns with this
+							  * realloc_address: pointer passed to realloc
+							  * If those 2 do not equal it means realloc returned with a different address
+							  * thus the object at the original place is moved to the new place
+							  * and freed from the original place.
+							  * In this case the newly given address becomes the "original" address.
+							  *
+							  */
+							if(it2->object->realloc_address != it2->object->address){
 								address = it2->object->address;
 							}
 							realloc_counter++;
@@ -188,7 +205,6 @@ void Memory_Leak_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_o
 			if(it2 == entries.end()){
 
 				size_to_free = 0;
-				realloc_size = 0;
 
 				if(address == it->object->address){
 				log_file << endl << "Memory 0x" << std::hex << it->object->address << " has not been freed yet!" << endl;
@@ -198,18 +214,23 @@ void Memory_Leak_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_o
 							<< " it has been changed (with realloc) to: 0x" << address << " which has not been freed yet! " << endl;
 				}
 
-				char buffer[30];
+				it->object->Print(process,log_file);
+
+				/*char buffer[30];
 				strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(it->object->tval_before.tv_sec)));
 				log_file << "GMT before: " << buffer << dec << it->object->tval_before.tv_usec << endl;
 				strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(it->object->tval_after.tv_sec)));
 				log_file << "GMT after: " << buffer << dec << it->object->tval_after.tv_usec << endl;
+
+
+				it->object->size
 
 				log_file << "Call stack: " << endl;
 				for(int  k = 0; k < it->object->backtrace_length; k++){
 
 					log_file << it->object->call_stack[k]<< " --- ";
 					log_file << process.object->Find_function_name((uint64_t)it->object->call_stack[k]) << endl;
-				}
+				}*/
 			}
 		}
 		else if(it->object->valid && it->object->type == free_func){

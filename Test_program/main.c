@@ -10,7 +10,7 @@
 
 pthread_t tid[3];
 
-volatile static int *ptr1;
+static int *ptr1;
 static int *ptr2;
 
 static unsigned int size = 0;
@@ -21,13 +21,14 @@ void dummy_malloc_1(int *pointer, int *i){
 	*i += 1;
 	size++;
 
-	printf("before ptr1: %lx\n",ptr1);
-	//printf("new size: %d",size*sizeof(int));
 	if(size < 6){
 	ptr1 = (int *)realloc(ptr1,size*sizeof(int));
+		//ptr1 = (int *)malloc(size*sizeof(int));
 	}
 	else if(size == 6){
 		free(ptr1);
+		ptr1 = NULL;
+		size = 0;
 	}
 
 }
@@ -36,9 +37,8 @@ void dummy_malloc_2(int *pointer, int *i){
 
 	*i += 1;
 
-	printf("ptr2: %lx\n",ptr2);
-	ptr2 = (int *)realloc(ptr2,*i*sizeof(int));
-	//free(pointer);
+	ptr2 = (int *)malloc(sizeof(int));
+	free(ptr2);
 }
 
 void* Thread_1(void *arg)
@@ -84,10 +84,12 @@ int main()
    /*pthread_create(&(tid[1]), NULL, &Thread_2, (int*)2);
     printf("\nCreated Thread 2\n");*/
 
+   ptr1 = malloc(sizeof(int));
+
     //volatile int *pointer = realloc(NULL,sizeof(int));
     while(1){
+    	//usleep(100);
     	sleep(1);
-
     	//realloc(pointer,sizeof(int));
 
     	//realloc(pointer,0);

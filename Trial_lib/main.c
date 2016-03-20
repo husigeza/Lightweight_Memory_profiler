@@ -3,19 +3,21 @@
 
 int i = 0;
 static int *pointer;
+static int *ptr;
 
 void __attribute__ ((constructor)) init324() {
 
 	printf("TRIAL lib init!\n");
-	//int *ptr = (int*)malloc(sizeof(int));
+	ptr = (int*)malloc(sizeof(int));
 
 }
 
 int func5(){
-	pointer = (int *)realloc(pointer,sizeof(int));
-	//free (ptr);
+	pointer = (int *)calloc(15,sizeof(int));
+
 
 	i++;
+
 
 	return i;
 }

@@ -59,6 +59,7 @@ public:
 		size = 0;
 		backtrace_length = 0;
 		address = 0;
+		realloc_address = 0;
 	}
 
 	pthread_t thread_id;
@@ -69,6 +70,7 @@ public:
 	unsigned int backtrace_length;
 	void *call_stack[max_call_stack_depth];
 	unsigned long int address;
+	unsigned long int realloc_address;
 	bool valid;
 
 	void wite_to_file(ofstream &entriesfile);

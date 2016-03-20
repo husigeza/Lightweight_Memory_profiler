@@ -103,6 +103,7 @@ typedef struct memory_profiler_log_entry_s{
 	unsigned int backtrace_length;
 	void *call_stack[max_call_stack_depth];
 	unsigned long int address;
+	unsigned long int realloc_address;
 	bool valid;
 }memory_profiler_log_entry_t;
 
@@ -343,6 +344,7 @@ void free(void* pointer) {
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].size = 0;
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].backtrace_length = (unsigned int)backtrace(memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].call_stack,max_call_stack_depth);
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (unsigned long int)pointer;
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].realloc_address = 0;
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid = true;
 
 			memory_profiler_struct_handler.pointer->log_count++;
@@ -380,6 +382,7 @@ void* malloc(size_t size) {
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].size = size;
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].backtrace_length = (unsigned int)backtrace(memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].call_stack,max_call_stack_depth);
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (unsigned long int)pointer;
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].realloc_address = 0;
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid = true;
 
 			memory_profiler_struct_handler.pointer->log_count++;
@@ -416,6 +419,7 @@ void* calloc(size_t nmemb,size_t size) {
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].size = nmemb*size;
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].backtrace_length = (unsigned int)backtrace(memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].call_stack,max_call_stack_depth);
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (unsigned long int)pointer;
+			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].realloc_address = 0;
 			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid = true;
 
 			memory_profiler_struct_handler.pointer->log_count++;
@@ -454,17 +458,20 @@ void* realloc(void *ptr,size_t size) {
 				printf("Realloc as malloc\n");
 				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].type = malloc_func;
 				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (unsigned long int)pointer;
+				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].realloc_address = 0;
 			}
 			//realloc behaves like free
 			else if(size == 0 && ptr != NULL){
 				printf("Realloc as free\n");
 				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].type = free_func;
 				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (unsigned long int)ptr;
+				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].realloc_address = 0;
 			}
 			//realloc behaves like realloc
 			else {
 				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].type = realloc_func;
 				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (unsigned long int)pointer;
+				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].realloc_address = (unsigned long int)ptr;
 			}
 			//if ptr == NULL and size == 0, than behavior is undefined
 
