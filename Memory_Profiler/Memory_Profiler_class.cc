@@ -237,7 +237,13 @@ void Memory_Profiler::Read_overload_FIFO(){
 
 			if (res > 0) {
 				pid = atol( buffer.c_str() );
-				Save_process_shared_memory(pid);
+				try{
+					Save_process_shared_memory(pid);
+				}
+				catch(ofstream::failure &e){
+					cout << e.what() << endl;
+					cout << "Shared memory saving failed!" << endl;
+				}
 			}
 		}
 	}
@@ -251,17 +257,22 @@ void Memory_Profiler::Save_process_shared_memory(pid_t PID){
 	//cout << "Saving " << dec << " process shm..." << endl;
 	template_handler<Process_handler> process = Processes[PID];
 
-	if(process.object->memory_profiler_struct_A->active == false){
-		//cout << " Saving from segment A..." << endl;
-		//cout << " segment A log count: " << process.object->memory_profiler_struct_A->log_count << endl;
-		process.object->total_entry_number += process.object->memory_profiler_struct_A->log_count;
-		process.object->memory_profiler_struct_A->write_to_binary_file(process.object->PID_string,process.object->total_entry_number);
+	try{
+		if(process.object->memory_profiler_struct_A->active == false){
+			//cout << " Saving from segment A..." << endl;
+			//cout << " segment A log count: " << process.object->memory_profiler_struct_A->log_count << endl;
+			process.object->memory_profiler_struct_A->write_to_binary_file(process.object->PID_string,process.object->total_entry_number);
+			process.object->total_entry_number += process.object->memory_profiler_struct_A->log_count;
+		}
+		else {
+			//cout << " Saving from segment B..." << endl;
+			//cout << " segment B log count: " << process.object->memory_profiler_struct_B->log_count << endl;
+			process.object->memory_profiler_struct_B->write_to_binary_file(process.object->PID_string,process.object->total_entry_number);
+			process.object->total_entry_number += process.object->memory_profiler_struct_B->log_count;
+		}
 	}
-	else {
-		//cout << " Saving from segment B..." << endl;
-		//cout << " segment B log count: " << process.object->memory_profiler_struct_B->log_count << endl;
-		process.object->total_entry_number += process.object->memory_profiler_struct_B->log_count;
-		process.object->memory_profiler_struct_B->write_to_binary_file(process.object->PID_string,process.object->total_entry_number);
+	catch(ofstream::failure &e){
+		throw e;
 	}
 
 	//cout << dec << PID << " log count:  " << process.object->total_entry_number << endl;
@@ -477,11 +488,13 @@ void Memory_Profiler::Run_pattern(unsigned int pattern_index, pid_t PID){
 			cout << "Wrong pattern ID" << endl;
 	}
 	else{
-		if(Processes[PID].object->Read_shared_memory()){
+		try{
+			Processes[PID].object->Read_shared_memory();
 			Patterns_vector[pattern_index].object->Run_analyzers(Processes[PID]);
 			delete Processes[PID].object->memory_profiler_struct;
 		}
-		else {
+		catch(ifstream::failure &e){
+			cout << e.what() << endl;
 			cout << "Cannot run pattern for Process " << dec << PID << endl;
 		}
 	}
@@ -492,14 +505,18 @@ void Memory_Profiler::Run_pattern(string pattern_name, pid_t PID){
 	vector< template_handler<Pattern> >::iterator pattern = Find_pattern_by_name(pattern_name);
 
 	if (pattern == Patterns_vector.end()){
-			cout << "Wrong pattern name" << endl;
+		cout << "Wrong pattern name" << endl;
 	}
 	else{
-		if(Processes[PID].object->Read_shared_memory()){
+		try{
+			Processes[PID].object->Read_shared_memory();
 			pattern->object->Run_analyzers(Processes[PID]);
+			// In case of exception, memory_profiler_struct is deleted from exception handler in "Run_analyzers"
 			delete Processes[PID].object->memory_profiler_struct;
 		}
-		else {
+		catch(ifstream::failure &e){
+			cout << "Exception type: " << e.what() << endl;
+			cout << "Problems with reading from binary files..." << endl;
 			cout << "Cannot run pattern for Process " << dec << PID << endl;
 		}
 	}

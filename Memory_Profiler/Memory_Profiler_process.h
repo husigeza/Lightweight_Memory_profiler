@@ -73,7 +73,7 @@ public:
 	unsigned long int realloc_address;
 	bool valid;
 
-	void wite_to_file(ofstream &entriesfile);
+	void write_to_file(ofstream &entriesfile);
 	void read_from_file(ofstream &entriesfile);
 
 	void Print(template_handler<Process_handler> process, ofstream &log_file) const;
@@ -223,7 +223,7 @@ class Process_handler {
 
         bool Init_shared_memory();
 
-        bool Read_shared_memory();
+        void Read_shared_memory();
 
         const bool Is_shared_memory_initialized() const {return shared_memory_initialized;} ;
 

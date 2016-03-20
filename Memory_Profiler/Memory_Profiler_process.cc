@@ -42,26 +42,33 @@ string find_alloc_type(int type){
 void memory_profiler_sm_object_class_fix::write_header_to_file(string filename, unsigned long int total_log_count){
 
 	ofstream headerfile;
-	// TODO: find a smarter way for this, don't add log_count before total_log_count already contains with in the current call chain...
-	unsigned long int count_to_write = total_log_count /*+ log_count*/;
+	headerfile.exceptions ( ofstream::failbit | ofstream::badbit | ofstream::eofbit);
+	unsigned long int count_to_write = total_log_count + log_count;
 
-	headerfile.open(filename.c_str(), ios::binary | ios::out | ios::trunc);
-
-	headerfile.write((char*)&count_to_write, sizeof(log_count));
-
-	headerfile.close();
+	try{
+		headerfile.open(filename.c_str(), ios::binary | ios::trunc);
+		headerfile.write((char*)&count_to_write, sizeof(log_count));
+		headerfile.close();
+	}
+	catch(ofstream::failure &e) {
+		throw e;
+	}
 
 }
 void memory_profiler_sm_object_class_fix::write_entries_to_file(string filename){
 
 	ofstream entriesfile;
-	entriesfile.open(filename.c_str(), ofstream::binary | ios::app);
+	entriesfile.exceptions( ofstream::failbit | ofstream::badbit | ofstream::eofbit);
 
-	if(entriesfile){
+	try{
+		entriesfile.open(filename.c_str(), ofstream::binary | ios::app);
 		for(unsigned long i = 0; i < log_count; i++){
-			log_entry[i].wite_to_file(entriesfile);
+			log_entry[i].write_to_file(entriesfile);
 		}
 		entriesfile.close();
+	}
+	catch(ofstream::failure &e) {
+		throw e;
 	}
 
 }
@@ -69,11 +76,15 @@ void memory_profiler_sm_object_class_fix::write_entries_to_file(string filename)
 void memory_profiler_sm_object_class::read_header_from_file(string filename){
 
 	ifstream headerfile;
-	headerfile.open(filename.c_str(), ifstream::binary);
-
-	if(headerfile){
+	headerfile.exceptions( ifstream::failbit | ifstream::badbit | ifstream::eofbit);
+	try{
+		headerfile.open(filename.c_str(), ifstream::binary);
 		headerfile.read((char*)&log_count, sizeof(log_count));
 		headerfile.close();
+	}
+	catch(ifstream::failure &e){
+		log_count = 0;
+		throw e;
 	}
 
 
@@ -81,39 +92,58 @@ void memory_profiler_sm_object_class::read_header_from_file(string filename){
 void memory_profiler_sm_object_class::read_entries_from_file(string filename){
 
 	ifstream entriesfile;
-	entriesfile.open(filename.c_str(), ifstream::binary);
-
-	if(entriesfile){
+	entriesfile.exceptions( ifstream::failbit | ifstream::badbit | ifstream::eofbit);
+	try{
+		entriesfile.open(filename.c_str(), ifstream::binary);
 		entriesfile.seekg(0,entriesfile.end);
 		unsigned long int  length = entriesfile.tellg();
 		entriesfile.seekg(0, entriesfile.beg);
-
-	entriesfile.read((char*)log_entry, length);
-
-	entriesfile.close();
+		entriesfile.read((char*)log_entry, length);
+		entriesfile.close();
+	}
+	catch(ifstream::failure &e){
+		throw e;
 	}
 }
 
 
 void memory_profiler_sm_object_class_fix::write_to_binary_file(string PID,unsigned long int total_log_count){
 
-	write_header_to_file(PID+"_shm_header.bin",total_log_count);
-	write_entries_to_file(PID+"_shm_entries.bin");
+	try{
+		write_header_to_file(PID+"_shm_header.bin",total_log_count);
+		write_entries_to_file(PID+"_shm_entries.bin");
+	}
+	catch(ofstream::failure &e){
+		throw e;
+	}
 }
 
 void memory_profiler_sm_object_class::read_from_binary_file(string PID){
 
-	read_header_from_file(PID + "_shm_header.bin");
-	read_entries_from_file(PID + "_shm_entries.bin");
+	try{
+		read_header_from_file(PID + "_shm_header.bin");
+		read_entries_from_file(PID + "_shm_entries.bin");
+	}
+	catch(ifstream::failure &e){
+		throw e;
+	}
+
+
 }
 
 /*
  *
  * entriesfile has to been opened before passing
  */
-void memory_profiler_sm_object_log_entry_class::wite_to_file(ofstream &entriesfile){
+void memory_profiler_sm_object_log_entry_class::write_to_file(ofstream &entriesfile){
 
-	entriesfile.write((char*)this,sizeof(*this));
+	try{
+		entriesfile.write((char*)this,sizeof(*this));
+	}
+	catch (ofstream::failure &e) {
+		cout <<"EXCEPTION write" << endl;
+		throw e;
+	}
 }
 
 void memory_profiler_sm_object_log_entry_class::Print(template_handler<Process_handler> process, ofstream &log_file) const{
@@ -776,28 +806,28 @@ void Process_handler::Start_Stop_profiling() const {
 	sem_post(start_stop_semaphore);
 }
 
-bool Process_handler::Read_shared_memory(){
+void Process_handler::Read_shared_memory(){
 
 	ifstream headerfile;
-
-	unsigned long int count;
+	headerfile.exceptions( ifstream::failbit | ifstream::badbit | ifstream::eofbit);
+	unsigned long int count = 0;
 
 	if(!shared_memory_initialized || profiled){
 		cout << "Process " << PID_string << " is under profiling and/or shared memory has not been initialized." << endl;
-		return false;
 	}
-
-	headerfile.open((PID_string + "_shm_header.bin").c_str(), ios::binary | ios::in);
-
-	headerfile.read((char*)&count, sizeof(count));
-
-	headerfile.close();
-
 	cout << "Reading binary file..." << endl;
+	try{
 
-	memory_profiler_struct = new memory_profiler_sm_object_class(count);
-	memory_profiler_struct->read_from_binary_file(PID_string);
+		headerfile.open((PID_string + "_shm_header.bin").c_str(), ios::binary | ios::in);
+		headerfile.read((char*)&count, sizeof(count));
+		headerfile.close();
 
-	return true;
+		memory_profiler_struct = new memory_profiler_sm_object_class(count);
+		memory_profiler_struct->read_from_binary_file(PID_string);
+	}
+	catch(ifstream::failure &e){
+		delete memory_profiler_struct;
+		throw e;
+	}
 }
 
