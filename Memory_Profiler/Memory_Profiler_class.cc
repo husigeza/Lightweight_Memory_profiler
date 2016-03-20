@@ -103,15 +103,15 @@ void Memory_Profiler::Add_process_to_profiling(const pid_t PID) {
 			return;
 		}
 		if(it->second.object->Is_shared_memory_initialized() == false){
-			cout << "Shared memory has not been initialized, initializing it... Process: " << dec << PID << endl;
+			//cout << "Shared memory has not been initialized, initializing it... Process: " << dec << PID << endl;
 			if(it->second.object->Init_shared_memory() == false){
 				cout << "Shared memory init unsuccessful, not added to profiled state." << endl;
 				return;
 			}
-			cout << "Shared memory init successful!" << endl;
+			//cout << "Shared memory init successful!" << endl;
 		}
 		else {
-			cout << "Shared memory has been initialized for process: " << dec << PID << endl;
+			//cout << "Shared memory has been initialized for process: " << dec << PID << endl;
 		}
 		it->second.object->Set_profiled(true);
 		it->second.object->Start_Stop_profiling();
@@ -150,21 +150,12 @@ bool Memory_Profiler::Get_process_shared_memory_initilized_flag(const pid_t PID)
 void Memory_Profiler::Remove_process_from_profiling(const pid_t PID){
 
 	if(Processes[PID].object->Get_profiled() == false){
-		cout << "Process " << dec << PID << "is not under profiling!"<< endl;
+		cout << "Process " << dec << PID << " is not under profiling!"<< endl;
 		return;
 	}
-
-	//if(Processes[PID].object->Remap_shared_memory()){
 		Processes[PID].object->Start_Stop_profiling();
 		Processes[PID].object->Set_profiled(false);
 		cout << "Process " << dec << PID << " removed from profiled state!" << endl;
-	/*}
-	else{
-		cout << "Process " << dec << PID << " NOT removed from profiled state!" << endl;
-	}*/
-
-
-
 }
 
 void Memory_Profiler::Remove_all_process_from_profiling(){
@@ -261,19 +252,19 @@ void Memory_Profiler::Save_process_shared_memory(pid_t PID){
 	template_handler<Process_handler> process = Processes[PID];
 
 	if(process.object->memory_profiler_struct_A->active == false){
-		cout << " Saving from segment A..." << endl;
-		cout << " segment A log count: " << process.object->memory_profiler_struct_A->log_count << endl;
+		//cout << " Saving from segment A..." << endl;
+		//cout << " segment A log count: " << process.object->memory_profiler_struct_A->log_count << endl;
 		process.object->total_entry_number += process.object->memory_profiler_struct_A->log_count;
 		process.object->memory_profiler_struct_A->write_to_binary_file(process.object->PID_string,process.object->total_entry_number);
 	}
 	else {
-		cout << " Saving from segment B..." << endl;
-		cout << " segment B log count: " << process.object->memory_profiler_struct_B->log_count << endl;
+		//cout << " Saving from segment B..." << endl;
+		//cout << " segment B log count: " << process.object->memory_profiler_struct_B->log_count << endl;
 		process.object->total_entry_number += process.object->memory_profiler_struct_B->log_count;
 		process.object->memory_profiler_struct_B->write_to_binary_file(process.object->PID_string,process.object->total_entry_number);
 	}
 
-	cout << dec << PID << " log count:  " << process.object->total_entry_number << endl;
+	//cout << dec << PID << " log count:  " << process.object->total_entry_number << endl;
 }
 
 
@@ -481,13 +472,18 @@ void Memory_Profiler::Add_filter_to_pattern_by_name(unsigned int filter_index,st
 
 void Memory_Profiler::Run_pattern(unsigned int pattern_index, pid_t PID){
 
+
 	if (pattern_index >= Patterns_vector.size()){
 			cout << "Wrong pattern ID" << endl;
 	}
 	else{
-		Processes[PID].object->Read_shared_memory();
-		Patterns_vector[pattern_index].object->Run_analyzers(Processes[PID]);
-		delete Processes[PID].object->memory_profiler_struct;
+		if(Processes[PID].object->Read_shared_memory()){
+			Patterns_vector[pattern_index].object->Run_analyzers(Processes[PID]);
+			delete Processes[PID].object->memory_profiler_struct;
+		}
+		else {
+			cout << "Cannot run pattern for Process " << dec << PID << endl;
+		}
 	}
 }
 
@@ -499,40 +495,29 @@ void Memory_Profiler::Run_pattern(string pattern_name, pid_t PID){
 			cout << "Wrong pattern name" << endl;
 	}
 	else{
-		Processes[PID].object->Read_shared_memory();
-		pattern->object->Run_analyzers(Processes[PID]);
-		delete Processes[PID].object->memory_profiler_struct;
+		if(Processes[PID].object->Read_shared_memory()){
+			pattern->object->Run_analyzers(Processes[PID]);
+			delete Processes[PID].object->memory_profiler_struct;
+		}
+		else {
+			cout << "Cannot run pattern for Process " << dec << PID << endl;
+		}
 	}
 }
 
 void  Memory_Profiler::Run_pattern_all_process(unsigned int pattern_index){
 
-	if (pattern_index >= Patterns_vector.size()){
-		cout << "Wrong pattern ID" << endl;
+
+	for(map<pid_t const,template_handler<Process_handler> >::iterator process = Processes.begin();process != Processes.end();process++){
+		Run_pattern(pattern_index,process->first);
 	}
-	else {
-		for(map<pid_t const,template_handler<Process_handler> >::iterator process = Processes.begin();process != Processes.end();process++){
-			process->second.object->Read_shared_memory();
-			Run_pattern(pattern_index,process->first);
-			delete process->second.object->memory_profiler_struct;
-		}
-	}
+
 }
 
 void Memory_Profiler::Run_pattern_all_process(string name){
 
-	vector< template_handler<Pattern> >::iterator pattern = Find_pattern_by_name(name);
-
-	if (pattern == Patterns_vector.end()){
-		cout << "Wrong Pattern name" << endl;
+	for(map<pid_t const,template_handler<Process_handler> >::iterator process = Processes.begin();process != Processes.end();process++){
+		Run_pattern(name,process->first);
 	}
-	else{
-		for(map<pid_t const,template_handler<Process_handler> >::iterator process = Processes.begin();process != Processes.end();process++){
-			process->second.object->Read_shared_memory();
-			pattern->object->Run_analyzers(process->second);
-			delete process->second.object->memory_profiler_struct;
-		}
-	}
-
 }
 

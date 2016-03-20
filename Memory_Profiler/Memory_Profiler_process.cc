@@ -695,7 +695,7 @@ bool Process_handler::Init_shared_memory() {
 
 	if (shared_memory_A < 0) {
 		if (errno == EEXIST){
-			cout << "Shared memory already exists, do not re-create it! Trying to open it...  errno: " << errno << endl;
+			//cout << "Shared memory already exists, do not re-create it! Trying to open it...  errno: " << errno << endl;
 			shared_memory_A = shm_open(shared_memory_name.c_str(),  O_RDWR , S_IRWXU | S_IRWXG | S_IRWXO);
 			if(shared_memory_A <= 0){
 				cout << "Failed opening the shared memory for Process: " << dec << PID << " errno: " << dec << errno << endl;
@@ -732,7 +732,7 @@ bool Process_handler::Init_shared_memory() {
 
 	if (shared_memory_B < 0) {
 		if (errno == EEXIST){
-			cout << "Shared memory already exists, do not re-create it! Trying to open it...  errno: " << errno << endl;
+			//cout << "Shared memory already exists, do not re-create it! Trying to open it...  errno: " << errno << endl;
 			shared_memory_B = shm_open(shared_memory_name.c_str(),  O_RDWR , S_IRWXU | S_IRWXG | S_IRWXO);
 			if(shared_memory_B <= 0){
 				cout << "Failed opening the shared memory for Process: " << dec << PID << " errno: " << dec << errno << endl;
@@ -776,11 +776,16 @@ void Process_handler::Start_Stop_profiling() const {
 	sem_post(start_stop_semaphore);
 }
 
-void Process_handler::Read_shared_memory(){
+bool Process_handler::Read_shared_memory(){
 
 	ifstream headerfile;
 
 	unsigned long int count;
+
+	if(!shared_memory_initialized || profiled){
+		cout << "Process " << PID_string << " is under profiling and/or shared memory has not been initialized." << endl;
+		return false;
+	}
 
 	headerfile.open((PID_string + "_shm_header.bin").c_str(), ios::binary | ios::in);
 
@@ -792,5 +797,7 @@ void Process_handler::Read_shared_memory(){
 
 	memory_profiler_struct = new memory_profiler_sm_object_class(count);
 	memory_profiler_struct->read_from_binary_file(PID_string);
+
+	return true;
 }
 

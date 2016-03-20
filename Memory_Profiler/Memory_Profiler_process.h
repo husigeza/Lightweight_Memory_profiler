@@ -223,7 +223,7 @@ class Process_handler {
 
         bool Init_shared_memory();
 
-        void Read_shared_memory();
+        bool Read_shared_memory();
 
         const bool Is_shared_memory_initialized() const {return shared_memory_initialized;} ;
 
