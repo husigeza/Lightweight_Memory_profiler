@@ -131,7 +131,6 @@ public:
 	}
 
 	~memory_profiler_sm_object_class(){
-		cout << " log_entry destructor" << endl;
 		delete[] log_entry;
 	}
 

@@ -118,16 +118,6 @@ void memory_profiler_sm_object_log_entry_class::wite_to_file(ofstream &entriesfi
 
 void memory_profiler_sm_object_log_entry_class::Print(template_handler<Process_handler> process, ofstream &log_file) const{
 
-	/*cout << "Backtrace: " << endl;
-	log_file << "Backtrace: " << endl;
-
-	for(int  k = 0; k < backtrace_length; k++){
-		cout << call_stack[k]<< " --- ";
-		log_file << call_stack[k]<< " --- ";
-		cout << process.object->Find_function_name((uint64_t)call_stack[k]) << endl;
-		log_file << process.object->Find_function_name((uint64_t)call_stack[k]) << endl;
-	}*/
-
 	log_file << endl <<"PID: " << process.object->PID_string << endl;
 	log_file <<"Thread ID: " << dec << thread_id << endl;
 	char buffer[30];
@@ -151,8 +141,6 @@ void memory_profiler_sm_object_log_entry_class::Print(template_handler<Process_h
 
 void memory_profiler_sm_object_log_entry_class::Print(template_handler<Process_handler> process) const{
 
-
-	if(valid == true){
 		cout << endl <<"PID: " << process.object->PID_string << endl;
 		cout <<"Thread ID: " << dec << thread_id << endl;
 		char buffer[30];
@@ -160,8 +148,11 @@ void memory_profiler_sm_object_log_entry_class::Print(template_handler<Process_h
 		cout <<"GMT before: " << buffer << dec << tval_before.tv_usec << endl;
 		strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(tval_after.tv_sec)));
 		cout <<"GMT after: " << buffer << dec << tval_after.tv_usec << endl;
-		cout <<"Call stack type: " << dec << type << endl;
+		cout <<"Call stack type: " << find_alloc_type(type) << endl;
 		cout <<"Address: 0x" << hex << address << endl;
+		if(type == realloc_func){
+			cout <<"Realloc parameter address: 0x" << hex << realloc_address << endl;
+		}
 		cout <<"Allocation size: " << dec << size << endl;
 		cout <<"Call stack size: " << dec << backtrace_length << endl;
 		cout <<"Call stack: " << endl;
@@ -169,7 +160,6 @@ void memory_profiler_sm_object_log_entry_class::Print(template_handler<Process_h
 			cout << call_stack[k]<< " --- ";
 			cout << process.object->Find_function_name((uint64_t)call_stack[k])<< endl;
 		}
-	}
 }
 
 
@@ -239,7 +229,7 @@ Process_handler::Process_handler(pid_t PID) {
 	// Check whether the process starts profiling at the beginning with checking the existence of the corresponding shared memory area
 	shared_memory_A = shm_open(shared_memory_name_A.c_str(),  O_RDWR , S_IRWXU | S_IRWXG | S_IRWXO);
 	if (shared_memory_A >= 0){
-		cout << "Shared memory: " << shared_memory_name_A << " exists, shared memory handler: " << shared_memory_A <<" errno: " << errno << endl;
+		//cout << "Shared memory: " << shared_memory_name_A << " exists, shared memory handler: " << shared_memory_A <<" errno: " << errno << endl;
 
 		// Map the shared memory because it exists
 		memory_profiler_struct_A = (memory_profiler_sm_object_class_fix*) mmap(
@@ -257,7 +247,7 @@ Process_handler::Process_handler(pid_t PID) {
 			shared_memory_B = shm_open(shared_memory_name_B.c_str(),  O_RDWR , S_IRWXU | S_IRWXG | S_IRWXO);
 			if (shared_memory_B >= 0){
 
-				cout << "Shared memory: " << shared_memory_name_B << " exists, shared memory handler: " << shared_memory_B <<" errno: " << errno << endl;
+				//cout << "Shared memory: " << shared_memory_name_B << " exists, shared memory handler: " << shared_memory_B <<" errno: " << errno << endl;
 
 				// Map the shared memory because it exists
 				memory_profiler_struct_B = (memory_profiler_sm_object_class_fix*) mmap(
@@ -286,7 +276,7 @@ Process_handler::Process_handler(pid_t PID) {
 		}
 	}
 	else {
-		cout << "Shared memories not exist, errno: " << errno << endl;
+		//cout << "Shared memories not exist, errno: " << errno << endl;
 	}
 
 	if (!Create_symbol_table()) {
@@ -375,9 +365,10 @@ Process_handler::~Process_handler() {
 	all_function_symbol_table.clear();
 
 	munmap(start_stop_semaphore, sizeof(sem_t));
-	munmap(memory_profiler_struct_A,sizeof(memory_profiler_sm_object_class_fix));
-	munmap(memory_profiler_struct_B,sizeof(memory_profiler_sm_object_class_fix));
-
+	if(shared_memory_initialized){
+		munmap(memory_profiler_struct_A,sizeof(memory_profiler_sm_object_class_fix));
+		munmap(memory_profiler_struct_B,sizeof(memory_profiler_sm_object_class_fix));
+	}
 
 	delete memory_profiler_struct;
 }
@@ -673,7 +664,7 @@ bool Process_handler::Init_start_stop_semaphore() {
 	start_stop_semaphore_shared_memory = shm_open(start_stop_semaphore_name.c_str(), O_CREAT | O_RDWR | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO);
 	if (start_stop_semaphore_shared_memory < 0){
 		if (errno == EEXIST){
-			cout << "Start stop semaphore already exists, do not re-create it! Trying to open it...  errno: " << errno << endl;
+			//cout << "Start stop semaphore already exists, do not re-create it! Trying to open it...  errno: " << errno << endl;
 			start_stop_semaphore_shared_memory = shm_open(start_stop_semaphore_name.c_str(),  O_RDWR , S_IRWXU | S_IRWXG | S_IRWXO);
 			if(start_stop_semaphore_shared_memory <= 0){
 				cout << "Error while opening start_stop_semaphore shared memory: " << dec << errno << endl;
@@ -692,7 +683,7 @@ bool Process_handler::Init_start_stop_semaphore() {
 		return false;
 	}
 
-	cout << "Start stop semaphore initialized" << endl;
+	//cout << "Start stop semaphore initialized" << endl;
 
 	return true;
 }

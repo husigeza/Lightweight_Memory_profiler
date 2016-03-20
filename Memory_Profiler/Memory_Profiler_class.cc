@@ -22,14 +22,14 @@ Memory_Profiler::Memory_Profiler(string fifo_path, string overload_fifo_path) {
 	if (mkfifo(this->fifo_path.c_str(), 0666) == -1) {
 
 		if (errno == EEXIST) {
-			cout << "FIFO already exists" << endl;
+			//cout << "FIFO already exists" << endl;
 		} else {
 			cout << "Failed creating FIFO" << "errno: " << errno << endl;
 			return;
 		}
 	}
 	else {
-	cout << "FIFO is created" << endl;
+	//cout << "FIFO is created" << endl;
 	}
 	mem_prof_fifo = open(fifo_path.c_str(), O_RDONLY | O_NONBLOCK );
 
@@ -38,14 +38,14 @@ Memory_Profiler::Memory_Profiler(string fifo_path, string overload_fifo_path) {
 	if (mkfifo(overload_fifo_path.c_str(), 0666) == -1) {
 
 			if (errno == EEXIST) {
-				cout << "overload FIFO already exists" << endl;
+				//cout << "overload FIFO already exists" << endl;
 			} else {
 				cout << "Failed creating FIFO" << "errno: " << errno << endl;
 				return;
 			}
 		}
 		else {
-		cout << "overload FIFO is created" << endl;
+		//cout << "overload FIFO is created" << endl;
 		}
 		mem_prof_overload_fifo = open(overload_fifo_path.c_str(), O_RDONLY | O_NONBLOCK );
 

@@ -76,7 +76,7 @@ command : PRINT PROCESS NUMBER '\n'      			{mem_prof.Print_process($3);}
 		| ADD ANALYZER SAVE MAP '\n'				{mem_prof.Create_new_analyzer(*(new Save_memory_mappings_Analyzer()));}
 		| ADD ANALYZER SAVE SYMBOLS '\n'			{mem_prof.Create_new_analyzer(*(new Save_symbol_table_Analyzer()));}
 		| ADD ANALYZER SAVE BT '\n'					{mem_prof.Create_new_analyzer(*(new Save_shared_memory_Analyzer()));}
-		| ADD FILTER SIZE NUMBER TEXT'\n'			{mem_prof.Create_new_size_filter_cli($4,$5);}
+		| ADD FILTER SIZE NUMBER TEXT'\n'			{mem_prof.Create_new_size_filter_cli($4,remove_end($5));}
 		| ADD ANALYZER NUMBER PATTERN NUMBER '\n'	{mem_prof.Add_analyzer_to_pattern($3,$5);}
 		| ADD ANALYZER NUMBER PATTERN TEXT '\n'		{mem_prof.Add_analyzer_to_pattern_by_name($3,remove_end($5));}
 		| REMOVE ANALYZER NUMBER '\n'				{mem_prof.Remove_analyzer($3);}
@@ -88,7 +88,7 @@ command : PRINT PROCESS NUMBER '\n'      			{mem_prof.Print_process($3);}
 		| REMOVE FILTER NUMBER PATTERN NUMBER '\n'	{mem_prof.Remove_filter_from_pattern($3,$5);}
 		| REMOVE FILTER NUMBER PATTERN TEXT '\n'	{mem_prof.Remove_filter_from_pattern_by_name($3,remove_end($5));}
 		| PROCESS NUMBER ANALYZE PATTERN NUMBER '\n'{mem_prof.Run_pattern($5,$2);}
-		| PROCESS NUMBER ANALYZE PATTERN TEXT '\n'	{mem_prof.Run_pattern($5,$2);}
+		| PROCESS NUMBER ANALYZE PATTERN TEXT '\n'	{mem_prof.Run_pattern(remove_end($5),$2);}
 		| PROCESS ALL ANALYZE PATTERN NUMBER '\n'	{mem_prof.Run_pattern_all_process($5);}
 		| PROCESS ALL ANALYZE PATTERN TEXT '\n'		{mem_prof.Run_pattern_all_process(remove_end($5));}
 		| PRINT ANALYZER ALL '\n'					{mem_prof.Print_analyzers();}
@@ -231,14 +231,14 @@ int main() {
 	if (err) {
 		cout << "Thread creation failed error: " << err << endl;
 	} else {
-		cout << "Read_FIFO_thread created" << endl;
+		//cout << "Read_FIFO_thread created" << endl;
 	}
 	
 	err = pthread_create(&overload_FIFO_read_thread_id, NULL, &Read_overload_FIFO_thread, NULL);
 	if (err) {
 		cout << "Thread creation failed error: " << err << endl;
 	} else {
-		cout << "Read_overload_FIFO_thread created" << endl;
+		//cout << "Read_overload_FIFO_thread created" << endl;
 	}
 	
 	mem_prof.Create_new_pattern("p");

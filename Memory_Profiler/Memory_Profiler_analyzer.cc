@@ -215,22 +215,6 @@ void Memory_Leak_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_o
 				}
 
 				it->object->Print(process,log_file);
-
-				/*char buffer[30];
-				strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(it->object->tval_before.tv_sec)));
-				log_file << "GMT before: " << buffer << dec << it->object->tval_before.tv_usec << endl;
-				strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(it->object->tval_after.tv_sec)));
-				log_file << "GMT after: " << buffer << dec << it->object->tval_after.tv_usec << endl;
-
-
-				it->object->size
-
-				log_file << "Call stack: " << endl;
-				for(int  k = 0; k < it->object->backtrace_length; k++){
-
-					log_file << it->object->call_stack[k]<< " --- ";
-					log_file << process.object->Find_function_name((uint64_t)it->object->call_stack[k]) << endl;
-				}*/
 			}
 		}
 		else if(it->object->valid && it->object->type == free_func){
@@ -421,30 +405,13 @@ Save_shared_memory_Analyzer::Save_shared_memory_Analyzer(){
 void Save_shared_memory_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const {
 
 	ofstream shared_memory_file;
+	vector<template_handler< memory_profiler_sm_object_log_entry_class> >::iterator it;
 
 	cout << "Saving Process " << process.object->PID_string << " backtrace..." << endl;
 	shared_memory_file.open(process.object->shared_memory_file_name.c_str(), ofstream::app);
 
-	for (unsigned int j = 0; j < entries.size(); j++) {
-
-		if(entries[j].object->valid == true){
-			shared_memory_file << endl <<"Shared memory PID: " << process.object->PID_string << endl;
-			shared_memory_file <<"Shared_memory index: " << dec << j << endl;
-			shared_memory_file <<"Thread ID: " << dec << entries[j].object->thread_id << endl;
-			char buffer[30];
-			strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(entries[j].object->tval_before.tv_sec)));
-			shared_memory_file <<"GMT before: " << buffer << dec << entries[j].object->tval_before.tv_usec << endl;
-			strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(entries[j].object->tval_after.tv_sec)));
-			shared_memory_file <<"GMT after: " << buffer << dec << entries[j].object->tval_after.tv_usec << endl;
-			shared_memory_file <<"Call stack type: " << dec << entries[j].object->type << endl;
-			shared_memory_file <<"Address: " << hex <<entries[j].object->address << endl;
-			shared_memory_file <<"Allocation size: " << dec << entries[j].object->size << endl;
-			shared_memory_file <<"Call stack: " << endl;
-			for(int  k=0; k < entries[j].object->backtrace_length;k++){
-				shared_memory_file << entries[j].object->call_stack[k]<< " --- ";
-				shared_memory_file << process.object->Find_function_name((uint64_t) entries[j].object->call_stack[k])<< endl;
-			}
-		}
+	for (it = entries.begin(); it != entries.end(); it++) {
+		it->object->Print(process,shared_memory_file);
 	}
 
 	cout << "Process " << process.object->PID_string << " backtrace saved!" << endl;
