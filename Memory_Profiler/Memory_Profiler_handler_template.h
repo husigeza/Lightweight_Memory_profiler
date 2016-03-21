@@ -23,7 +23,6 @@ public:
 		if(counter == 0 && delete_enable){
 			delete object;
 		}
-
 	}
 
 	template_handler(class_template &object_p){
@@ -39,11 +38,9 @@ public:
 	}
 
 	template_handler(const template_handler &obj){
-		if(this != &obj){
-			object = obj.object;
-			delete_enable = obj.delete_enable;
-			counter++;
-		}
+		object = obj.object;
+		delete_enable = obj.delete_enable;
+		counter++;
 	}
 
 	template_handler& operator=(const template_handler &obj){
@@ -52,6 +49,7 @@ public:
 			delete_enable = obj.delete_enable;
 			counter++;
 		}
+
 		return *this;
 	}
 

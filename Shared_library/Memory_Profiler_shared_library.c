@@ -146,13 +146,6 @@ void print_to_log(char *text){
 	fclose(pfile);
 }
 
-void
-signal_callback_handler(int signum)
-{
-	exit(signum);
-}
-
-
 
 void __attribute__ ((constructor)) Memory_profiler_shared_library_init() {
 
@@ -183,7 +176,6 @@ void __attribute__ ((constructor)) Memory_profiler_shared_library_init() {
 		print_to_log(s);
 	}
 
-	signal(SIGINT, signal_callback_handler);
 
 	sprintf(PID_string, "%d", getpid());
 	printf("current process is: %s \n", PID_string);
@@ -295,7 +287,6 @@ void __attribute__ ((destructor)) Memory_profiler_shared_library_finit(){
 		swap_shared_memory_pointers();
 	}
 
-	//sem_destroy(memory_profiler_start_semaphore);
 	shm_unlink(PID_string_sem);
 	shm_unlink(string_shared_mem_A);
 	shm_unlink(string_shared_mem_B);
@@ -303,18 +294,28 @@ void __attribute__ ((destructor)) Memory_profiler_shared_library_finit(){
 
 inline void swap_shared_memory_pointers(){
 	if(memory_profiler_struct_handler.active == shm_active_A){
-		printf("Swapping shared memory from A to B \n");
+		//printf("Swapping shared memory from A to B \n");
 		memory_profiler_struct_handler.pointer = memory_profiler_struct_B;
 		memory_profiler_struct_A->active = false;
 		memory_profiler_struct_B->active = true;
+
+		// B segment's "profiled" flag meaning: the profiler process has read the segment
+		// Needed when the user program crashed, and did not call swap_shared_pointers function, which sets the "active" flags
+		memory_profiler_struct_B->profiled = false;
+
 		memory_profiler_struct_handler.active = shm_active_B;
 	}
 	else {
-		printf("Swapping shared memory from B to A \n");
+		//printf("Swapping shared memory from B to A \n");
 
 		memory_profiler_struct_handler.pointer = memory_profiler_struct_A;
 		memory_profiler_struct_B->active = false;
 		memory_profiler_struct_A->active = true;
+
+		// B segment's "profiled" flag meaning: the profiler process has read the segment
+		// Needed when the user program crashed, and did not call swap_shared_pointers function, which sets the "active" flags
+		memory_profiler_struct_B->profiled = false;
+
 		memory_profiler_struct_handler.active = shm_active_A;
 	}
 	indicate_shm_overload();
@@ -526,6 +527,7 @@ bool Create_shared_memory(){
 		}
 
 	memory_profiler_struct_A->log_count = 0;
+	memory_profiler_struct_A->profiled = false;
 
 	shared_memory_B = shm_open(string_shared_mem_B, O_CREAT | O_RDWR | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO);
 		if (shared_memory_B < 0) {
@@ -554,6 +556,7 @@ bool Create_shared_memory(){
 
 	memory_profiler_struct_B->log_count = 0;
 	memory_profiler_struct_B->active = false;
+	memory_profiler_struct_B->profiled = false;
 
 	memory_profiler_struct_handler.pointer = memory_profiler_struct_A;
 	memory_profiler_struct_handler.active = shm_active_A;
@@ -603,6 +606,7 @@ bool Open_shared_memory(){
 	}
 
 	memory_profiler_struct_B->active = false;
+	memory_profiler_struct_B->profiled = false;
 
 	memory_profiler_struct_handler.pointer = memory_profiler_struct_A;
 	memory_profiler_struct_handler.active = shm_active_A;
@@ -646,13 +650,9 @@ void* Memory_profiler_start_thread(void *arg){
 
 void indicate_shm_overload(){
 
-	printf("Notifiing... %s\n",PID_string);
-
 	mem_prof_overload_fifo = open(fifo_overload_path, O_WRONLY | O_NONBLOCK);
 
 	if (mem_prof_overload_fifo != -1) {
-
-		printf("overload: %s\n",PID_string);
 
 		if (write(mem_prof_overload_fifo, &PID_string, sizeof(PID_string)) == -1) {
 
@@ -672,7 +672,7 @@ void* Hearthbeat(void *arg) {
 
 	while (true) {
 
-		mem_prof_fifo = open(fifo_path, O_WRONLY);
+		mem_prof_fifo = open(fifo_path, O_WRONLY /*| O_NONBLOCK*/);
 
 		if (mem_prof_fifo != -1) {
 
@@ -685,11 +685,11 @@ void* Hearthbeat(void *arg) {
 
 			close(mem_prof_fifo);
 		} else {
-			//printf("Failed opening the FIFO, errno: %d\n", errno);
+			printf("Failed opening the FIFO, errno: %d\n", errno);
 			//sprintf(s,"Hearthbeat: Failed opening the FIFO, errno: %d\n", errno);
 			//print_to_log(s);
 		}
-		usleep(100);
+		usleep(100000);
 	}
 
 }

@@ -34,7 +34,6 @@ Analyzer::Analyzer(const Analyzer &obj){
 
 	type = obj.type;
 	type_string = obj.type_string;
-	process = obj.process;
 	Pattern_vector = obj.Pattern_vector;
 
 }
@@ -42,7 +41,6 @@ Analyzer& Analyzer::operator=(const Analyzer &obj){
 
 	type = obj.type;
 	type_string = obj.type_string;
-	process = obj.process;
 	Pattern_vector = obj.Pattern_vector;
 
 	return *this;
@@ -95,12 +93,10 @@ void Analyzer::Start(template_handler<Process_handler> process){
 	cout << "Analyzer " << type_string << " starting..." << endl;
 	log_file << "Analyzer " << type_string << " starting..." << endl;
 
-	this->process = process;
-
 	log_file.close();
 }
 
-void Analyzer::Stop(){
+void Analyzer::Stop(template_handler<Process_handler> process){
 
 	ofstream log_file;
 	log_file.open(("Analyzation_output_"+ process.object->PID_string + ".txt").c_str(), ios::app);
@@ -117,7 +113,7 @@ Print_Analyzer::Print_Analyzer(){
 	type_string = "Print analyzer";
 }
 
-void Print_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const {
+void Print_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries, template_handler<Process_handler> process) const {
 
 	for(vector<template_handler< memory_profiler_sm_object_log_entry_class> >::iterator entry = entries.begin();entry != entries.end();entry++){
 		entry->object->Print(process);
@@ -129,7 +125,7 @@ Memory_Leak_Analyzer::Memory_Leak_Analyzer(){
 	type_string = "Memory Leak analyzer";
 }
 
-void Memory_Leak_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const {
+void Memory_Leak_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries, template_handler<Process_handler> process) const {
 
 	ofstream log_file;
 	log_file.open(("Analyzation_output_"+ process.object->PID_string + ".txt").c_str(), ios::app);
@@ -248,7 +244,7 @@ Double_Free_Analyzer::Double_Free_Analyzer(){
 	type_string = "Double free analyzer";
 }
 
-void Double_Free_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const {
+void Double_Free_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries, template_handler<Process_handler> process) const {
 
 	ofstream log_file;
 	log_file.open(("Analyzation_output_"+ process.object->PID_string + ".txt").c_str(), ios::app);
@@ -288,7 +284,7 @@ Malloc_Counter_Analyzer::Malloc_Counter_Analyzer(){
 	type_string = "Malloc,calloc,realloc and free counter analyzer";
 }
 
-void Malloc_Counter_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const {
+void Malloc_Counter_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries, template_handler<Process_handler> process) const {
 
 	ofstream log_file;
 	log_file.open(("Analyzation_output_"+ process.object->PID_string + ".txt").c_str(), ios::app);
@@ -354,7 +350,7 @@ Save_symbol_table_Analyzer::Save_symbol_table_Analyzer(){
 	type_string = "Saving symbol table";
 }
 
-void Save_symbol_table_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const {
+void Save_symbol_table_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries, template_handler<Process_handler> process) const {
 
 	ofstream symbol_file;
 
@@ -380,7 +376,7 @@ Save_memory_mappings_Analyzer::Save_memory_mappings_Analyzer(){
 	type_string = "Saving virtual memory mapping";
 }
 
-void Save_memory_mappings_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const {
+void Save_memory_mappings_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries, template_handler<Process_handler> process) const {
 
 	ofstream memory_map_file;
 
@@ -402,7 +398,7 @@ Save_shared_memory_Analyzer::Save_shared_memory_Analyzer(){
 	type_string = "Saving backtrace";
 }
 
-void Save_shared_memory_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const {
+void Save_shared_memory_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries, template_handler<Process_handler> process) const {
 
 	ofstream shared_memory_file;
 	vector<template_handler< memory_profiler_sm_object_log_entry_class> >::iterator it;

@@ -33,7 +33,7 @@ protected:
 	Analyzer();
 	unsigned int type;
 	string type_string;
-	template_handler<Process_handler> process;
+
 
 public:
 
@@ -46,8 +46,8 @@ public:
 	virtual void Print()const;
 
 	void Start(template_handler<Process_handler> process);
-	virtual void Analyze(vector<template_handler<memory_profiler_sm_object_log_entry_class> > entries) const = 0;
-	void Stop();
+	virtual void Analyze(vector<template_handler<memory_profiler_sm_object_log_entry_class> > entries, template_handler<Process_handler> process) const = 0;
+	void Stop(template_handler<Process_handler> process);
 
 	void Pattern_register(template_handler<Pattern> pattern);
 	void Pattern_deregister(string name);
@@ -59,7 +59,7 @@ public:
 	Print_Analyzer();
 	~Print_Analyzer(){}
 
-	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const ;
+	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries,template_handler<Process_handler> process) const ;
 
 };
 
@@ -69,7 +69,7 @@ public:
 	Memory_Leak_Analyzer();
 	~Memory_Leak_Analyzer(){}
 
-	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const ;
+	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries,template_handler<Process_handler> process) const ;
 };
 
 
@@ -79,7 +79,7 @@ public:
 	Double_Free_Analyzer();
 	~Double_Free_Analyzer(){}
 
-	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const ;
+	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries,template_handler<Process_handler> process) const ;
 };
 
 class Malloc_Counter_Analyzer : public Analyzer{
@@ -88,7 +88,7 @@ public:
 	Malloc_Counter_Analyzer();
 	~Malloc_Counter_Analyzer(){}
 
-	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const ;
+	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries,template_handler<Process_handler> process) const ;
 };
 
 class Save_symbol_table_Analyzer : public Analyzer{
@@ -97,7 +97,7 @@ public:
 	Save_symbol_table_Analyzer();
 	~Save_symbol_table_Analyzer(){}
 
-	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const ;
+	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries,template_handler<Process_handler> process) const ;
 };
 
 class Save_memory_mappings_Analyzer : public Analyzer{
@@ -106,7 +106,7 @@ public:
 	Save_memory_mappings_Analyzer();
 	~Save_memory_mappings_Analyzer(){}
 
-	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const ;
+	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries,template_handler<Process_handler> process) const ;
 };
 
 class Save_shared_memory_Analyzer : public Analyzer{
@@ -115,7 +115,7 @@ public:
 	Save_shared_memory_Analyzer();
 	~Save_shared_memory_Analyzer(){}
 
-	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries) const ;
+	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries,template_handler<Process_handler> process) const ;
 };
 
 bool operator==(template_handler<Analyzer> analyzer_1, const template_handler<Analyzer> analyzer_2);

@@ -228,8 +228,8 @@ void Pattern::Run_analyzers(template_handler<Process_handler> process){
 
 		for(vector<template_handler<Analyzer> >::iterator analyzer = Analyzer_vector.begin();analyzer != Analyzer_vector.end();analyzer++){
 			analyzer->object->Start(process);
-			analyzer->object->Analyze(log_entry_vector);
-			analyzer->object->Stop();
+			analyzer->object->Analyze(log_entry_vector,process);
+			analyzer->object->Stop(process);
 		}
 
 		log_entry_vector.clear();

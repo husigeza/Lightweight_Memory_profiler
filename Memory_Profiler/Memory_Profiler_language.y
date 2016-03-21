@@ -208,7 +208,8 @@ void* Read_FIFO_thread(void *arg) {
 
 	while (true) {
 		mem_prof.Read_FIFO();
-		usleep(300);
+		usleep(500000);
+		
 	}
 	return 0;
 }

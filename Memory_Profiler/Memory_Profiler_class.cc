@@ -31,23 +31,23 @@ Memory_Profiler::Memory_Profiler(string fifo_path, string overload_fifo_path) {
 	else {
 	//cout << "FIFO is created" << endl;
 	}
-	mem_prof_fifo = open(fifo_path.c_str(), O_RDONLY | O_NONBLOCK );
+
+	mem_prof_fifo = open(fifo_path.c_str(), O_RDONLY | O_NONBLOCK);
 
 	mem_prof_overload_fifo_path = overload_fifo_path;
 
 	if (mkfifo(overload_fifo_path.c_str(), 0666) == -1) {
-
-			if (errno == EEXIST) {
-				//cout << "overload FIFO already exists" << endl;
-			} else {
-				cout << "Failed creating FIFO" << "errno: " << errno << endl;
-				return;
-			}
+		if (errno == EEXIST) {
+			//cout << "overload FIFO already exists" << endl;
+		} else {
+			cout << "Failed creating FIFO" << "errno: " << errno << endl;
+			return;
 		}
-		else {
-		//cout << "overload FIFO is created" << endl;
-		}
-		mem_prof_overload_fifo = open(overload_fifo_path.c_str(), O_RDONLY | O_NONBLOCK );
+	}
+	else {
+	//cout << "overload FIFO is created" << endl;
+	}
+	mem_prof_overload_fifo = open(overload_fifo_path.c_str(), O_RDONLY | O_NONBLOCK);
 
 }
 
@@ -197,32 +197,37 @@ void Memory_Profiler::Read_FIFO() {
 	int res;
 	map<const pid_t, template_handler<Process_handler> >::iterator it;
 
-	if (mem_prof_fifo != -1) {
-		while ((res = read(mem_prof_fifo, (char*)buffer.c_str(), buff_size)) != 0) {
-
-			if (res > 0) {
-				pid = atol( buffer.c_str() );
-				Add_Process_to_list(pid);
-				alive_processes.push_back(pid);
-
-			} else {
-				//cout << "Failed reading the FIFO" << endl;
-				return;
-			}
+	while ((res = read(mem_prof_fifo, (char*)buffer.c_str(), buff_size)) != 0) {
+		if (res > 0) {
+			pid = atol( buffer.c_str() );
+			Add_Process_to_list(pid);
+			alive_processes.push_back(pid);
+		} else {
+			//cout << "Failed reading the FIFO" << endl;
+			return;
 		}
-		// IF nobody has written the FIFO, res = 0, alive_processes = 0, all the processes are dead
-		for (it = Processes.begin(); it != Processes.end(); it++) {
+	}
+
+	// IF nobody has written the FIFO, res = 0, alive_processes = 0, all the processes are dead
+	for (it = Processes.begin(); it != Processes.end(); it++) {
+		if(it->second.object->Get_alive() == true){
 			if(find(alive_processes.begin(), alive_processes.end(), it->first) == alive_processes.end()) {
 				Set_process_alive_flag(it->first,false);
-				//cout << "Process " << dec << it->first <<" is no more alive!" << endl;
+				cout << "Process " << dec << it->first <<" is no more alive!" << endl;
+				try{
+					Save_process_shared_memory(it->first);
+				}
+				catch(ofstream::failure &e){
+					cout << e.what() << endl;
+					cout << "Shared memory saving failed!" << endl;
+				}
 			}
 			else {
 				Set_process_alive_flag(it->first,true);
 			}
 		}
-	} else {
-		cout << "Failed opening the FIFO, errno: " << errno << endl;
 	}
+	alive_processes.clear();
 }
 
 void Memory_Profiler::Read_overload_FIFO(){
@@ -232,50 +237,77 @@ void Memory_Profiler::Read_overload_FIFO(){
 	string buffer;
 	size_t buff_size = 6;
 
-	if (mem_prof_overload_fifo != -1) {
-		while ((res = read(mem_prof_overload_fifo, (char*)buffer.c_str(), buff_size)) != 0) {
+	while ((res = read(mem_prof_overload_fifo, (char*)buffer.c_str(), buff_size)) != 0) {
 
-			if (res > 0) {
-				pid = atol( buffer.c_str() );
-				try{
-					Save_process_shared_memory(pid);
-				}
-				catch(ofstream::failure &e){
-					cout << e.what() << endl;
-					cout << "Shared memory saving failed!" << endl;
-				}
+		if (res > 0) {
+			pid = atol( buffer.c_str() );
+			try{
+				Save_process_shared_memory(pid);
+			}
+			catch(ofstream::failure &e){
+				cout << e.what() << endl;
+				cout << "Shared memory saving failed!" << endl;
 			}
 		}
 	}
-	else {
-		cout << "Failed opening the overload FIFO, errno: " << errno << endl;
-	}
-
 }
 
 void Memory_Profiler::Save_process_shared_memory(pid_t PID){
 	//cout << "Saving " << dec << " process shm..." << endl;
-	template_handler<Process_handler> process = Processes[PID];
 
-	try{
-		if(process.object->memory_profiler_struct_A->active == false){
-			//cout << " Saving from segment A..." << endl;
-			//cout << " segment A log count: " << process.object->memory_profiler_struct_A->log_count << endl;
-			process.object->memory_profiler_struct_A->write_to_binary_file(process.object->PID_string,process.object->total_entry_number);
-			process.object->total_entry_number += process.object->memory_profiler_struct_A->log_count;
+	if(Processes[PID].object->Is_shared_memory_initialized()){
+		template_handler<Process_handler> process = Processes[PID];
+
+		try{
+			// B segment's "profiled" flag means: the profiler process has read the currently passive segment's content
+			// Needed when the user program crashed, and did not call swap_shared_pointers function, which sets the "active" flags
+			// In this case B segment's profiler flag is true, thus need to read entries from segment which active flag is true
+			if(process.object->memory_profiler_struct_B->profiled == false){
+				if(process.object->memory_profiler_struct_A->active == false){
+					//cout << " Saving from segment A..." << endl;
+					//cout << " segment A log count: " << process.object->memory_profiler_struct_A->log_count << endl;
+					process.object->memory_profiler_struct_A->write_to_binary_file(process.object->PID_string,process.object->total_entry_number);
+					process.object->total_entry_number += process.object->memory_profiler_struct_A->log_count;
+				}
+				else if(process.object->memory_profiler_struct_B->active == false){
+					//cout << " Saving from segment B..." << endl;
+					//cout << " segment B log count: " << process.object->memory_profiler_struct_B->log_count << endl;
+					process.object->memory_profiler_struct_B->write_to_binary_file(process.object->PID_string,process.object->total_entry_number);
+					process.object->total_entry_number += process.object->memory_profiler_struct_B->log_count;
+				}
+				else{
+					//cout <<"Shared memory is in inconsistent state, don't parse it!" << endl;
+				}
+
+				process.object->memory_profiler_struct_B->profiled = true;
+			}
+			else{
+				if(process.object->memory_profiler_struct_A->active == true){
+					//cout << " Saving from segment A..." << endl;
+					//cout << " segment A log count: " << process.object->memory_profiler_struct_A->log_count << endl;
+					process.object->memory_profiler_struct_A->write_to_binary_file(process.object->PID_string,process.object->total_entry_number);
+					process.object->total_entry_number += process.object->memory_profiler_struct_A->log_count;
+				}
+				else if(process.object->memory_profiler_struct_B->active == true){
+					//cout << " Saving from segment B..." << endl;
+					//cout << " segment B log count: " << process.object->memory_profiler_struct_B->log_count << endl;
+					process.object->memory_profiler_struct_B->write_to_binary_file(process.object->PID_string,process.object->total_entry_number);
+					process.object->total_entry_number += process.object->memory_profiler_struct_B->log_count;
+				}
+				else{
+					cout <<"Shared memory is in inconsistent state, don't parse it!" << endl;
+				}
+			}
+
+
+			//cout << dec << PID << "  log count:  " << process.object->total_entry_number << endl;
+
 		}
-		else {
-			//cout << " Saving from segment B..." << endl;
-			//cout << " segment B log count: " << process.object->memory_profiler_struct_B->log_count << endl;
-			process.object->memory_profiler_struct_B->write_to_binary_file(process.object->PID_string,process.object->total_entry_number);
-			process.object->total_entry_number += process.object->memory_profiler_struct_B->log_count;
+		catch(ofstream::failure &e){
+			throw e;
 		}
 	}
-	catch(ofstream::failure &e){
-		throw e;
-	}
 
-	//cout << dec << PID << " log count:  " << process.object->total_entry_number << endl;
 }
 
 

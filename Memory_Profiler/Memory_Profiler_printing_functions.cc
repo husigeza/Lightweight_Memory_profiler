@@ -18,6 +18,7 @@ void Memory_Profiler::Print_process(const pid_t PID) const{
 		cout <<"Alive: " << it->second.object->Get_alive() << endl;
 		cout <<"Profiled: " << it->second.object->Get_profiled() << endl;
 		cout <<"Shared memory initialized: " << it->second.object->Is_shared_memory_initialized() << endl;
+		cout <<"Total number of entries have been read: " << dec << it->second.object->total_entry_number << endl;
 		cout << endl;
 	}
 
@@ -40,14 +41,14 @@ void Memory_Profiler::Print_alive_processes() const{
 	cout << endl << "Alive processes:" << endl;
 	for (it = Processes.begin(); it != Processes.end(); it++) {
 		if(it->second.object->Get_alive()){
-			cout << "PID: " << std::dec << it->first << endl;
+			Print_process(it->first);
 		}
 	}
 
 	cout << endl << "Dead processes:" << endl;
 	for (it = Processes.begin(); it != Processes.end(); it++) {
 		if(!it->second.object->Get_alive()){
-			cout << "PID: " << std::dec << it->first << endl;
+			Print_process(it->first);
 		}
 	}
 }
@@ -59,7 +60,7 @@ void Memory_Profiler::Print_profiled_processes() const{
 
 	for (it = Processes.begin(); it != Processes.end(); it++) {
 		if(it->second.object->Get_profiled() == true){
-			cout << "PID: " << std::dec << it->first << endl;
+			Print_process(it->first);
 		}
 
 	}

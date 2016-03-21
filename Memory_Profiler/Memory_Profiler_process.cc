@@ -283,7 +283,7 @@ Process_handler::Process_handler(pid_t PID) {
 				memory_profiler_struct_B = (memory_profiler_sm_object_class_fix*) mmap(
 										NULL,
 										sizeof(memory_profiler_sm_object_class_fix),
-										PROT_READ,
+										PROT_READ | PROT_WRITE,
 										MAP_SHARED,
 										shared_memory_B,
 										0);
@@ -395,12 +395,18 @@ Process_handler::~Process_handler() {
 	all_function_symbol_table.clear();
 
 	munmap(start_stop_semaphore, sizeof(sem_t));
+
 	if(shared_memory_initialized){
 		munmap(memory_profiler_struct_A,sizeof(memory_profiler_sm_object_class_fix));
 		munmap(memory_profiler_struct_B,sizeof(memory_profiler_sm_object_class_fix));
 	}
 
-	delete memory_profiler_struct;
+	if(alive == false){
+		sem_destroy(start_stop_semaphore);
+		shm_unlink(start_stop_semaphore_name.c_str());
+		shm_unlink(shared_memory_name_A.c_str());
+		shm_unlink(shared_memory_name_B.c_str());
+	}
 }
 
 
@@ -785,7 +791,7 @@ bool Process_handler::Init_shared_memory() {
 	memory_profiler_struct_B = (memory_profiler_sm_object_class_fix*) mmap(
 				NULL,
 				sizeof(memory_profiler_sm_object_class_fix),
-				PROT_READ,
+				PROT_READ | PROT_WRITE,
 				MAP_SHARED,
 				shared_memory_B,
 				0);
