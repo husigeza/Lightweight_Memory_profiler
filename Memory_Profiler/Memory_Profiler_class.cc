@@ -339,6 +339,21 @@ void Memory_Profiler::Create_new_size_filter_cli(unsigned long size_p, string op
 	}
 }
 
+void Memory_Profiler::Create_new_time_filter_cli(string time,__suseconds_t usec,string time_type, string operation_p){
+
+	try{
+			Create_new_filter (*(new Time_filter(time,usec,time_type,operation_p)));
+		}
+		catch(const bool v){
+			if( v == false){
+				cout << "Filter not added: bad operation type or bad time format or type." << endl;
+				cout << "Possibilities for operations: equal, less, bigger" << endl;
+				cout << "Time format: %Y-%m-%d-%H:%M:%S" << endl;
+				cout << "Possibilities for time type: after, before" << endl;
+			}
+		}
+}
+
 void Memory_Profiler::Create_new_filter(Filter& filter){
 
 	Filters_vector.push_back(template_handler<Filter>(filter));

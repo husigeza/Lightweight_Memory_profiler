@@ -13,8 +13,6 @@ extern "C" {
 	void yyerror(const char *s);
 }
 
-
-
 %}
 
 %%
@@ -36,6 +34,7 @@ extern "C" {
 "leak"				{return LEAK;}
 "dfree"				{return DFREE;}
 "alloc"				{return ALLOC;}
+"time"				{return TIME;}
 "analyze"			{return ANALYZE;}
 "filter"			{return FILTER;}
 "size"				{return SIZE;}
@@ -43,7 +42,8 @@ extern "C" {
 "exit"  			{return EXIT_COMMAND;}
 "help"				{return HELP;}
 [0-9]+				{yylval.number=atoi(yytext); return NUMBER;}
-[a-zA-Z0-9]*		{yylval.text = yytext; return TEXT;}
+[0-9][0-9][0-9][0-9]"-"[0-9][0-9]"-"[0-9][0-9]"-"[0-9][0-9]":"[0-9][0-9]":"[0-9][0-9] {yylval.text = strdup(yytext); return TIMESTAMP;} 
+[a-zA-Z0-9]*		{yylval.text = strdup(yytext); return TEXT;}
 [\n]                {return yytext[0];}
 [ \t]+              ;
 .					{return UNRECOGNIZED_TOKEN;}

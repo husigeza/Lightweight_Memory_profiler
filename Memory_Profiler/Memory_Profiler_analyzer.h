@@ -21,6 +21,7 @@ enum analyzer_type{
 	save_symbol_table_analyzer = 5,
 	save_memory_mappings_analyzer = 6,
 	save_shared_memory_analyzer = 7,
+	average_time_analyzer = 8,
 	unknown_analyzer
 };
 
@@ -114,6 +115,15 @@ class Save_shared_memory_Analyzer : public Analyzer{
 public:
 	Save_shared_memory_Analyzer();
 	~Save_shared_memory_Analyzer(){}
+
+	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries,template_handler<Process_handler> process) const ;
+};
+
+class Average_time_Analyzer : public Analyzer{
+
+public:
+	Average_time_Analyzer();
+	~Average_time_Analyzer(){}
 
 	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries,template_handler<Process_handler> process) const ;
 };

@@ -414,3 +414,34 @@ void Save_shared_memory_Analyzer::Analyze(vector<template_handler< memory_profil
 
 	shared_memory_file.close();
 }
+
+Average_time_Analyzer::Average_time_Analyzer(){
+	type = average_time_analyzer;
+	type_string = "Saving backtrace";
+}
+
+void Average_time_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries, template_handler<Process_handler> process) const {
+
+	ofstream log_file;
+	log_file.open(("Analyzation_output_"+ process.object->PID_string + ".txt").c_str(), ios::app);
+
+	cout << endl << endl <<"Running average allocation/free time calculation for Process: "<< process.object->PID_string<< endl;
+	log_file << endl << endl <<"Running average allocation/free time calculation for Process: "<< process.object->PID_string<< endl;
+
+
+	vector<template_handler< memory_profiler_sm_object_log_entry_class> >::iterator it;
+	unsigned long int sum = 0;
+	float average;
+
+	//timeval.tv_sec and timeval.tv_usec are long int, result will be always bigger than 0, no conversion needed
+	for (it = entries.begin(); it != entries.end(); it++) {
+		sum += 1000000*(it->object->tval_after.tv_sec - it->object->tval_before.tv_sec) + (it->object->tval_after.tv_usec - it->object->tval_before.tv_usec);
+	}
+
+	average = (float)sum/entries.size();
+
+	cout << endl <<"Average time for selected entries: " << dec << average << " usec"<< endl;
+	log_file << endl <<"Average time for selected entries: " << dec << average << " usec"<< endl;
+
+	log_file.close();
+}

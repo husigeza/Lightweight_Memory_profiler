@@ -672,7 +672,7 @@ void* Hearthbeat(void *arg) {
 
 	while (true) {
 
-		mem_prof_fifo = open(fifo_path, O_WRONLY /*| O_NONBLOCK*/);
+		mem_prof_fifo = open(fifo_path, O_WRONLY);
 
 		if (mem_prof_fifo != -1) {
 
@@ -685,7 +685,7 @@ void* Hearthbeat(void *arg) {
 
 			close(mem_prof_fifo);
 		} else {
-			printf("Failed opening the FIFO, errno: %d\n", errno);
+			//printf("Failed opening the FIFO, errno: %d\n", errno);
 			//sprintf(s,"Hearthbeat: Failed opening the FIFO, errno: %d\n", errno);
 			//print_to_log(s);
 		}

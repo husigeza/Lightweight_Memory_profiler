@@ -41,11 +41,12 @@ extern "C" {
 %token <text> ALL 
 %token ALIVE PROFILED BT 
 %token ANALYZE ADD REMOVE ANALYZER ANALYZERS PATTERN FILTER SIZE
-%token LEAK DFREE ALLOC
+%token LEAK DFREE ALLOC TIME
 %token SAVE SYMBOLS MAP
 %token ON OFF
 %token <number> NUMBER
 %token <text> TEXT
+%token <text> TIMESTAMP
 %token PROMPT
 %token HELP
 %token EXIT_COMMAND
@@ -68,7 +69,7 @@ command : PRINT PROCESS NUMBER '\n'      			{mem_prof.Print_process($3);}
 		| PROCESS NUMBER PROFILED OFF '\n'			{mem_prof.Remove_process_from_profiling($2);}
 		| PROCESS ALL PROFILED ON '\n'				{mem_prof.Add_all_process_to_profiling();}
 		| PROCESS ALL PROFILED OFF '\n'				{mem_prof.Remove_all_process_from_profiling();}
-		| ADD PATTERN TEXT '\n'						{mem_prof.Create_new_pattern(remove_end($3));}
+		| ADD PATTERN TEXT '\n'						{mem_prof.Create_new_pattern($3); free($3);}
 		| ADD ANALYZER LEAK '\n'					{mem_prof.Create_new_analyzer(*(new Memory_Leak_Analyzer()));}
 		| ADD ANALYZER DFREE '\n'					{mem_prof.Create_new_analyzer(*(new Double_Free_Analyzer()));}
 		| ADD ANALYZER PRINT '\n'					{mem_prof.Create_new_analyzer(*(new Print_Analyzer()));}
@@ -76,21 +77,23 @@ command : PRINT PROCESS NUMBER '\n'      			{mem_prof.Print_process($3);}
 		| ADD ANALYZER SAVE MAP '\n'				{mem_prof.Create_new_analyzer(*(new Save_memory_mappings_Analyzer()));}
 		| ADD ANALYZER SAVE SYMBOLS '\n'			{mem_prof.Create_new_analyzer(*(new Save_symbol_table_Analyzer()));}
 		| ADD ANALYZER SAVE BT '\n'					{mem_prof.Create_new_analyzer(*(new Save_shared_memory_Analyzer()));}
-		| ADD FILTER SIZE NUMBER TEXT'\n'			{mem_prof.Create_new_size_filter_cli($4,remove_end($5));}
+		| ADD ANALYZER TIME '\n'					{mem_prof.Create_new_analyzer(*(new Average_time_Analyzer()));}
+		| ADD FILTER SIZE NUMBER TEXT '\n'			{mem_prof.Create_new_size_filter_cli($4,$5);free($5);}
+		| ADD FILTER TIME TIMESTAMP NUMBER TEXT TEXT '\n'	{mem_prof.Create_new_time_filter_cli($4,$5,$6,$7);free($4);free($6);free($7);}	
 		| ADD ANALYZER NUMBER PATTERN NUMBER '\n'	{mem_prof.Add_analyzer_to_pattern($3,$5);}
-		| ADD ANALYZER NUMBER PATTERN TEXT '\n'		{mem_prof.Add_analyzer_to_pattern_by_name($3,remove_end($5));}
+		| ADD ANALYZER NUMBER PATTERN TEXT '\n'		{mem_prof.Add_analyzer_to_pattern_by_name($3,$5);free($5);}
 		| REMOVE ANALYZER NUMBER '\n'				{mem_prof.Remove_analyzer($3);}
 		| REMOVE ANALYZER NUMBER PATTERN NUMBER '\n'{mem_prof.Remove_analyzer_from_pattern($3,$5);}
-		| REMOVE ANALYZER NUMBER PATTERN TEXT '\n'	{mem_prof.Remove_analyzer_from_pattern_by_name($3,remove_end($5));}
+		| REMOVE ANALYZER NUMBER PATTERN TEXT '\n'	{mem_prof.Remove_analyzer_from_pattern_by_name($3,$5);free($5);}
 		| ADD FILTER NUMBER PATTERN NUMBER '\n'		{mem_prof.Add_filter_to_pattern($3,$5);}
-		| ADD FILTER NUMBER PATTERN TEXT '\n'		{mem_prof.Add_filter_to_pattern_by_name($3,remove_end($5));}
+		| ADD FILTER NUMBER PATTERN TEXT '\n'		{mem_prof.Add_filter_to_pattern_by_name($3,$5);free($5);}
 		| REMOVE FILTER NUMBER '\n'					{mem_prof.Remove_filter($3);}
 		| REMOVE FILTER NUMBER PATTERN NUMBER '\n'	{mem_prof.Remove_filter_from_pattern($3,$5);}
-		| REMOVE FILTER NUMBER PATTERN TEXT '\n'	{mem_prof.Remove_filter_from_pattern_by_name($3,remove_end($5));}
+		| REMOVE FILTER NUMBER PATTERN TEXT '\n'	{mem_prof.Remove_filter_from_pattern_by_name($3,$5);free($5);}
 		| PROCESS NUMBER ANALYZE PATTERN NUMBER '\n'{mem_prof.Run_pattern($5,$2);}
-		| PROCESS NUMBER ANALYZE PATTERN TEXT '\n'	{mem_prof.Run_pattern(remove_end($5),$2);}
+		| PROCESS NUMBER ANALYZE PATTERN TEXT '\n'	{mem_prof.Run_pattern($5,$2);free($5);}
 		| PROCESS ALL ANALYZE PATTERN NUMBER '\n'	{mem_prof.Run_pattern_all_process($5);}
-		| PROCESS ALL ANALYZE PATTERN TEXT '\n'		{mem_prof.Run_pattern_all_process(remove_end($5));}
+		| PROCESS ALL ANALYZE PATTERN TEXT '\n'		{mem_prof.Run_pattern_all_process($5);free($5);}
 		| PRINT ANALYZER ALL '\n'					{mem_prof.Print_analyzers();}
 		| PRINT PATTERN ALL '\n'					{mem_prof.Print_patterns();}
 		| PRINT FILTER ALL '\n'						{mem_prof.Print_filters();}

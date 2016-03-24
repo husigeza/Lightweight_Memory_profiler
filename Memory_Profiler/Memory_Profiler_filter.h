@@ -27,6 +27,12 @@ enum operation_type{
 	operation_type_unknown
 };
 
+enum time_type{
+	time_type_before = 1,
+	time_type_after = 2,
+	time_type_unknown
+};
+
 class Filter {
 private:
 	unsigned int filter_type;
@@ -64,18 +70,26 @@ public:
 
 	Size_filter(const Size_filter &obj);
 
-	unsigned long Get_size()const;
-	void Set_size(unsigned long new_size);
-
-	string Get_operation()const;
-
 	void Print() const ;
-
 	bool Filter_func(template_handler< memory_profiler_sm_object_log_entry_class> log_entry) const ;
 };
 
 class Time_filter : public Filter{
 
+	unsigned int operation;
+	string operation_string;
+	timeval timestamp;
+	int time_type;
+	string time_type_string;
+
+public:
+	Time_filter(string time_param,__suseconds_t usec,string time_type, string operation_p);
+	~Time_filter(){}
+
+	Time_filter(const Time_filter &obj);
+
+	void Print() const ;
+	bool Filter_func(template_handler< memory_profiler_sm_object_log_entry_class> log_entry) const ;
 };
 
 bool operator==(template_handler<Filter> filter_1, const template_handler<Filter> filter_2);

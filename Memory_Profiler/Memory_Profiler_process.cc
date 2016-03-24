@@ -151,10 +151,14 @@ void memory_profiler_sm_object_log_entry_class::Print(template_handler<Process_h
 	log_file << endl <<"PID: " << process.object->PID_string << endl;
 	log_file <<"Thread ID: " << dec << thread_id << endl;
 	char buffer[30];
-	strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(tval_before.tv_sec)));
+	strftime(buffer,30,"%Y-%m-%d %T.",localtime(&(tval_before.tv_sec)));
+	log_file <<"Localtime before: " << buffer << dec << tval_before.tv_usec << endl;
+	strftime(buffer,30,"%Y-%m-%d %T.",gmtime(&(tval_before.tv_sec)));
 	log_file <<"GMT before: " << buffer << dec << tval_before.tv_usec << endl;
-	strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(tval_after.tv_sec)));
-	log_file <<"GMT after: " << buffer << dec << tval_after.tv_usec << endl;
+	strftime(buffer,30,"%Y-%m-%d %T.",localtime(&(tval_after.tv_sec)));
+	log_file <<"Localtime after: " << buffer << dec << tval_after.tv_usec << endl;
+	strftime(buffer,30,"%Y-%m-%d %T.",gmtime(&(tval_after.tv_sec)));
+	log_file <<"GMT before: " << buffer << dec << tval_after.tv_usec << endl;
 	log_file <<"Call stack type: " << find_alloc_type(type) << endl;
 	log_file <<"Address: 0x" << hex << address << endl;
 	if(type == realloc_func){
@@ -174,10 +178,14 @@ void memory_profiler_sm_object_log_entry_class::Print(template_handler<Process_h
 		cout << endl <<"PID: " << process.object->PID_string << endl;
 		cout <<"Thread ID: " << dec << thread_id << endl;
 		char buffer[30];
-		strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(tval_before.tv_sec)));
+		strftime(buffer,30,"%Y-%m-%d %T.",localtime(&(tval_before.tv_sec)));
+		cout <<"Localtime before: " << buffer << dec << tval_before.tv_usec << endl;
+		strftime(buffer,30,"%Y-%m-%d %T.",gmtime(&(tval_before.tv_sec)));
 		cout <<"GMT before: " << buffer << dec << tval_before.tv_usec << endl;
-		strftime(buffer,30,"%m-%d-%Y %T.",gmtime(&(tval_after.tv_sec)));
-		cout <<"GMT after: " << buffer << dec << tval_after.tv_usec << endl;
+		strftime(buffer,30,"%Y-%m-%d %T.",localtime(&(tval_after.tv_sec)));
+		cout <<"Localtime after: " << buffer << dec << tval_after.tv_usec << endl;
+		strftime(buffer,30,"%Y-%m-%d %T.",gmtime(&(tval_after.tv_sec)));
+		cout <<"GMT before: " << buffer << dec << tval_after.tv_usec << endl;
 		cout <<"Call stack type: " << find_alloc_type(type) << endl;
 		cout <<"Address: 0x" << hex << address << endl;
 		if(type == realloc_func){

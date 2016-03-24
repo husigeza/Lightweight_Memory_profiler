@@ -99,17 +99,6 @@ Size_filter::Size_filter(const Size_filter &obj) :  Filter(obj){
 	size = obj.size;
 }
 
-unsigned long Size_filter::Get_size()const {
-	return size;
-}
-
-void Size_filter::Set_size(unsigned long new_size){
-	size = new_size;
-}
-
-string Size_filter::Get_operation()const {
-	return operation_string;
-}
 
 void Size_filter::Print() const{
 	cout << "   Type: " << type_string << endl;
@@ -152,5 +141,146 @@ bool Size_filter::Filter_func(template_handler< memory_profiler_sm_object_log_en
 	}
 	else {
 		return true;
+	}
+}
+
+Time_filter::Time_filter(string time_param,__suseconds_t usec,string time_type, string operation_p) : Filter(time_filter,"Time filter"){
+
+	if(time_type.find("before") != string::npos){
+		this->time_type = time_type_before;
+		time_type_string = "Time before allocation/free";
+	}
+	else if(time_type.find("after") != string::npos){
+		this->time_type = time_type_after;
+		time_type_string = "Time after allocation/free";
+	}
+	else{
+		this->time_type = time_type_unknown;
+		time_type_string = "Unknown";
+		throw false;
+	}
+
+	struct tm tm;
+
+	if(strptime(time_param.c_str(),"%Y-%m-%d-%T", &tm) != NULL){   //%T = %H:%M:%S
+
+		tm.tm_gmtoff = 0;
+		tm.tm_isdst = -1;
+
+		//mktime interprets "tm" as local time
+		timestamp.tv_sec = mktime(&tm);
+		timestamp.tv_usec = usec;
+	}
+	else {
+		throw false;
+	}
+
+	if(operation_p.find("equal") != string::npos){
+			operation = equal_op;
+			operation_string = "equal";
+		}
+		else if(operation_p.find("bigger") != string::npos) {
+			operation = bigger;
+			operation_string = "bigger";
+		}
+		else if (operation_p.find("less") != string::npos){
+			operation = less_;
+			operation_string = "less";
+		}
+		else {
+			operation = operation_type_unknown;
+			operation_string = "Unknown";
+			throw false;
+		}
+}
+
+void Time_filter::Print() const{
+	cout << "   Type: " << type_string << endl;
+	cout << "   Operation: " << operation_string << endl;
+	cout << "   Time type: " << time_type_string << endl;
+	char buffer[30];
+	cout << "timestamp sec: " << timestamp.tv_sec << endl;
+	strftime(buffer,30,"%Y-%m-%d %T.",localtime(&(timestamp.tv_sec)));
+	cout << "   Timestamp in local time: " << buffer << dec << timestamp.tv_usec << endl;
+	strftime(buffer,30,"%Y-%m-%d %T.",gmtime(&(timestamp.tv_sec)));
+	cout << "   Timestamp in GMT: " << buffer << dec << timestamp.tv_usec << endl;
+
+	Print_patterns();
+}
+
+bool Time_filter::Filter_func(template_handler< memory_profiler_sm_object_log_entry_class> log_entry) const{
+
+	if(time_type == time_type_before){
+		if(operation == equal_op){
+			if(log_entry.object->tval_before.tv_sec == timestamp.tv_sec && log_entry.object->tval_before.tv_usec == timestamp.tv_usec){
+				return true;
+			}
+			else{
+				return false;
+			}
+		}
+		else if(operation == bigger){
+			if(log_entry.object->tval_before.tv_sec > timestamp.tv_sec){
+				return true;
+			}
+			else if(log_entry.object->tval_before.tv_sec == timestamp.tv_sec && log_entry.object->tval_before.tv_usec > timestamp.tv_usec){
+				return true;
+			}
+			else{
+				return false;
+			}
+		}
+		else if(operation == less_){
+			if(log_entry.object->tval_before.tv_sec < timestamp.tv_sec){
+				return true;
+			}
+			else if(log_entry.object->tval_before.tv_sec == timestamp.tv_sec && log_entry.object->tval_before.tv_usec < timestamp.tv_usec){
+				return true;
+			}
+			else{
+				return false;
+			}
+		}
+		else{
+			return false;
+		}
+	}
+	else if(time_type == time_type_after){
+		if(operation == equal_op){
+			if(log_entry.object->tval_after.tv_sec == timestamp.tv_sec && log_entry.object->tval_after.tv_usec == timestamp.tv_usec){
+				return true;
+			}
+			else{
+				return false;
+			}
+		}
+		else if(operation == bigger){
+			if(log_entry.object->tval_after.tv_sec > timestamp.tv_sec){
+				return true;
+			}
+			else if(log_entry.object->tval_after.tv_sec == timestamp.tv_sec && log_entry.object->tval_after.tv_usec > timestamp.tv_usec){
+				return true;
+			}
+			else{
+				return false;
+			}
+		}
+		else if(operation == less_){
+			if(log_entry.object->tval_after.tv_sec < timestamp.tv_sec){
+				return true;
+			}
+			else if(log_entry.object->tval_after.tv_sec == timestamp.tv_sec && log_entry.object->tval_after.tv_usec < timestamp.tv_usec){
+				return true;
+			}
+			else{
+				return false;
+			}
+		}
+		else{
+			return false;
+		}
+	}
+	else {
+		return false;
 	}
 }

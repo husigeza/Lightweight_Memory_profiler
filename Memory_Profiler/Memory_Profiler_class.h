@@ -60,6 +60,8 @@ class Memory_Profiler {
         void Print_analyzers() const;
 
         void Create_new_size_filter_cli(unsigned long size_p, string operation_p);
+        void Create_new_time_filter_cli(string time,__suseconds_t usec,string time_type, string operation_p);
+
         void Create_new_filter(Filter& filter);
         void Print_filters() const;
 
