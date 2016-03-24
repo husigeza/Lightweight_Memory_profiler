@@ -378,15 +378,20 @@ void Memory_Profiler::Print_patterns() const{
 		cout << endl;
 		cout <<"Index: " << dec << i << endl;
 		pattern->object->Print();
-		cout << endl;
-		cout << "Analyzers in the pattern: " << endl;
-		pattern->object->Print_analyzers();
-		cout << endl;
-		cout << "Filters in the pattern: " << endl;
-		pattern->object->Print_filters();
-		cout << endl << "-----------------------------" << endl;
 		i++;
 	}
+}
+
+void Memory_Profiler::Print_pattern(string pattern_name){
+
+	vector<template_handler<Pattern> >::iterator pattern = Find_pattern_by_name(pattern_name);
+
+		if (pattern == Patterns_vector.end()){
+			cout << "Wrong pattern name!" << endl;
+		}
+		else{
+			pattern->object->Print();
+		}
 }
 
 void Memory_Profiler::Print_filters() const{
@@ -400,6 +405,15 @@ void Memory_Profiler::Print_filters() const{
 	}
 }
 
+void Memory_Profiler::Print_filter(unsigned int index) const{
+	if(index < Filters_vector.size()){
+		Filters_vector[index].object->Print();
+	}
+	else{
+		cout <<"Wrong ID!"<< endl;
+	}
+}
+
 void Memory_Profiler::Print_analyzers() const{
 
 	unsigned int i = 0;
@@ -408,6 +422,15 @@ void Memory_Profiler::Print_analyzers() const{
 		cout <<"Index: " << dec << i << endl;
 		analyzer->object->Print();
 		i++;
+	}
+}
+
+void Memory_Profiler::Print_analyzer(unsigned int index) const{
+	if(index < Analyzers_vector.size()){
+		Analyzers_vector[index].object->Print();
+	}
+	else{
+		cout <<"Wrong ID!"<< endl;
 	}
 }
 

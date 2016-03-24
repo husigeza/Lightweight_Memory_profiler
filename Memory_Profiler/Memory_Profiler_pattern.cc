@@ -51,6 +51,13 @@ const string Pattern::Get_name() const {
 
 void Pattern::Print() const {
 	cout << "Name: " << this->name;
+	cout << endl;
+	cout << "Analyzers in the pattern: " << endl;
+	Print_analyzers();
+	cout << endl;
+	cout << "Filters in the pattern: " << endl;
+	Print_filters();
+	cout << endl << "-----------------------------" << endl;
 }
 
 unsigned int Pattern::Get_number_of_analyzers() {
@@ -181,9 +188,9 @@ void Pattern::Filter_deregister(const Filter *filter){
 	}
 }
 
-void Pattern::Print_analyzers(){
+void Pattern::Print_analyzers()const{
 
-	vector<template_handler<Analyzer> >::iterator it;
+	vector<template_handler<Analyzer> >::const_iterator it;
 
 	for(it = Analyzer_vector.begin(); it != Analyzer_vector.end(); it++){
 		cout <<"Index: " << dec << distance(Analyzer_vector.begin(), it) << endl;
@@ -191,9 +198,9 @@ void Pattern::Print_analyzers(){
 	}
 }
 
-void Pattern::Print_filters(){
+void Pattern::Print_filters()const{
 
-	vector<template_handler<Filter> >::iterator it;
+	vector<template_handler<Filter> >::const_iterator it;
 
 	for(it = Filter_vector.begin(); it != Filter_vector.end(); it++){
 		cout <<"Index: " << dec << distance(Filter_vector.begin(), it) << endl;

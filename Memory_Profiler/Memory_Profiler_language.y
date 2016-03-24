@@ -97,6 +97,9 @@ command : PRINT PROCESS NUMBER '\n'      			{mem_prof.Print_process($3);}
 		| PRINT ANALYZER ALL '\n'					{mem_prof.Print_analyzers();}
 		| PRINT PATTERN ALL '\n'					{mem_prof.Print_patterns();}
 		| PRINT FILTER ALL '\n'						{mem_prof.Print_filters();}
+		| PRINT PATTERN TEXT '\n'					{mem_prof.Print_pattern($3);}
+		| PRINT ANALYZER NUMBER '\n'				{mem_prof.Print_analyzer($3);}
+		| PRINT FILTER NUMBER '\n'					{mem_prof.Print_filter($3);}
 		| HELP '\n'									{Print_help();}
 		| EXIT_COMMAND '\n'    						{exit(1);}
 		| '\n'										{;}
@@ -143,12 +146,23 @@ void Print_help(){
 	cout << "index after pattern always refers to the global pattern index" << endl << endl;
 	
 	cout <<"Analyzers: " << endl;
-	cout <<"leak"<< endl;
-	cout <<"print"<< endl;
-	cout <<"dfree"<< endl;
-	cout <<"save symbols"<< endl;
-	cout <<"save map"<< endl;
-	cout <<"save bt"<< endl << endl;
+	cout <<"Types: "<< endl;
+	cout <<"	leak"<< endl;
+	cout <<"	print"<< endl;
+	cout <<"	dfree"<< endl;
+	cout <<"	save symbols"<< endl;
+	cout <<"	save map"<< endl;
+	cout <<"	save bt"<< endl;
+	cout <<"	time" << endl << endl;
+	
+	cout <<"Filters: " << endl;
+	cout <<"Size filter: "<< endl;
+	cout <<"	type: size" << endl;
+	cout <<"	params: [VALUE in BYTES] [equal | less | bigger]" << endl;
+	cout <<"Time filter: "<< endl;
+	cout <<"	type: time" << endl;
+	cout <<"	params: [DATE-TIME] [USEC] [after | before] [equal | less | bigger]" << endl;
+	cout <<		"DATE-TIME format: YYYY-MM-DD-HH:MM:SS" << endl << endl; 
 
 	cout << endl << "Recognized commands:" << endl;
 
@@ -159,6 +173,9 @@ void Print_help(){
 	cout <<"print analyzer all" << endl;
 	cout <<"print filter all" << endl;
 	cout <<"print pattern all" << endl;
+	cout <<"print analyzer index" << endl;
+	cout <<"print filter index" << endl;
+	cout <<"print pattern name" << endl;
 	
 	cout<< endl;
 	

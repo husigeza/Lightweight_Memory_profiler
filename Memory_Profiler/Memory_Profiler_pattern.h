@@ -53,8 +53,8 @@ public:
 	void Filter_deregister(unsigned int index);
 	void Filter_deregister(const Filter *filter);
 
-	void Print_analyzers();
-	void Print_filters();
+	void Print_analyzers()const;
+	void Print_filters()const;
 
 	void Run_analyzers(template_handler<Process_handler> process);
 };
