@@ -417,7 +417,7 @@ void Save_shared_memory_Analyzer::Analyze(vector<template_handler< memory_profil
 
 Average_time_Analyzer::Average_time_Analyzer(){
 	type = average_time_analyzer;
-	type_string = "Saving backtrace";
+	type_string = "Average time analyzer";
 }
 
 void Average_time_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries, template_handler<Process_handler> process) const {
