@@ -16,6 +16,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
@@ -291,7 +292,6 @@ void __attribute__ ((destructor)) Memory_profiler_shared_library_finit(){
 	shm_unlink(string_shared_mem_A);
 	shm_unlink(string_shared_mem_B);
 }
-
 inline void swap_shared_memory_pointers(){
 	if(memory_profiler_struct_handler.active == shm_active_A){
 		//printf("Swapping shared memory from A to B \n");
@@ -394,6 +394,7 @@ void* malloc(size_t size) {
 
 			return pointer;
 		}
+
 		if(sem_post(&thread_semaphore) == -1){
 			printf("Error in sem_post, errno: %d\n",errno);
 		}
@@ -466,7 +467,6 @@ void* realloc(void *ptr,size_t size) {
 				printf("Realloc as free\n");
 				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].type = free_func;
 				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (unsigned long int)ptr;
-				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].realloc_address = 0;
 			}
 			//realloc behaves like realloc
 			else {

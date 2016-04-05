@@ -29,6 +29,8 @@ class Memory_Profiler {
 
         void Save_process_shared_memory(pid_t PID);
 
+        sem_t save_sem;
+
 
     public:
         Memory_Profiler();

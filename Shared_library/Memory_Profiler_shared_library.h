@@ -14,6 +14,9 @@ bool get_user_profiling_flag();
 bool Create_shared_memory();
 bool Open_shared_memory();
 
+void swap_shared_memory_pointers();
+void indicate_shm_overload();
+
 
 
 #endif // MEMORY_PROFILER_SHARED_LIBRARY_H_INCLUDED

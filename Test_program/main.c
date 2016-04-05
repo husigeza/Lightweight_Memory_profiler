@@ -75,32 +75,58 @@ void* Thread_2(void *arg)
 
 
 
-int main()
-{
+//int main()
+//{
 
-    pthread_create(&(tid[0]), NULL, &Thread_1, (int*)1);
+  /*pthread_create(&(tid[0]), NULL, &Thread_1, (int*)1);
     printf("\nCreated Thread 1\n");
 
    pthread_create(&(tid[1]), NULL, &Thread_2, (int*)2);
-    printf("\nCreated Thread 2\n");
+    printf("\nCreated Thread 2\n");*/
 
-   ptr1 = malloc(sizeof(int));
+
 
     //volatile int *pointer = realloc(NULL,sizeof(int));
-    while(1){
+
+//int i = 0;
+
+	//while(i < 100000){
     	//usleep(100);
-    	sleep(1);
+
+    	//func1();
+    	//i++;
+
+    	//ptr1 = malloc(sizeof(int));
+
     	//realloc(pointer,sizeof(int));
 
     	//realloc(pointer,0);
 
     	//set_user_profiling_flag(true);
-    	func1();
-    	//set_user_profiling_flag(false);
-   }
 
-    return 0;
+    	//set_user_profiling_flag(false);
+   //}
+
+//sleep(1);
+	//exit(0);
+
+
+    //return 0;
+//}
+
+
+int main()
+{
+	int i = 0;
+	volatile int *ptr;
+
+	while(i < 100000){
+		i++;
+		ptr = malloc(sizeof(int));
+	}
+	exit(0);
 }
+
 
 
 

@@ -17,6 +17,12 @@ using namespace std;
 
 Memory_Profiler::Memory_Profiler(string fifo_path, string overload_fifo_path) {
 
+	if(sem_init(&save_sem,0,1) == -1){
+		cout << "Failed initializing semaphore for shared memory reading" << "errno: " << errno << endl;
+		return;
+	}
+
+
 	this->fifo_path = fifo_path;
 
 	if (mkfifo(this->fifo_path.c_str(), 0666) == -1) {
@@ -253,10 +259,16 @@ void Memory_Profiler::Read_overload_FIFO(){
 }
 
 void Memory_Profiler::Save_process_shared_memory(pid_t PID){
-	//cout << "Saving " << dec << " process shm..." << endl;
+
+	sem_wait(&save_sem);
+
+	template_handler<Process_handler> process = Processes[PID];
+
+
+	cout << "Saving " << dec << PID <<" process shm..." << endl;
 
 	if(Processes[PID].object->Is_shared_memory_initialized()){
-		template_handler<Process_handler> process = Processes[PID];
+
 
 		try{
 			// B segment's "profiled" flag means: the profiler process has read the currently passive segment's content
@@ -264,48 +276,53 @@ void Memory_Profiler::Save_process_shared_memory(pid_t PID){
 			// In this case B segment's profiler flag is true, thus need to read entries from segment which active flag is true
 			if(process.object->memory_profiler_struct_B->profiled == false){
 				if(process.object->memory_profiler_struct_A->active == false){
-					//cout << " Saving from segment A..." << endl;
-					//cout << " segment A log count: " << process.object->memory_profiler_struct_A->log_count << endl;
+					cout << " Saving from segment A..." << endl;
+					cout << " segment A log count: " << process.object->memory_profiler_struct_A->log_count << endl;
 					process.object->memory_profiler_struct_A->write_to_binary_file(process.object->PID_string,process.object->total_entry_number);
 					process.object->total_entry_number += process.object->memory_profiler_struct_A->log_count;
 				}
 				else if(process.object->memory_profiler_struct_B->active == false){
-					//cout << " Saving from segment B..." << endl;
-					//cout << " segment B log count: " << process.object->memory_profiler_struct_B->log_count << endl;
-					process.object->memory_profiler_struct_B->write_to_binary_file(process.object->PID_string,process.object->total_entry_number);
-					process.object->total_entry_number += process.object->memory_profiler_struct_B->log_count;
-				}
-				else{
-					//cout <<"Shared memory is in inconsistent state, don't parse it!" << endl;
-				}
-
-				process.object->memory_profiler_struct_B->profiled = true;
-			}
-			else{
-				if(process.object->memory_profiler_struct_A->active == true){
-					//cout << " Saving from segment A..." << endl;
-					//cout << " segment A log count: " << process.object->memory_profiler_struct_A->log_count << endl;
-					process.object->memory_profiler_struct_A->write_to_binary_file(process.object->PID_string,process.object->total_entry_number);
-					process.object->total_entry_number += process.object->memory_profiler_struct_A->log_count;
-				}
-				else if(process.object->memory_profiler_struct_B->active == true){
-					//cout << " Saving from segment B..." << endl;
-					//cout << " segment B log count: " << process.object->memory_profiler_struct_B->log_count << endl;
+					cout << " Saving from segment B..." << endl;
+					cout << " segment B log count: " << process.object->memory_profiler_struct_B->log_count << endl;
 					process.object->memory_profiler_struct_B->write_to_binary_file(process.object->PID_string,process.object->total_entry_number);
 					process.object->total_entry_number += process.object->memory_profiler_struct_B->log_count;
 				}
 				else{
 					cout <<"Shared memory is in inconsistent state, don't parse it!" << endl;
 				}
+
+				process.object->memory_profiler_struct_B->profiled = true;
 			}
+			else{
+				if(process.object->memory_profiler_struct_A->active == true){
+					cout << " Saving from segment A..." << endl;
+					cout << " segment A log count: " << process.object->memory_profiler_struct_A->log_count << endl;
+					process.object->memory_profiler_struct_A->write_to_binary_file(process.object->PID_string,process.object->total_entry_number);
+					process.object->total_entry_number += process.object->memory_profiler_struct_A->log_count;
+				}
+				else if(process.object->memory_profiler_struct_B->active == true){
+					cout << " Saving from segment B..." << endl;
+					cout << " segment B log count: " << process.object->memory_profiler_struct_B->log_count << endl;
+					process.object->memory_profiler_struct_B->write_to_binary_file(process.object->PID_string,process.object->total_entry_number);
+					process.object->total_entry_number += process.object->memory_profiler_struct_B->log_count;
+				}
+				else{
+					cout <<"Shared memory is in inconsistent state, don't parse it!" << endl;
+				}
 
-
-			//cout << dec << PID << "  log count:  " << process.object->total_entry_number << endl;
-
+				cout << dec << PID << "  log count:  " << process.object->total_entry_number << endl;
+			}
 		}
 		catch(ofstream::failure &e){
+			if(sem_post(&save_sem) == -1){
+				cout <<"Error in sem_post, errno: " << errno << endl;
+			}
 			throw e;
 		}
+	}
+
+	if(sem_post(&save_sem) == -1){
+		cout <<"Error in sem_post, errno: " << errno << endl;
 	}
 
 }

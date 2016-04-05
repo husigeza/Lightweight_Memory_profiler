@@ -183,8 +183,6 @@ class Process_handler {
     bool Create_symbol_table();
     bool Read_virtual_memory_mapping();
 
-    map<memory_map_table_entry_class,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::const_iterator Find_function_VMA (const uint64_t address) const;
-
     bool Init_start_stop_semaphore();
 
     public:
@@ -227,6 +225,7 @@ class Process_handler {
 
         const bool Is_shared_memory_initialized() const {return shared_memory_initialized;} ;
 
+        map<memory_map_table_entry_class,vector<symbol_table_entry_class>,memory_map_table_entry_class_comp >::const_iterator Find_function_VMA (const uint64_t address) const;
         const string Find_function_name(uint64_t const address) const;
 
 };

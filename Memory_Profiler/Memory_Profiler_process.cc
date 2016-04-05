@@ -169,7 +169,8 @@ void memory_profiler_sm_object_log_entry_class::Print(template_handler<Process_h
 	log_file <<"Call stack: " << endl;
 	for(int  k=0; k < backtrace_length;k++){
 		log_file << call_stack[k]<< " --- ";
-		log_file << process.object->Find_function_name((uint64_t)call_stack[k])<< endl;
+		log_file << process.object->Find_function_name((uint64_t)call_stack[k]) << "  -----  ";
+		log_file << process.object->Find_function_VMA((uint64_t)call_stack[k])->first.path << endl;
 	}
 }
 
@@ -196,7 +197,8 @@ void memory_profiler_sm_object_log_entry_class::Print(template_handler<Process_h
 		cout <<"Call stack: " << endl;
 		for(int  k=0; k < backtrace_length;k++){
 			cout << call_stack[k]<< " --- ";
-			cout << process.object->Find_function_name((uint64_t)call_stack[k])<< endl;
+			cout << process.object->Find_function_name((uint64_t)call_stack[k])<< "  -----  ";
+			cout << process.object->Find_function_VMA((uint64_t)call_stack[k])->first.path << endl;
 		}
 }
 
@@ -428,7 +430,6 @@ Process_handler::~Process_handler() {
 
 	return it;
 }
-
 
 const string Process_handler::Find_function_name(const uint64_t address) const{
 
