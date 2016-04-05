@@ -117,13 +117,15 @@ void* Thread_2(void *arg)
 
 int main()
 {
-	int i = 0;
+	//int i = 0;
 	volatile int *ptr;
 
-	while(i < 100000){
-		i++;
+	//while(i < 100000){
+		//i++;
 		ptr = malloc(sizeof(int));
-	}
+	//}
+
+
 	exit(0);
 }
 
