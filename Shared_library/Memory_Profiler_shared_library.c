@@ -337,16 +337,18 @@ void free(void* pointer) {
 
 			check_and_set_shared_memory_size();
 
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].thread_id = pthread_self();
-			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_before,NULL);
+			memory_profiler_log_entry_t *log_entry_ptr = &memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count];
+
+			log_entry_ptr->thread_id = pthread_self();
+			gettimeofday(&log_entry_ptr->tval_before,NULL);
 			__libc_free(pointer);
-			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_after,NULL);
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].type = free_func;
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].size = 0;
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].backtrace_length = (unsigned int)backtrace(memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].call_stack,max_call_stack_depth);
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (unsigned long int)pointer;
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].realloc_address = 0;
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid = true;
+			gettimeofday(&log_entry_ptr->tval_after,NULL);
+			log_entry_ptr->type = free_func;
+			log_entry_ptr->size = 0;
+			log_entry_ptr->backtrace_length = (unsigned int)backtrace(log_entry_ptr->call_stack,max_call_stack_depth);
+			log_entry_ptr->address = (unsigned long int)pointer;
+			log_entry_ptr->realloc_address = 0;
+			log_entry_ptr->valid = true;
 
 			memory_profiler_struct_handler.pointer->log_count++;
 
@@ -375,16 +377,18 @@ void* malloc(size_t size) {
 
 			check_and_set_shared_memory_size();
 
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].thread_id = pthread_self();
-			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_before,NULL);
+			memory_profiler_log_entry_t *log_entry_ptr = &memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count];
+
+			log_entry_ptr->thread_id = pthread_self();
+			gettimeofday(&log_entry_ptr->tval_before,NULL);
 			void* pointer = __libc_malloc(size);
-			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_after,NULL);
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].type = malloc_func;
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].size = size;
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].backtrace_length = (unsigned int)backtrace(memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].call_stack,max_call_stack_depth);
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (unsigned long int)pointer;
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].realloc_address = 0;
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid = true;
+			gettimeofday(&log_entry_ptr->tval_after,NULL);
+			log_entry_ptr->type = malloc_func;
+			log_entry_ptr->size = size;
+			log_entry_ptr->backtrace_length = (unsigned int)backtrace(log_entry_ptr->call_stack,max_call_stack_depth);
+			log_entry_ptr->address = (unsigned long int)pointer;
+			log_entry_ptr->realloc_address = 0;
+			log_entry_ptr->valid = true;
 
 			memory_profiler_struct_handler.pointer->log_count++;
 
@@ -413,16 +417,18 @@ void* calloc(size_t nmemb,size_t size) {
 
 			check_and_set_shared_memory_size();
 
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].thread_id = pthread_self();
-			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_before,NULL);
+			memory_profiler_log_entry_t *log_entry_ptr = &memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count];
+
+			log_entry_ptr->thread_id = pthread_self();
+			gettimeofday(&log_entry_ptr->tval_before,NULL);
 			void* pointer = __libc_calloc(nmemb,size);
-			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_after,NULL);
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].type = calloc_func;
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].size = nmemb*size;
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].backtrace_length = (unsigned int)backtrace(memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].call_stack,max_call_stack_depth);
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (unsigned long int)pointer;
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].realloc_address = 0;
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid = true;
+			gettimeofday(&log_entry_ptr->tval_after,NULL);
+			log_entry_ptr->type = calloc_func;
+			log_entry_ptr->size = nmemb*size;
+			log_entry_ptr->backtrace_length = (unsigned int)backtrace(log_entry_ptr->call_stack,max_call_stack_depth);
+			log_entry_ptr->address = (unsigned long int)pointer;
+			log_entry_ptr->realloc_address = 0;
+			log_entry_ptr->valid = true;
 
 			memory_profiler_struct_handler.pointer->log_count++;
 
@@ -450,35 +456,37 @@ void* realloc(void *ptr,size_t size) {
 
 			check_and_set_shared_memory_size();
 
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].thread_id = pthread_self();
-			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_before,NULL);
+			memory_profiler_log_entry_t *log_entry_ptr = &memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count];
+
+			log_entry_ptr->thread_id = pthread_self();
+			gettimeofday(&log_entry_ptr->tval_before,NULL);
 			void* pointer = __libc_realloc(ptr,size);
-			gettimeofday(&memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].tval_after,NULL);
+			gettimeofday(&log_entry_ptr->tval_after,NULL);
 
 			//realloc behaves like malloc
 			if(ptr == NULL && size != 0){
 				//printf("Realloc as malloc\n");
-				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].type = malloc_func;
-				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (unsigned long int)pointer;
-				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].realloc_address = 0;
+				log_entry_ptr->type = malloc_func;
+				log_entry_ptr->address = (unsigned long int)pointer;
+				log_entry_ptr->realloc_address = 0;
 			}
 			//realloc behaves like free
 			else if(size == 0 && ptr != NULL){
 				//printf("Realloc as free\n");
-				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].type = free_func;
-				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (unsigned long int)ptr;
+				log_entry_ptr->type = free_func;
+				log_entry_ptr->address = (unsigned long int)ptr;
 			}
 			//realloc behaves like realloc
 			else {
-				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].type = realloc_func;
-				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (unsigned long int)pointer;
-				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].realloc_address = (unsigned long int)ptr;
+				log_entry_ptr->type = realloc_func;
+				log_entry_ptr->address = (unsigned long int)pointer;
+				log_entry_ptr->realloc_address = (unsigned long int)ptr;
 			}
 			//if ptr == NULL and size == 0, than behavior is undefined
 
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].size = size;
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].backtrace_length = (unsigned int)backtrace(memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].call_stack,max_call_stack_depth);
-			memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].valid = true;
+			log_entry_ptr->size = size;
+			log_entry_ptr->backtrace_length = (unsigned int)backtrace(log_entry_ptr->call_stack,max_call_stack_depth);
+			log_entry_ptr->valid = true;
 			memory_profiler_struct_handler.pointer->log_count++;
 
 			if(sem_post(&thread_semaphore) == -1){
