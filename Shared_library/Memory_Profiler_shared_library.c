@@ -150,82 +150,82 @@ void print_to_log(char *text){
 
 void __attribute__ ((constructor)) Memory_profiler_shared_library_init() {
 
-	printf("Init\n");
-	sprintf(file,"shared_lib_log_%d.txt",getpid());
+	//printf("Init\n");
+	//sprintf(file,"shared_lib_log_%d.txt",getpid());
 
 
-	sprintf(s,"Starting to initialize shared memory\n");
-	print_to_log(s);
+	//sprintf(s,"Starting to initialize shared memory\n");
+	//print_to_log(s);
 	
 	if(sem_init(&enable_semaphore,0,1) == -1) {
-		printf("Error in enable_semaphore init, errno: %d\n",errno);
-		sprintf(s,"Error in enable_semaphore init, errno: %d\n",errno);
-		print_to_log(s);
+		//printf("Error in enable_semaphore init, errno: %d\n",errno);
+		//sprintf(s,"Error in enable_semaphore init, errno: %d\n",errno);
+		//print_to_log(s);
 	}
 	else{
-		sprintf(s,"Initializing enable_semaphore was successful\n");
-		print_to_log(s);
+		//sprintf(s,"Initializing enable_semaphore was successful\n");
+		//print_to_log(s);
 	}
 
 	if(sem_init(&thread_semaphore,0,1) == -1) {
-		printf("Error in thread_semaphore init, errno: %d\n",errno);
-		sprintf(s,"Error in thread_semaphore init, errno: %d\n",errno);
-		print_to_log(s);
+		//printf("Error in thread_semaphore init, errno: %d\n",errno);
+		//sprintf(s,"Error in thread_semaphore init, errno: %d\n",errno);
+		//print_to_log(s);
 	}
 	else{
-		sprintf(s,"Initializing thread_semaphore was successful\n");
-		print_to_log(s);
+		//sprintf(s,"Initializing thread_semaphore was successful\n");
+		//print_to_log(s);
 	}
 
 
 	sprintf(PID_string, "%d", getpid());
-	printf("current process is: %s \n", PID_string);
+	//printf("current process is: %s \n", PID_string);
 
-	sprintf(s,"current process is: %s\n",PID_string);
-	print_to_log(s);
+	//sprintf(s,"current process is: %s\n",PID_string);
+	//print_to_log(s);
 
 	sprintf(PID_string_sem, "%d_start_sem", getpid());
 	semaphore_shared_memory = shm_open(PID_string_sem, O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
 	if (semaphore_shared_memory < 0) {
-		printf("Error while creating semaphore shared memory:%d \n", errno);
-		sprintf(s,"Error while creating semaphore shared memory:%d \n", errno);
-		print_to_log(s);
+		//printf("Error while creating semaphore shared memory:%d \n", errno);
+		//sprintf(s,"Error while creating semaphore shared memory:%d \n", errno);
+		//print_to_log(s);
 	}
 	else{
-		sprintf(s,"Creating semaphore shared memory was successful\n");
-		print_to_log(s);
+		//sprintf(s,"Creating semaphore shared memory was successful\n");
+		//print_to_log(s);
 	}
 
 	int err = ftruncate(semaphore_shared_memory, sizeof(sem_t));
 	if (err < 0) {
-		printf("semaphore_shared_memory while truncating shared memory: %d \n", errno);
-		sprintf(s,"semaphore_shared_memory while truncating shared memory: %d \n", errno);
-		print_to_log(s);
+		//printf("semaphore_shared_memory while truncating shared memory: %d \n", errno);
+		//sprintf(s,"semaphore_shared_memory while truncating shared memory: %d \n", errno);
+		//print_to_log(s);
 		}
 	else{
-		sprintf(s,"Truncating semaphore_shared_memory was successful\n");
-		print_to_log(s);
+		//sprintf(s,"Truncating semaphore_shared_memory was successful\n");
+		//print_to_log(s);
 	}
 
 	memory_profiler_start_semaphore = (sem_t*)mmap(NULL, sizeof(sem_t), PROT_WRITE,MAP_SHARED, semaphore_shared_memory, 0);
 	if (memory_profiler_start_semaphore == MAP_FAILED) {
-		printf("Failed mapping the shared memory: %d \n", errno);
-		sprintf(s,"Failed mapping the shared memory: %d \n", errno);
-		print_to_log(s);
+		//printf("Failed mapping the shared memory: %d \n", errno);
+		//sprintf(s,"Failed mapping the shared memory: %d \n", errno);
+		//print_to_log(s);
 	}
 	else{
-		sprintf(s,"Mapping shared memory was successful\n");
-		print_to_log(s);
+		//sprintf(s,"Mapping shared memory was successful\n");
+		//print_to_log(s);
 	}
 
 	if(sem_init(memory_profiler_start_semaphore,1,0) == -1) {
-		printf("Error in memory_profiler_start_semaphore init, errno: %d\n",errno);
-		sprintf(s,"Error in memory_profiler_start_semaphore init, errno: %d\n",errno);
-		print_to_log(s);
+		//printf("Error in memory_profiler_start_semaphore init, errno: %d\n",errno);
+		//sprintf(s,"Error in memory_profiler_start_semaphore init, errno: %d\n",errno);
+		//print_to_log(s);
 	}
 	else{
-		sprintf(s,"Initializing memory_profiler_start_semaphore was successful\n");
-		print_to_log(s);
+		//sprintf(s,"Initializing memory_profiler_start_semaphore was successful\n");
+		//print_to_log(s);
 	}
 
 	//Calling a dummy backtrace because it calls malloc at its first run, avoid recursion
@@ -238,51 +238,51 @@ void __attribute__ ((constructor)) Memory_profiler_shared_library_init() {
 #ifdef START_PROF_IMM
 
 	if(Create_shared_memory() == false ) {
-		printf("Error in creating shared memory for profiling!\n");
-		sprintf(s,"Error in creating shared memory for profiling!\n");
-		print_to_log(s);
+		//printf("Error in creating shared memory for profiling!\n");
+		//sprintf(s,"Error in creating shared memory for profiling!\n");
+		//print_to_log(s);
 	}
 	else{
-		sprintf(s,"Creating shared memory for profiling was successful!\n");
-		print_to_log(s);
+		//sprintf(s,"Creating shared memory for profiling was successful!\n");
+		//print_to_log(s);
 		set_profiling(true);
 	}
 #endif
 
 	err = pthread_create(&memory_profiler_start_thread_id, NULL, &Memory_profiler_start_thread, NULL);
 	if (err) {
-		printf("Memory_profiler_start thread creation failed error:%d \n", err);
-		sprintf(s,"Memory_profiler_start thread creation failed error:%d \n", err);
-		print_to_log(s);
+		//printf("Memory_profiler_start thread creation failed error:%d \n", err);
+		//sprintf(s,"Memory_profiler_start thread creation failed error:%d \n", err);
+		//print_to_log(s);
 	}
 	else{
-		sprintf(s,"Memory_profiler_start thread creation was successful\n", err);
-		print_to_log(s);
+		//sprintf(s,"Memory_profiler_start thread creation was successful\n", err);
+		//print_to_log(s);
 	}
 
 	err = pthread_create(&hearthbeat_thread_id, NULL, &Hearthbeat, NULL);
 	if (err) {
-		printf("Hearthbeat thread creation failed error:%d \n", err);
-		sprintf(s,"Hearthbeat thread creation failed error:%d \n", err);
-		print_to_log(s);
+		//printf("Hearthbeat thread creation failed error:%d \n", err);
+		//sprintf(s,"Hearthbeat thread creation failed error:%d \n", err);
+		//print_to_log(s);
 	}
 	else{
-		sprintf(s,"Hearthbeat thread creation was successful\n", err);
-		print_to_log(s);
+		//sprintf(s,"Hearthbeat thread creation was successful\n", err);
+		//print_to_log(s);
 	}
 
-	sprintf(s,"Shared library init finished!\n");
-	print_to_log(s);
+	//sprintf(s,"Shared library init finished!\n");
+	//print_to_log(s);
 
 	init_done = true;
 
-	printf("INIT done\n");
+	//printf("INIT done\n");
 
 }
 
 void __attribute__ ((destructor)) Memory_profiler_shared_library_finit(){
 
-	printf("Closing shared lib\n");
+	//printf("Closing shared lib\n");
 
 	if(profiling_allowed() && get_user_profiling_flag()){
 		swap_shared_memory_pointers();
@@ -294,7 +294,7 @@ void __attribute__ ((destructor)) Memory_profiler_shared_library_finit(){
 }
 inline void swap_shared_memory_pointers(){
 	if(memory_profiler_struct_handler.active == shm_active_A){
-		//printf("Swapping shared memory from A to B \n");
+		////printf("Swapping shared memory from A to B \n");
 		memory_profiler_struct_handler.pointer = memory_profiler_struct_B;
 		memory_profiler_struct_A->active = false;
 		memory_profiler_struct_B->active = true;
@@ -306,7 +306,7 @@ inline void swap_shared_memory_pointers(){
 		memory_profiler_struct_handler.active = shm_active_B;
 	}
 	else {
-		//printf("Swapping shared memory from B to A \n");
+		////printf("Swapping shared memory from B to A \n");
 
 		memory_profiler_struct_handler.pointer = memory_profiler_struct_A;
 		memory_profiler_struct_B->active = false;
@@ -351,12 +351,12 @@ void free(void* pointer) {
 			memory_profiler_struct_handler.pointer->log_count++;
 
 			if(sem_post(&thread_semaphore) == -1){
-				printf("Error in sem_post, errno: %d\n",errno);
+				//printf("Error in sem_post, errno: %d\n",errno);
 			}
 			return;
 		}
 		if(sem_post(&thread_semaphore) == -1){
-			printf("Error in sem_post, errno: %d\n",errno);
+			//printf("Error in sem_post, errno: %d\n",errno);
 		}
 	}
 
@@ -389,14 +389,14 @@ void* malloc(size_t size) {
 			memory_profiler_struct_handler.pointer->log_count++;
 
 			if(sem_post(&thread_semaphore) == -1){
-				printf("Error in sem_post, errno: %d\n",errno);
+				//printf("Error in sem_post, errno: %d\n",errno);
 			}
 
 			return pointer;
 		}
 
 		if(sem_post(&thread_semaphore) == -1){
-			printf("Error in sem_post, errno: %d\n",errno);
+			//printf("Error in sem_post, errno: %d\n",errno);
 		}
 	}
 
@@ -427,13 +427,13 @@ void* calloc(size_t nmemb,size_t size) {
 			memory_profiler_struct_handler.pointer->log_count++;
 
 			if(sem_post(&thread_semaphore) == -1){
-				printf("Error in sem_post, errno: %d\n",errno);
+				//printf("Error in sem_post, errno: %d\n",errno);
 			}
 
 			return pointer;
 		}
 		if(sem_post(&thread_semaphore) == -1){
-			printf("Error in sem_post, errno: %d\n",errno);
+			//printf("Error in sem_post, errno: %d\n",errno);
 		}
 	}
 
@@ -457,14 +457,14 @@ void* realloc(void *ptr,size_t size) {
 
 			//realloc behaves like malloc
 			if(ptr == NULL && size != 0){
-				printf("Realloc as malloc\n");
+				//printf("Realloc as malloc\n");
 				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].type = malloc_func;
 				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (unsigned long int)pointer;
 				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].realloc_address = 0;
 			}
 			//realloc behaves like free
 			else if(size == 0 && ptr != NULL){
-				printf("Realloc as free\n");
+				//printf("Realloc as free\n");
 				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].type = free_func;
 				memory_profiler_struct_handler.pointer->log_entry[memory_profiler_struct_handler.pointer->log_count].address = (unsigned long int)ptr;
 			}
@@ -482,13 +482,13 @@ void* realloc(void *ptr,size_t size) {
 			memory_profiler_struct_handler.pointer->log_count++;
 
 			if(sem_post(&thread_semaphore) == -1){
-				printf("Error in sem_post, errno: %d\n",errno);
+				//printf("Error in sem_post, errno: %d\n",errno);
 			}
 
 			return pointer;
 		}
 		if(sem_post(&thread_semaphore) == -1){
-			printf("Error in sem_post, errno: %d\n",errno);
+			//printf("Error in sem_post, errno: %d\n",errno);
 		}
 	}
 
@@ -497,32 +497,32 @@ void* realloc(void *ptr,size_t size) {
 
 bool Create_shared_memory(){
 
-	printf("Creating shared memory for profiling\n");
-	sprintf(s,"Create_shared_memory: Creating shared memory for profiling\n");
-	print_to_log(s);
+	//printf("Creating shared memory for profiling\n");
+	//sprintf(s,"Create_shared_memory: Creating shared memory for profiling\n");
+	//print_to_log(s);
 
 	shared_memory_A = shm_open(string_shared_mem_A, O_CREAT | O_RDWR | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO);
 		if (shared_memory_A < 0) {
-			printf("Error while creating shared memory: %s, errno: %d \n",string_shared_mem_A, errno);
+			//printf("Error while creating shared memory: %s, errno: %d \n",string_shared_mem_A, errno);
 			//shared_memory_size = 0;
-			sprintf(s,"Create_shared_memory: Error while creating shared memory: %s, errno: %d \n",string_shared_mem_A, errno);
-			print_to_log(s);
+			//sprintf(s,"Create_shared_memory: Error while creating shared memory: %s, errno: %d \n",string_shared_mem_A, errno);
+			//print_to_log(s);
 			return false;
 		}
 
 	int err = ftruncate(shared_memory_A, shared_memory_size_A);
 		if (err < 0) {
-			printf("Error while truncating shared memory: %s, errno: %d\n",string_shared_mem_A, errno);
-			sprintf(s,"Create_shared_memory: Error while truncating shared memory: %s, errno: %d\n",string_shared_mem_A, errno);
-			print_to_log(s);
+			//printf("Error while truncating shared memory: %s, errno: %d\n",string_shared_mem_A, errno);
+			//sprintf(s,"Create_shared_memory: Error while truncating shared memory: %s, errno: %d\n",string_shared_mem_A, errno);
+			//print_to_log(s);
 			return false;
 		}
 
 	memory_profiler_struct_A = (memory_profiler_struct_t*)mmap(NULL, shared_memory_size_A, PROT_WRITE, MAP_SHARED , shared_memory_A, 0);
 		if (memory_profiler_struct_A == MAP_FAILED) {
-			printf("Failed mapping shared memory: %s, errno: %d \n",string_shared_mem_A, errno);
-			sprintf(s,"Create_shared_memory: Failed mapping shared memory: %s, errno: %d\n",string_shared_mem_A, errno);
-			print_to_log(s);
+			//printf("Failed mapping shared memory: %s, errno: %d \n",string_shared_mem_A, errno);
+			//sprintf(s,"Create_shared_memory: Failed mapping shared memory: %s, errno: %d\n",string_shared_mem_A, errno);
+			//print_to_log(s);
 			return false;
 		}
 
@@ -531,26 +531,26 @@ bool Create_shared_memory(){
 
 	shared_memory_B = shm_open(string_shared_mem_B, O_CREAT | O_RDWR | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO);
 		if (shared_memory_B < 0) {
-			printf("Error while creating shared memory: %s, errno: %d \n",string_shared_mem_B, errno);
+			//printf("Error while creating shared memory: %s, errno: %d \n",string_shared_mem_B, errno);
 			//shared_memory_size = 0;
-			sprintf(s,"Create_shared_memory: Error while creating shared memory: %s, errno: %d \n",string_shared_mem_B, errno);
-			print_to_log(s);
+			//sprintf(s,"Create_shared_memory: Error while creating shared memory: %s, errno: %d \n",string_shared_mem_B, errno);
+			//print_to_log(s);
 			return false;
 		}
 
 	 err = ftruncate(shared_memory_B, shared_memory_size_B);
 		if (err < 0) {
-			printf("Error while truncating shared memory: %s, errno: %d\n",string_shared_mem_B, errno);
-			sprintf(s,"Create_shared_memory: Error while truncating shared memory: %s, errno: %d\n",string_shared_mem_B, errno);
-			print_to_log(s);
+			//printf("Error while truncating shared memory: %s, errno: %d\n",string_shared_mem_B, errno);
+			//sprintf(s,"Create_shared_memory: Error while truncating shared memory: %s, errno: %d\n",string_shared_mem_B, errno);
+			//print_to_log(s);
 			return false;
 		}
 
 	memory_profiler_struct_B = (memory_profiler_struct_t*)mmap(NULL, shared_memory_size_B, PROT_WRITE, MAP_SHARED , shared_memory_B, 0);
 		if (memory_profiler_struct_B == MAP_FAILED) {
-			printf("Failed mapping shared memory: %s, errno: %d \n",string_shared_mem_B, errno);
-			sprintf(s,"Create_shared_memory: Failed mapping shared memory: %s, errno: %d\n",string_shared_mem_B, errno);
-			print_to_log(s);
+			//printf("Failed mapping shared memory: %s, errno: %d \n",string_shared_mem_B, errno);
+			//sprintf(s,"Create_shared_memory: Failed mapping shared memory: %s, errno: %d\n",string_shared_mem_B, errno);
+			//print_to_log(s);
 			return false;
 		}
 
@@ -566,23 +566,23 @@ bool Create_shared_memory(){
 
 bool Open_shared_memory(){
 
-	printf("Opening shared memory for profiling\n");
-	sprintf(s,"Open_shared_memory: Opening shared memory for profiling\n");
-	print_to_log(s);
+	//printf("Opening shared memory for profiling\n");
+	//sprintf(s,"Open_shared_memory: Opening shared memory for profiling\n");
+	//print_to_log(s);
 
 	shared_memory_A = shm_open(string_shared_mem_A, O_RDWR, S_IRWXU | S_IRWXG | S_IRWXO);
 	if (shared_memory_A < 0) {
-		printf("Error while opening shared memory: %s, errno: %d \n",string_shared_mem_A, errno);
-		sprintf(s,"Open_shared_memory: Error while opening shared memory: %s, errno: %d\n",string_shared_mem_A, errno);
-		print_to_log(s);
+		//printf("Error while opening shared memory: %s, errno: %d \n",string_shared_mem_A, errno);
+		//sprintf(s,"Open_shared_memory: Error while opening shared memory: %s, errno: %d\n",string_shared_mem_A, errno);
+		//print_to_log(s);
 		return false;
 	}
 
 	memory_profiler_struct_A = (memory_profiler_struct_t*)mmap(NULL, shared_memory_size_A, PROT_WRITE, MAP_SHARED , shared_memory_A, 0);
 	if (memory_profiler_struct_A == MAP_FAILED) {
-		printf("Failed mapping the shared memory: %s, errno: %d\n",string_shared_mem_A, errno);
-		sprintf(s,"Open_shared_memory: Failed mapping the shared memory: %s, errno: %d\n",string_shared_mem_A, errno);
-		print_to_log(s);
+		//printf("Failed mapping the shared memory: %s, errno: %d\n",string_shared_mem_A, errno);
+		//sprintf(s,"Open_shared_memory: Failed mapping the shared memory: %s, errno: %d\n",string_shared_mem_A, errno);
+		//print_to_log(s);
 		return false;
 	}
 
@@ -591,17 +591,17 @@ bool Open_shared_memory(){
 
 	shared_memory_B = shm_open(string_shared_mem_B, O_RDWR, S_IRWXU | S_IRWXG | S_IRWXO);
 	if (shared_memory_B < 0) {
-		printf("Error while opening shared memory: %s, errno: %d \n",string_shared_mem_B, errno);
-		sprintf(s,"Open_shared_memory: Error while opening shared memory: %s, errno: %d\n",string_shared_mem_B, errno);
-		print_to_log(s);
+		//printf("Error while opening shared memory: %s, errno: %d \n",string_shared_mem_B, errno);
+		//sprintf(s,"Open_shared_memory: Error while opening shared memory: %s, errno: %d\n",string_shared_mem_B, errno);
+		//print_to_log(s);
 		return false;
 	}
 
 	memory_profiler_struct_B = (memory_profiler_struct_t*)mmap(NULL, shared_memory_size_B, PROT_WRITE, MAP_SHARED , shared_memory_B, 0);
 	if (memory_profiler_struct_B == MAP_FAILED) {
-		printf("Failed mapping the shared memory: %s, errno: %d\n",string_shared_mem_B, errno);
-		sprintf(s,"Open_shared_memory: Failed mapping the shared memory: %s, errno: %d\n",string_shared_mem_B, errno);
-		print_to_log(s);
+		//printf("Failed mapping the shared memory: %s, errno: %d\n",string_shared_mem_B, errno);
+		//sprintf(s,"Open_shared_memory: Failed mapping the shared memory: %s, errno: %d\n",string_shared_mem_B, errno);
+		//print_to_log(s);
 		return false;
 	}
 
@@ -623,16 +623,16 @@ void* Memory_profiler_start_thread(void *arg){
 		if (profiling_allowed() == false) {
 
 			if(Open_shared_memory() == false){
-				printf("Failed to open shared memory!\n");
-				sprintf(s,"Memory_profiler_start_thread: Failed to open shared memory!\n");
-				print_to_log(s);
+				//printf("Failed to open shared memory!\n");
+				//sprintf(s,"Memory_profiler_start_thread: Failed to open shared memory!\n");
+				//print_to_log(s);
 			}
 			else{
 				set_profiling(true);
 			}
 
 		} else {
-			printf("closing shared memory for profiling\n");
+			//printf("closing shared memory for profiling\n");
 			// Need to check thread_semaphore because if a thread is executing malloc/free we cannot set profiling to false,
 			// because when we unmap the shared memory in the next instruction, and the thread may need it from malloc/free, we have to wait for it to finish
 			sem_wait(&thread_semaphore);
@@ -642,8 +642,8 @@ void* Memory_profiler_start_thread(void *arg){
 			munmap(memory_profiler_struct_A, shared_memory_size_A);
 			munmap(memory_profiler_struct_B, shared_memory_size_B);
 
-			sprintf(s,"Memory_profiler_start_thread: closing shared memory for profiling\n");
-			print_to_log(s);
+			//sprintf(s,"Memory_profiler_start_thread: closing shared memory for profiling\n");
+			//print_to_log(s);
 		}
 	}
 }
@@ -656,15 +656,15 @@ void indicate_shm_overload(){
 
 		if (write(mem_prof_overload_fifo, &PID_string, sizeof(PID_string)) == -1) {
 
-			printf("Failed writing the overload FIFO\n");
-			sprintf(s,"Hearthbeat: Failed writing the overload FIFO\n");
-			print_to_log(s);
+			//printf("Failed writing the overload FIFO\n");
+			//sprintf(s,"Hearthbeat: Failed writing the overload FIFO\n");
+			//print_to_log(s);
 		}
-		//printf("Profiler is notified\n");
+		////printf("Profiler is notified\n");
 		close(mem_prof_overload_fifo);
 	}
 	else {
-		//printf("Failed opening the mem_prof_overload_fifo \n");
+		////printf("Failed opening the mem_prof_overload_fifo \n");
 	}
 }
 
@@ -678,16 +678,16 @@ void* Hearthbeat(void *arg) {
 
 			if (write(mem_prof_fifo, &PID_string, sizeof(PID_string)) == -1) {
 
-				printf("Failed writing the FIFO\n");
-				sprintf(s,"Hearthbeat: Failed writing the FIFO\n");
-				print_to_log(s);
+				//printf("Failed writing the FIFO\n");
+				//sprintf(s,"Hearthbeat: Failed writing the FIFO\n");
+				//print_to_log(s);
 			}
 
 			close(mem_prof_fifo);
 		} else {
-			//printf("Failed opening the FIFO, errno: %d\n", errno);
-			//sprintf(s,"Hearthbeat: Failed opening the FIFO, errno: %d\n", errno);
-			//print_to_log(s);
+			////printf("Failed opening the FIFO, errno: %d\n", errno);
+			////sprintf(s,"Hearthbeat: Failed opening the FIFO, errno: %d\n", errno);
+			////print_to_log(s);
 		}
 		usleep(100000);
 	}
