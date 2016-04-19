@@ -120,9 +120,10 @@ int main()
 	int i = 0;
 	volatile int *ptr;
 
-	while(i < 1000000){
+	while(i < 10000){
 		i++;
 		ptr = malloc(sizeof(int));
+		usleep(50);
 	}
 
 

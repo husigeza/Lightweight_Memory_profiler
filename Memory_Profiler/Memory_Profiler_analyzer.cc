@@ -226,10 +226,10 @@ void Memory_Leak_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_o
 	log_file <<"Total memory allocated: " << std::dec << total_memory_allocated << " bytes" << endl;
 	cout << "Total memory freed: " << std::dec << total_memory_freed << " bytes" << endl;
 	log_file << "Total memory freed: " << std::dec << total_memory_freed << " bytes" << endl;
-	cout << "Total memory has not been freed yet: " << std::dec << total_memory_leaked << " bytes" << endl;
-	log_file << "Total memory has not been freed yet: " << std::dec << total_memory_leaked << " bytes" << endl;
-	cout << "Total number of mallocs: " << std::dec << malloc_counter << endl;
-	log_file << "Total number of mallocs: " << std::dec << malloc_counter << endl;
+	cout << "Total memory has not been freed yet (being used or leaked): " << std::dec << total_memory_leaked << " bytes" << endl;
+	log_file << "Total memory has not been freed yet (being used or leaked): " << std::dec << total_memory_leaked << " bytes" << endl;
+	cout << "Total number of mallocs,callocs: " << std::dec << malloc_counter << endl;
+	log_file << "Total number of mallocs,callocs: " << std::dec << malloc_counter << endl;
 	cout << "Total number of reallocs: " << std::dec << realloc_counter << endl;
 	log_file << "Total number of reallocs: " << std::dec << realloc_counter << endl;
 	cout << "Total number of frees: " << std::dec << free_counter << endl<<endl;

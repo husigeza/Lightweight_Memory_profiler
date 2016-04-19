@@ -220,6 +220,7 @@ void Memory_Profiler::Read_FIFO() {
 			if(find(alive_processes.begin(), alive_processes.end(), it->first) == alive_processes.end()) {
 				Set_process_alive_flag(it->first,false);
 				cout << "Process " << dec << it->first <<" is no more alive!" << endl;
+				Remove_process_from_profiling(it->first);
 				try{
 					Save_process_shared_memory(it->first);
 				}
@@ -278,14 +279,14 @@ void Memory_Profiler::Save_process_shared_memory(pid_t PID){
 				// In this case B segment's profiler flag is true, thus need to read entries from segment which active flag is true
 				if(process.object->memory_profiler_struct_B->profiled == false){
 					if(process.object->memory_profiler_struct_A->active == false){
-						cout << " Saving from segment A..." << endl;
-						cout << " segment A log count: " << process.object->memory_profiler_struct_A->log_count << endl;
+						//cout << " Saving from segment A..." << endl;
+						//cout << " segment A log count: " << process.object->memory_profiler_struct_A->log_count << endl;
 						process.object->memory_profiler_struct_A->write_to_binary_file(process.object->PID_string,process.object->total_entry_number);
 						process.object->total_entry_number += process.object->memory_profiler_struct_A->log_count;
 					}
 					else if(process.object->memory_profiler_struct_B->active == false){
-						cout << " Saving from segment B..." << endl;
-						cout << " segment B log count: " << process.object->memory_profiler_struct_B->log_count << endl;
+						//cout << " Saving from segment B..." << endl;
+						//cout << " segment B log count: " << process.object->memory_profiler_struct_B->log_count << endl;
 						process.object->memory_profiler_struct_B->write_to_binary_file(process.object->PID_string,process.object->total_entry_number);
 						process.object->total_entry_number += process.object->memory_profiler_struct_B->log_count;
 					}
@@ -297,14 +298,14 @@ void Memory_Profiler::Save_process_shared_memory(pid_t PID){
 				}
 				else{
 					if(process.object->memory_profiler_struct_A->active == true){
-						cout << " Saving from segment A..." << endl;
-						cout << " segment A log count: " << process.object->memory_profiler_struct_A->log_count << endl;
+						//cout << " Saving from segment A..." << endl;
+						//cout << " segment A log count: " << process.object->memory_profiler_struct_A->log_count << endl;
 						process.object->memory_profiler_struct_A->write_to_binary_file(process.object->PID_string,process.object->total_entry_number);
 						process.object->total_entry_number += process.object->memory_profiler_struct_A->log_count;
 					}
 					else if(process.object->memory_profiler_struct_B->active == true){
-						cout << " Saving from segment B..." << endl;
-						cout << " segment B log count: " << process.object->memory_profiler_struct_B->log_count << endl;
+						//cout << " Saving from segment B..." << endl;
+						//cout << " segment B log count: " << process.object->memory_profiler_struct_B->log_count << endl;
 						process.object->memory_profiler_struct_B->write_to_binary_file(process.object->PID_string,process.object->total_entry_number);
 						process.object->total_entry_number += process.object->memory_profiler_struct_B->log_count;
 					}
