@@ -199,7 +199,6 @@ void Time_filter::Print() const{
 	cout << "   Operation: " << operation_string << endl;
 	cout << "   Time type: " << time_type_string << endl;
 	char buffer[30];
-	cout << "timestamp sec: " << timestamp.tv_sec << endl;
 	strftime(buffer,30,"%Y-%m-%d %T.",localtime(&(timestamp.tv_sec)));
 	cout << "   Timestamp in local time: " << buffer << dec << timestamp.tv_usec << endl;
 	strftime(buffer,30,"%Y-%m-%d %T.",gmtime(&(timestamp.tv_sec)));

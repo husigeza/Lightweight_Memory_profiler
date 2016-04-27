@@ -262,10 +262,9 @@ int main() {
 		//cout << "Read_overload_FIFO_thread created" << endl;
 	}
 	
-	mem_prof.Create_new_pattern("p");
-	mem_prof.Create_new_analyzer(*(new Memory_Leak_Analyzer()));
-	mem_prof.Create_new_analyzer(*(new Malloc_Counter_Analyzer()));
-	mem_prof.Add_analyzer_to_pattern_by_name(0,"p");
+	//mem_prof.Create_new_pattern("p");
+	//mem_prof.Create_new_analyzer(*(new Memory_Leak_Analyzer()));
+	//mem_prof.Add_analyzer_to_pattern_by_name(0,"p");
 	mem_prof.Add_analyzer_to_pattern_by_name(1,"p");
 
 	cout << ">> "; 

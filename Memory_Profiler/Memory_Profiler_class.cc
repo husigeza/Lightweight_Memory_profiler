@@ -267,7 +267,7 @@ void Memory_Profiler::Save_process_shared_memory(pid_t PID){
 		template_handler<Process_handler> process = Processes[PID];
 
 
-		cout << "Saving " << dec << PID <<" process shm..." << endl;
+		//cout << "Saving " << dec << PID <<" process shm..." << endl;
 
 		if(process.object->Is_shared_memory_initialized()){
 
@@ -290,10 +290,11 @@ void Memory_Profiler::Save_process_shared_memory(pid_t PID){
 						process.object->total_entry_number += process.object->memory_profiler_struct_B->log_count;
 					}
 					else{
-						cout <<"Shared memory is in inconsistent state, don't parse it!" << endl;
+						//cout <<"Shared memory is in inconsistent state, don't parse it!" << endl;
 					}
 
 					process.object->memory_profiler_struct_B->profiled = true;
+					cout << dec << PID << "  log count:  " << process.object->total_entry_number << endl;
 				}
 				else{
 					if(process.object->memory_profiler_struct_A->active == true){
@@ -309,7 +310,7 @@ void Memory_Profiler::Save_process_shared_memory(pid_t PID){
 						process.object->total_entry_number += process.object->memory_profiler_struct_B->log_count;
 					}
 					else{
-						cout <<"Shared memory is in inconsistent state, don't parse it!" << endl;
+						//cout <<"Shared memory is in inconsistent state, don't parse it!" << endl;
 					}
 
 					cout << dec << PID << "  log count:  " << process.object->total_entry_number << endl;
@@ -328,7 +329,7 @@ void Memory_Profiler::Save_process_shared_memory(pid_t PID){
 		}
 	}
 	else {
-		cout << "Process " << dec << PID << " has not been added, cannot read shared memory" << endl;
+		//cout << "Process " << dec << PID << " has not been added, cannot read shared memory" << endl;
 	}
 
 }
