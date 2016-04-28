@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <map>
 
 #include "Memory_Profiler_process.h"
 #include "Memory_Profiler_handler_template.h"
@@ -130,9 +131,6 @@ void Memory_Leak_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_o
 	ofstream log_file;
 	log_file.open(("Analyzation_output_"+ process.object->PID_string + ".txt").c_str(), ios::app);
 
-	cout << endl << endl <<"Running memory leak analyzation for Process: "<< process.object->PID_string<< endl;
-	log_file << endl << endl <<"Running memory leak analyzation for Process: "<< process.object->PID_string<< endl;
-
 	unsigned long long int counter = 0;
 	unsigned long long int entries_size = entries.size();
 
@@ -249,9 +247,6 @@ void Double_Free_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_o
 	ofstream log_file;
 	log_file.open(("Analyzation_output_"+ process.object->PID_string + ".txt").c_str(), ios::app);
 
-	cout << endl << endl <<"Running dummy free searching for Process: "<< process.object->PID_string<< endl;
-	log_file << endl << endl <<"Running dummy free searching for Process: "<< process.object->PID_string<< endl;
-
 	vector<uint64_t> malloc_vector;
 	vector<uint64_t>::iterator it_address;
 
@@ -288,9 +283,6 @@ void Malloc_Counter_Analyzer::Analyze(vector<template_handler< memory_profiler_s
 
 	ofstream log_file;
 	log_file.open(("Analyzation_output_"+ process.object->PID_string + ".txt").c_str(), ios::app);
-
-	cout << endl << endl <<"Running malloc,calloc,realloc and free counting for Process: "<< process.object->PID_string<< endl;
-	log_file << endl << endl <<"Running malloc,calloc,realloc and free counting for Process: "<< process.object->PID_string<< endl;
 
 	unsigned long int malloc = 0;
 	unsigned long int malloc_size = 0;
@@ -425,9 +417,6 @@ void Average_time_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_
 	ofstream log_file;
 	log_file.open(("Analyzation_output_"+ process.object->PID_string + ".txt").c_str(), ios::app);
 
-	cout << endl << endl <<"Running average allocation/free time calculation for Process: "<< process.object->PID_string<< endl;
-	log_file << endl << endl <<"Running average allocation/free time calculation for Process: "<< process.object->PID_string<< endl;
-
 
 	vector<template_handler< memory_profiler_sm_object_log_entry_class> >::iterator it;
 	unsigned long int sum = 0;
@@ -444,4 +433,39 @@ void Average_time_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_
 	log_file << endl <<"Average time for selected entries: " << dec << average << " usec"<< endl;
 
 	log_file.close();
+}
+
+Function_counter_Analyzer::Function_counter_Analyzer(){
+	type = function_counter_analyzer;
+	type_string = "Function counter analyzer";
+}
+
+
+void Function_counter_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries, template_handler<Process_handler> process) const{
+
+	ofstream log_file;
+	unsigned int i = 0;
+	string name;
+	log_file.open(("Analyzation_output_"+ process.object->PID_string + ".txt").c_str(), ios::app);
+
+	vector<template_handler< memory_profiler_sm_object_log_entry_class> >::iterator it;
+	map< string, unsigned long int > countermap;
+	map< string, unsigned long int >::const_iterator it2 = countermap.begin();
+
+	for (it = entries.begin(); it != entries.end(); it++) {
+		for(i = 0;i < it->object->backtrace_length; i++){
+			name = process.object->Find_function_name((uint64_t)it->object->call_stack[i]);
+			countermap[name + " ----- " + process.object->Find_function_VMA((uint64_t)it->object->call_stack[i])->first.path]++;
+		}
+	}
+
+
+	cout << "Functions with the number of calling time:" << endl;
+	log_file << "Functions with the number of calling time:" << endl;
+
+	for(it2 = countermap.begin(); it2 != countermap.end(); it2++){
+		cout << it2->first << " :   " << dec << it2->second << endl;
+		log_file << it2->first << " :   " << dec << it2->second << endl;
+	}
+
 }
