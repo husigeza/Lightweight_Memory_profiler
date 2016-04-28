@@ -440,6 +440,15 @@ Function_counter_Analyzer::Function_counter_Analyzer(){
 	type_string = "Function counter analyzer";
 }
 
+struct sort_symbols
+{
+    bool operator() (const pair<string, unsigned long int> & entry1, const pair<string, unsigned long int> & entry2)
+    {
+        return (entry1.second > entry2.second);
+    }
+};
+
+
 
 void Function_counter_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries, template_handler<Process_handler> process) const{
 
@@ -449,23 +458,37 @@ void Function_counter_Analyzer::Analyze(vector<template_handler< memory_profiler
 	log_file.open(("Analyzation_output_"+ process.object->PID_string + ".txt").c_str(), ios::app);
 
 	vector<template_handler< memory_profiler_sm_object_log_entry_class> >::iterator it;
+	vector < pair<string, unsigned long int> > vector_sort;
+	vector < pair<string, unsigned long int> >::const_iterator it_vect;
 	map< string, unsigned long int > countermap;
 	map< string, unsigned long int >::const_iterator it2 = countermap.begin();
 
 	for (it = entries.begin(); it != entries.end(); it++) {
 		for(i = 0;i < it->object->backtrace_length; i++){
+
 			name = process.object->Find_function_name((uint64_t)it->object->call_stack[i]);
+
+			if(name == "main") break;
+
 			countermap[name + " ----- " + process.object->Find_function_VMA((uint64_t)it->object->call_stack[i])->first.path]++;
 		}
+
+	}
+
+	for(it2 = countermap.begin(); it2 != countermap.end(); it2++){
+		vector_sort.push_back(pair<string, unsigned long int>(it2->first,it2->second));
 	}
 
 
-	cout << "Functions with the number of calling time:" << endl;
-	log_file << "Functions with the number of calling time:" << endl;
+	sort(vector_sort.begin(),vector_sort.end(),sort_symbols());
 
-	for(it2 = countermap.begin(); it2 != countermap.end(); it2++){
-		cout << it2->first << " :   " << dec << it2->second << endl;
-		log_file << it2->first << " :   " << dec << it2->second << endl;
+
+	cout << "The following functions have been called N times:" << endl << endl;
+	log_file << "The following functions have been called N times:" << endl << endl;
+
+	for(it_vect = vector_sort.begin(); it_vect != vector_sort.end(); it_vect++){
+		cout << it_vect->first << " :   " << dec << it_vect->second << endl;
+		log_file << it_vect->first << " :   " << dec << it_vect->second << endl;
 	}
 
 }
