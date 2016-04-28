@@ -41,7 +41,7 @@ extern "C" {
 %token <text> ALL 
 %token ALIVE PROFILED BT 
 %token ANALYZE ADD REMOVE ANALYZER ANALYZERS PATTERN FILTER SIZE
-%token LEAK DFREE ALLOC TIME FUNCTION
+%token LEAK DFREE ALLOC TIME FUNCTIONCOUNT
 %token SAVE SYMBOLS MAP
 %token ON OFF
 %token <number> NUMBER
@@ -78,7 +78,7 @@ command : PRINT PROCESS NUMBER '\n'      			{mem_prof.Print_process($3);}
 		| ADD ANALYZER SAVE SYMBOLS '\n'			{mem_prof.Create_new_analyzer(*(new Save_symbol_table_Analyzer()));}
 		| ADD ANALYZER SAVE BT '\n'					{mem_prof.Create_new_analyzer(*(new Save_shared_memory_Analyzer()));}
 		| ADD ANALYZER TIME '\n'					{mem_prof.Create_new_analyzer(*(new Average_time_Analyzer()));}
-		| ADD ANALYZER FUNCTION '\n'				{mem_prof.Create_new_analyzer(*(new Function_counter_Analyzer()));}
+		| ADD ANALYZER FUNCTIONCOUNT '\n'			{mem_prof.Create_new_analyzer(*(new Function_counter_Analyzer()));}
 		| ADD FILTER SIZE NUMBER TEXT '\n'			{mem_prof.Create_new_size_filter_cli($4,$5);free($5);}
 		| ADD FILTER TIME TIMESTAMP NUMBER TEXT TEXT '\n'	{mem_prof.Create_new_time_filter_cli($4,$5,$6,$7);free($4);free($6);free($7);}	
 		| ADD ANALYZER NUMBER PATTERN NUMBER '\n'	{mem_prof.Add_analyzer_to_pattern($3,$5);}
@@ -154,7 +154,8 @@ void Print_help(){
 	cout <<"	save symbols"<< endl;
 	cout <<"	save map"<< endl;
 	cout <<"	save bt"<< endl;
-	cout <<"	time" << endl << endl;
+	cout <<"	time" << endl;
+	cout <<"    functioncount" << endl << endl;
 	
 	cout <<"Filters: " << endl;
 	cout <<"Size filter: "<< endl;
@@ -264,9 +265,9 @@ int main() {
 	}
 	
 
-	mem_prof.Create_new_pattern("p");
+	/*mem_prof.Create_new_pattern("p");
 	mem_prof.Create_new_analyzer(*(new Function_counter_Analyzer()));
-	mem_prof.Add_analyzer_to_pattern_by_name(0,"p");
+	mem_prof.Add_analyzer_to_pattern_by_name(0,"p");*/
 
 
 	cout << ">> "; 

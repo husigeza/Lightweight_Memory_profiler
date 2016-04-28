@@ -35,7 +35,7 @@ extern "C" {
 "dfree"				{return DFREE;}
 "alloc"				{return ALLOC;}
 "time"				{return TIME;}
-"function" 			{return FUNCTION;}
+"functioncount"		{return FUNCTIONCOUNT;}
 "analyze"			{return ANALYZE;}
 "filter"			{return FILTER;}
 "size"				{return SIZE;}

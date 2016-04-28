@@ -437,8 +437,18 @@ const string Process_handler::Find_function_name(const uint64_t address) const{
 
 	vector<symbol_table_entry_class>::const_iterator it = upper_bound(it_VMA->second.begin(),it_VMA->second.end(),address);
 
+
+	//Needed because of upper bound (points to next element)
 	if(it != it_VMA->second.begin()){
 			it = it-1;
+
+			// Some cases from libc a version with __ name and version without __ exists with the same location
+			// With upper bound we will find the one which is later, but better to print out version without __ characters at the beginning
+			if(it->address == (it-1)->address){
+				if((it)->name.find_first_of("_") == 0){
+					it = it-1;
+				}
+			}
 	}
 
 	if(it == it_VMA->second.end()){
