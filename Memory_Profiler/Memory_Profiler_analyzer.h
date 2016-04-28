@@ -22,6 +22,7 @@ enum analyzer_type{
 	save_memory_mappings_analyzer = 6,
 	save_shared_memory_analyzer = 7,
 	average_time_analyzer = 8,
+	function_counter_analyzer = 9,
 	unknown_analyzer
 };
 
@@ -124,6 +125,15 @@ class Average_time_Analyzer : public Analyzer{
 public:
 	Average_time_Analyzer();
 	~Average_time_Analyzer(){}
+
+	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries,template_handler<Process_handler> process) const ;
+};
+
+class Function_counter_Analyzer : public Analyzer{
+
+public:
+	Function_counter_Analyzer();
+	~Function_counter_Analyzer(){}
 
 	void Analyze(vector<template_handler< memory_profiler_sm_object_log_entry_class> > entries,template_handler<Process_handler> process) const ;
 };

@@ -120,13 +120,25 @@ int main()
 	int i = 0;
 	volatile int *ptr;
 
-	while(i < 10000){
+
+	/*while(i < 10000){
 		i++;
 		ptr = malloc(sizeof(int));
 		usleep(50);
+*/
+
+	//set_user_profiling_flag(true);
+	ptr = malloc(sizeof(int)*5);
+	//set_user_profiling_flag(false);
+
+	while(1){
+		i++;
+		ptr = malloc(sizeof(int));
+		free(ptr);
+		usleep(10);
+
 	}
-
-
+	sleep(1);
 	exit(0);
 }
 
