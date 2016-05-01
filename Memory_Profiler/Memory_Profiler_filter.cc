@@ -111,7 +111,7 @@ void Size_filter::Print() const{
 bool Size_filter::Filter_func(template_handler< memory_profiler_sm_object_log_entry_class> log_entry) const{
 
 	if(log_entry.object->type == free_func){
-		return false;
+		return true;
 	}
 
 	if(operation == equal_op){
