@@ -158,7 +158,7 @@ void memory_profiler_sm_object_log_entry_class::Print(template_handler<Process_h
 	strftime(buffer,30,"%Y-%m-%d %T.",localtime(&(tval_after.tv_sec)));
 	log_file <<"Localtime after: " << buffer << dec << tval_after.tv_usec << endl;
 	strftime(buffer,30,"%Y-%m-%d %T.",gmtime(&(tval_after.tv_sec)));
-	log_file <<"GMT before: " << buffer << dec << tval_after.tv_usec << endl;
+	log_file <<"GMT after: " << buffer << dec << tval_after.tv_usec << endl;
 	log_file <<"Call stack type: " << find_alloc_type(type) << endl;
 	log_file <<"Address: 0x" << hex << address << endl;
 	if(type == realloc_func){
@@ -186,7 +186,7 @@ void memory_profiler_sm_object_log_entry_class::Print(template_handler<Process_h
 		strftime(buffer,30,"%Y-%m-%d %T.",localtime(&(tval_after.tv_sec)));
 		cout <<"Localtime after: " << buffer << dec << tval_after.tv_usec << endl;
 		strftime(buffer,30,"%Y-%m-%d %T.",gmtime(&(tval_after.tv_sec)));
-		cout <<"GMT before: " << buffer << dec << tval_after.tv_usec << endl;
+		cout <<"GMT after: " << buffer << dec << tval_after.tv_usec << endl;
 		cout <<"Call stack type: " << find_alloc_type(type) << endl;
 		cout <<"Address: 0x" << hex << address << endl;
 		if(type == realloc_func){
