@@ -43,11 +43,10 @@ void memory_profiler_sm_object_class_fix::write_header_to_file(string filename, 
 
 	ofstream headerfile;
 	headerfile.exceptions ( ofstream::failbit | ofstream::badbit | ofstream::eofbit);
-	unsigned long int count_to_write = total_log_count + log_count;
 
 	try{
 		headerfile.open(filename.c_str(), ios::binary | ios::trunc);
-		headerfile.write((char*)&count_to_write, sizeof(log_count));
+		headerfile.write((char*)&total_log_count, sizeof(total_log_count));
 		headerfile.close();
 	}
 	catch(ofstream::failure &e) {

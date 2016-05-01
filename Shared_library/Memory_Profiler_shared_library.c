@@ -294,7 +294,7 @@ void __attribute__ ((destructor)) Memory_profiler_shared_library_finit(){
 }
 inline void swap_shared_memory_pointers(){
 	if(memory_profiler_struct_handler.active == shm_active_A){
-		////printf("Swapping shared memory from A to B \n");
+		//printf("Swapping shared memory from A to B \n");
 		memory_profiler_struct_handler.pointer = memory_profiler_struct_B;
 		memory_profiler_struct_A->active = false;
 		memory_profiler_struct_B->active = true;
@@ -306,7 +306,7 @@ inline void swap_shared_memory_pointers(){
 		memory_profiler_struct_handler.active = shm_active_B;
 	}
 	else {
-		////printf("Swapping shared memory from B to A \n");
+		//printf("Swapping shared memory from B to A \n");
 
 		memory_profiler_struct_handler.pointer = memory_profiler_struct_A;
 		memory_profiler_struct_B->active = false;
@@ -318,12 +318,15 @@ inline void swap_shared_memory_pointers(){
 
 		memory_profiler_struct_handler.active = shm_active_A;
 	}
-	indicate_shm_overload();
 	memory_profiler_struct_handler.pointer->log_count = 0;
+	indicate_shm_overload();
+
 }
 
 inline void check_and_set_shared_memory_size(){
+
 	if(memory_profiler_struct_handler.pointer->log_count == shared_memory_MAX_ENTRY) {
+		//printf("entries: %d\n",memory_profiler_struct_handler.pointer->log_count);
 		swap_shared_memory_pointers();
 	}
 }
@@ -640,7 +643,7 @@ void* Memory_profiler_start_thread(void *arg){
 			}
 
 		} else {
-			//printf("closing shared memory for profiling\n");
+			printf("closing shared memory for profiling\n");
 			// Need to check thread_semaphore because if a thread is executing malloc/free we cannot set profiling to false,
 			// because when we unmap the shared memory in the next instruction, and the thread may need it from malloc/free, we have to wait for it to finish
 			sem_wait(&thread_semaphore);
@@ -668,7 +671,7 @@ void indicate_shm_overload(){
 			//sprintf(s,"Hearthbeat: Failed writing the overload FIFO\n");
 			//print_to_log(s);
 		}
-		////printf("Profiler is notified\n");
+		//printf("Profiler is notified\n");
 		close(mem_prof_overload_fifo);
 	}
 	else {

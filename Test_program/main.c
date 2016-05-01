@@ -121,29 +121,18 @@ int main()
 	volatile int *ptr;
 
 
-	pthread_create(&(tid[0]), NULL, &Thread_1, (int*)1);
-	    printf("\nCreated Thread 1\n");
 
-	   pthread_create(&(tid[1]), NULL, &Thread_2, (int*)2);
-	    printf("\nCreated Thread 2\n");
-
-	/*while(i < 10000){
-		i++;
-		ptr = malloc(sizeof(int));
-		usleep(50);
-*/
-
-	//set_user_profiling_flag(true);
-	ptr = malloc(sizeof(int)*5);
-	//set_user_profiling_flag(false);
-
-	while(1){
-		i++;
+	for(i=0;i < 500000; i++){
 		ptr = malloc(sizeof(int));
 		free(ptr);
-		usleep(10);
+		if(i%50000 == 0){
+			printf("Sleeping...\n");
+			sleep(1);
+		};
 
 	}
+
+
 	sleep(1);
 	exit(0);
 }
