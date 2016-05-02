@@ -120,9 +120,9 @@ int main()
 	int i = 0;
 	volatile int *ptr;
 
+	ptr = malloc(sizeof(int));
 
-
-	for(i=0;i < 500000; i++){
+	for(i=0;i < 50000; i++){
 		ptr = malloc(sizeof(int));
 		free(ptr);
 		if(i%50000 == 0){
