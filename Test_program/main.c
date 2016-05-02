@@ -119,10 +119,24 @@ int main()
 {
 	int i = 0;
 	volatile int *ptr;
+	int* pointer;
 
 	ptr = malloc(sizeof(int));
 
-	for(i=0;i < 50000; i++){
+	pointer = realloc(ptr,0xFFFFFFFF);
+
+	ptr = realloc(pointer,sizeof(int));
+
+	free(ptr);
+	//free(pointer);
+
+	//ptr = realloc(pointer,3*sizeof(int));
+
+	//pointer = realloc(ptr,0);
+
+	//free(pointer);
+
+	/*for(i=0;i < 50000; i++){
 		ptr = malloc(sizeof(int));
 		free(ptr);
 		if(i%50000 == 0){
@@ -130,7 +144,7 @@ int main()
 			sleep(1);
 		};
 
-	}
+	}*/
 
 
 	sleep(1);

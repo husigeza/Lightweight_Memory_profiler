@@ -478,6 +478,7 @@ void* realloc(void *ptr,size_t size) {
 				//printf("Realloc as free\n");
 				log_entry_ptr->type = free_func;
 				log_entry_ptr->address = (unsigned long int)ptr;
+				log_entry_ptr->realloc_address = 0;
 			}
 			//realloc behaves like realloc
 			else {

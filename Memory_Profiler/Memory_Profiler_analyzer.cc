@@ -146,6 +146,8 @@ void Memory_Leak_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_o
 	unsigned long long int size_to_free = 0;
 	unsigned long long int realloc_size = 0;
 
+	bool finished = false;
+
 	map< unsigned long int, vector<template_handler< memory_profiler_sm_object_log_entry_class> > > free_map;
 
 	vector<template_handler< memory_profiler_sm_object_log_entry_class> >::iterator it;
@@ -195,64 +197,72 @@ void Memory_Leak_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_o
 		cout <<"Total entries analyzed: " << dec << counter << " / " << dec << entries_size
 				<< " (" << dec << (int)((double)counter/((double)entries_size)*100) << "%)" << '\r';
 
-			total_memory_allocated += it->object->size;
+		total_memory_allocated += it->object->size;
 
 			address = it->object->address;
 			size_to_free = it->object->size;
 
-			free_it = free_map.find(address);
+			finished = false;
+			while(finished == false){
 
-			if(free_it == free_map.end()){
-				size_to_free = 0;
+				free_it = free_map.find(address);
 
-				if(address == it->object->address){
-				log_file << endl << "Memory 0x" << std::hex << it->object->address << " has not been freed yet!" << endl;
+				if(free_it == free_map.end()){
+					size_to_free = 0;
+
+					if(address == it->object->address){
+					log_file << endl << "Memory 0x" << std::hex << it->object->address << " has not been freed yet!" << endl;
+					}
+					else {
+						log_file << endl << "Memory 0x" << std::hex << it->object->address << " has been freed, however " << endl
+								<< " it has been changed (with realloc) to: 0x" << address << " which has not been freed yet! " << endl;
+					}
+
+					it->object->Print(process,log_file);
+					break;
+
 				}
 				else {
-					log_file << endl << "Memory 0x" << std::hex << it->object->address << " has been freed, however " << endl
-							<< " it has been changed (with realloc) to: 0x" << address << " which has not been freed yet! " << endl;
-				}
-
-				it->object->Print(process,log_file);
-
-			}
-			else {
-				for(it2 = free_it->second.begin();it2 != free_it->second.end();){
-					if (it2->object->type == free_func){
-						//if(timercmp(&(it->object->tval_before),&(it2->object->tval_before), <)){
-							total_memory_freed += size_to_free;
-							size_to_free = 0;
+					for(it2 = free_it->second.begin();it2 != free_it->second.end();){
+						if (it2->object->type == free_func){
+								total_memory_freed += size_to_free;
+								size_to_free = 0;
+								free_it->second.erase(it2);
+								finished = true;
+								break;
+						}
+						else if(it2->object->type == realloc_func){
+							// If size in realloc and size from malloc/calloc do not equal
+							// it means the allocated space is expanded (reduced) with (new size - original size) bytes
+							if(it2->object->size != size_to_free){
+								total_memory_allocated -= size_to_free;
+								total_memory_allocated += it2->object->size;
+								// The realloc will contain the new allocated size
+								size_to_free = it2->object->size;
+							}
+							 /*
+							  * In case of realloc both address field is interpreted:
+							  * address: realloc returns with this
+							  * realloc_address: pointer passed to realloc
+							  * If those 2 do not equal it means realloc returned with a different address
+							  * thus the object at the original place is moved to the new place
+							  * and freed from the original place.
+							  * In this case the newly given address becomes the "original" address.
+							  *
+							  */
+							if(it2->object->realloc_address != it2->object->address){
+								address = it2->object->address;
+								free_it->second.erase(it2);
+								break;
+							}
 							free_it->second.erase(it2);
-							break;
-						//}
+						}
+						// This cannot happen...
+						else{
+							 ++it2;
+						}
 					}
-//					else if(it2->object->type == realloc_func){
-//						// If size in realloc and size from malloc/calloc do not equal
-//						// it means the allocated space is expanded (reduced) with (new size - original size) bytes
-//						if(it2->object->size != size_to_free){
-//							total_memory_allocated -= size_to_free;
-//							total_memory_allocated += it2->object->size;
-//							// The realloc will contain the new allocated size
-//							size_to_free = it2->object->size;
-//						}
-//						 /*
-//						  * In case of realloc both address field is interpreted:
-//						  * address: realloc returns with this
-//						  * realloc_address: pointer passed to realloc
-//						  * If those 2 do not equal it means realloc returned with a different address
-//						  * thus the object at the original place is moved to the new place
-//						  * and freed from the original place.
-//						  * In this case the newly given address becomes the "original" address.
-//						  *
-//						  */
-//						if(it2->object->realloc_address != it2->object->address){
-//							address = it2->object->address;
-//						}
-//						free_it->second.erase(it2);
-//					}
-//					else{
-//						 ++it2;
-//					}
+
 				}
 			}
 
