@@ -123,11 +123,18 @@ int main()
 
 	ptr = malloc(sizeof(int));
 
+	//pointer = realloc(ptr,0xFFFFFFFF);
+
+	//ptr = realloc(pointer,sizeof(int));
 	pointer = realloc(ptr,0xFFFFFFFF);
+	free(pointer);
 
-	ptr = realloc(pointer,sizeof(int));
+	ptr = malloc(sizeof(int));
 
-	free(ptr);
+
+	//free(ptr);
+
+	//ptr = malloc(sizeof(int));
 	//free(pointer);
 
 	//ptr = realloc(pointer,3*sizeof(int));
