@@ -360,25 +360,32 @@ void Double_Free_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_o
 	vector<uint64_t> malloc_vector;
 	vector<uint64_t>::iterator it_address;
 
+	unsigned long long int free_counter = 0;
+
 	vector<template_handler< memory_profiler_sm_object_log_entry_class> >::iterator it;
 
 		for(it = entries.begin(); it != entries.end(); it++){
-			if(it->object->valid && (it->object->type == malloc_func || it->object->type == calloc_func || it->object->type == realloc_func)){
+			if(it->object->valid && (it->object->type == malloc_func || it->object->type == calloc_func)){
 				malloc_vector.push_back(it->object->address);
+			}
+			else if(it->object->type == realloc_func){
+				malloc_vector.push_back(it->object->realloc_address);
+			}
+			else if(it->object->valid && it->object->type == free_func){
+				it_address = find(malloc_vector.begin(), malloc_vector.end(), it->object->address);
+				if(it_address == malloc_vector.end()){
+					free_counter++;
+					log_file << endl <<"Address 0x"<< hex << it->object->address << " is freed but has not been allocated!"<< endl;
+					it->object->Print(process,log_file);
+				}
+				else{
+					malloc_vector.erase(it_address);
+				}
+			}
 		}
-		else if(it->object->valid && it->object->type == free_func){
-			it_address = find(malloc_vector.begin(), malloc_vector.end(), it->object->address);
-			if(it_address == malloc_vector.end()){
-				cout << endl <<"Address 0x"<< hex << it->object->address << " is freed but has not been allocated!"<< endl;
-				log_file << endl <<"Address 0x"<< hex << it->object->address << " is freed but has not been allocated!"<< endl;
 
-				it->object->Print(process,log_file);
-			}
-			else{
-				malloc_vector.erase(it_address);
-			}
-		}
-	}
+	cout << dec << free_counter <<" times free has been called without any allocation function with the address passed to free!"<< endl;
+	log_file << dec << free_counter <<" times free has been called without any allocation function with the address passed to free!"<< endl;
 
 	log_file.close();
 

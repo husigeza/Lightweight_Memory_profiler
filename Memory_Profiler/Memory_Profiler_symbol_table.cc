@@ -23,8 +23,8 @@ symbol_table_entry_class& symbol_table_entry_class::operator=(const symbol_table
 
 bool operator == ( const uint64_t &address, const symbol_table_entry_class& entry){ return (address == entry.address);};
 bool operator != ( const uint64_t &address, const symbol_table_entry_class& entry){ return !(address == entry.address);};
-bool operator <  ( const uint64_t &address, const symbol_table_entry_class& entry){ return (entry.address < address);};
-bool operator >  ( const uint64_t &address, const symbol_table_entry_class& entry){ return (entry.address > address);};
-bool operator <= ( const uint64_t &address, const symbol_table_entry_class& entry){ return (entry.address <= address);};
-bool operator >= ( const uint64_t &address, const symbol_table_entry_class& entry){ return (entry.address >= address);};
+bool operator <  ( const uint64_t &address, const symbol_table_entry_class& entry){ return (address < entry.address);};
+bool operator >  ( const uint64_t &address, const symbol_table_entry_class& entry){ return (address > entry.address);};
+bool operator <= ( const uint64_t &address, const symbol_table_entry_class& entry){ return (address <= entry.address);};
+bool operator >= ( const uint64_t &address, const symbol_table_entry_class& entry){ return (address >= entry.address);};
 
