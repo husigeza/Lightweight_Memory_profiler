@@ -72,7 +72,7 @@ void Memory_Profiler::Read_FIFO() {
 	vector<pid_t> alive_processes;
 	pid_t pid;
 	string buffer;
-	size_t buff_size = 6;
+	size_t buff_size = 7;
 	int res;
 	map<const pid_t, template_handler<Process_handler> >::iterator it;
 
@@ -115,7 +115,7 @@ void Memory_Profiler::Read_overload_FIFO(){
 	pid_t pid;
 	int res;
 	string buffer;
-	size_t buff_size = 6;
+	size_t buff_size = 7;
 
 	mem_prof_overload_fifo = open(mem_prof_overload_fifo_path.c_str(), O_RDONLY /*| O_NONBLOCK*/);
 

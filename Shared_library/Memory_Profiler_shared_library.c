@@ -52,8 +52,8 @@ static bool user_profiling_flag = true;
 #endif
 
 // TODO: set the proper size, need +1 for /0, changes are needed in memory profiler FIFO reading
-static char PID_string[6];
-static char PID_string_sem[16];
+static char PID_string[7];
+static char PID_string_sem[17];
 
 enum {
 	shm_active_A = 0,

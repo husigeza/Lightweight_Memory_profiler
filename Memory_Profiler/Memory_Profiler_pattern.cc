@@ -215,6 +215,8 @@ void Pattern::Filter_entries(template_handler<memory_profiler_sm_object_class> s
 
 void Pattern::Run_analyzers(template_handler<Process_handler> process){
 
+	cout << endl <<"Running pattern on process: " << dec << process.object->PID_string << endl << endl;
+
 	if(Check_process(process)){
 
 		Filter_entries(template_handler<memory_profiler_sm_object_class>((*process.object->memory_profiler_struct),false));
