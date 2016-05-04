@@ -76,7 +76,8 @@ command : PRINT PROCESS NUMBER '\n'      			{mem_prof.Print_process($3);}
 		| ADD ANALYZER TIME '\n'					{mem_prof.Create_new_analyzer(*(new Average_time_Analyzer()));}
 		| ADD ANALYZER FUNCTIONCOUNT '\n'			{mem_prof.Create_new_analyzer(*(new Function_counter_Analyzer()));}
 		| ADD FILTER SIZE NUMBER TEXT '\n'			{mem_prof.Create_new_size_filter_cli($4,$5);free($5);}
-		| ADD FILTER TIME TIMESTAMP NUMBER TEXT TEXT '\n'	{mem_prof.Create_new_time_filter_cli($4,$5,$6,$7);free($4);free($6);free($7);}	
+		| ADD FILTER TIME TIMESTAMP NUMBER TEXT TEXT '\n'	{mem_prof.Create_new_time_filter_cli($4,$5,$6,$7);free($4);free($6);free($7);}
+		| ADD ANALYZER ALL PATTERN TEXT '\n'		{mem_prof.Add_analyzer_all_to_pattern_by_name($5);free($5);}	
 		| ADD ANALYZER NUMBER PATTERN NUMBER '\n'	{mem_prof.Add_analyzer_to_pattern($3,$5);}
 		| ADD ANALYZER NUMBER PATTERN TEXT '\n'		{mem_prof.Add_analyzer_to_pattern_by_name($3,$5);free($5);}
 		| REMOVE ANALYZER NUMBER '\n'				{mem_prof.Remove_analyzer($3);}
@@ -175,6 +176,7 @@ void Print_help(){
 	cout <<"add analyzer type" << endl;
 	cout <<"add filter type params" << endl;
 	cout <<"add pattern name" << endl;
+	cout <<"add analyzer all pattern name" << endl;
 	cout <<"add analyzer index pattern index" << endl;
 	cout <<"add analyzer index pattern name" << endl;
 	cout <<"add filter index pattern index" << endl;

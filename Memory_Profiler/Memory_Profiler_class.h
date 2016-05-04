@@ -63,6 +63,7 @@ class Memory_Profiler {
 
         void Add_analyzer_to_pattern(unsigned int analyzer_index,unsigned int pattern_index);
         void Add_analyzer_to_pattern_by_name(unsigned int analyzer_index,string pattern_name);
+        void Add_analyzer_all_to_pattern_by_name(string pattern_name);
         void Add_filter_to_pattern(unsigned int filter_index,unsigned int pattern_index);
         void Add_filter_to_pattern_by_name(unsigned int analyzer_index,string pattern_name);
 

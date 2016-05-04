@@ -23,13 +23,10 @@
 
 #include <dlfcn.h>
 
-//#define fifo_path "/home/egezhus/Memory_profiler/mem_prof_fifo"
 #define fifo_path "/dev/mem_prof_fifo"
-
 #define fifo_overload_path "/dev/mem_prof_fifo_overload"
 
 #define max_call_stack_depth 100
-
 #define shared_memory_MAX_ENTRY 100000
 
 extern void *__libc_malloc(size_t size);

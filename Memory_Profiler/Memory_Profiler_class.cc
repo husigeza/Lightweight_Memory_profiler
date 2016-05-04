@@ -495,6 +495,22 @@ void Memory_Profiler::Add_analyzer_to_pattern_by_name(unsigned int analyzer_inde
 	}
 }
 
+void Memory_Profiler::Add_analyzer_all_to_pattern_by_name(string pattern_name){
+
+	vector<template_handler<Pattern> >::iterator pattern = Find_pattern_by_name(pattern_name);
+	vector<template_handler<Analyzer> >::iterator analyzer;
+
+	if (pattern == Patterns_vector.end()){
+		cout << "Wrong pattern name!" << endl;
+	}
+	else{
+		for(analyzer = Analyzers_vector.begin();analyzer != Analyzers_vector.end(); analyzer++){
+			pattern->object->Analyzer_register(*analyzer);
+			analyzer->object->Pattern_register(*pattern);
+		}
+	}
+}
+
 void Memory_Profiler::Add_filter_to_pattern(unsigned int filter_index,unsigned int pattern_index){
 
 	if(filter_index >= Filters_vector.size()){
