@@ -36,7 +36,6 @@ protected:
 	unsigned int type;
 	string type_string;
 
-
 public:
 
 	virtual ~Analyzer();
@@ -139,5 +138,6 @@ public:
 };
 
 bool operator==(template_handler<Analyzer> analyzer_1, const template_handler<Analyzer> analyzer_2);
+bool operator==(template_handler<Analyzer> analyzer, const Analyzer* analyzer_ptr);
 
 #endif /* MEMORY_PROFILER_ANALYZER_H_ */

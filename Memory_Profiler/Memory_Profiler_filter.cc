@@ -2,17 +2,20 @@
 #include <memory>
 #include <algorithm>
 
-
 #include "Memory_Profiler_process.h"
 #include "Memory_Profiler_handler_template.h"
 #include "Memory_Profiler_pattern.h"
-
 #include "Memory_Profiler_filter.h"
 
 using namespace std;
 
 bool operator==(template_handler<Filter> filter_1, const template_handler<Filter> filter_2){
 	if(filter_1.object == filter_2.object) return true;
+	else return false;
+}
+
+bool operator==(template_handler<Filter> filter, const Filter *filter_ptr){
+	if(filter.object == filter_ptr) return true;
 	else return false;
 }
 
@@ -46,7 +49,7 @@ void Filter::Pattern_register(template_handler<Pattern> pattern){
 		Pattern_vector.push_back(pattern);
 	}
 	else{
-		//cout << "Filter has been already added to the pattern!" << endl;
+		cout << "Filter has been already added to the pattern!" << endl;
 	}
 }
 
@@ -111,7 +114,6 @@ void Size_filter::Print() const{
 bool Size_filter::Filter_func(template_handler< memory_profiler_sm_object_log_entry_class> log_entry) const{
 
 	if(log_entry.object->type == free_func){
-		//return true;
 		return false;
 	}
 

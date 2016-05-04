@@ -1,16 +1,12 @@
 %{
-
-#include "../Memory_Profiler_class.h"
-
 #include <iostream>
 #include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
-#include <stdio.h>
-#include <memory>
 #include <stdlib.h>
-#include <string>
 
+
+#include "../Memory_Profiler_class.h"
 #include "../Memory_Profiler_analyzer.h"
 
 extern "C" {    
@@ -19,10 +15,7 @@ extern "C" {
 	int yyparse(void);
 	int yywrap(){
 	    return 1;
-	}
-	
-	string remove_end(string s);
-	
+	}		
 }
 
 
@@ -36,21 +29,24 @@ extern "C" {
 	char *text;
 }
 
-%token <text> PRINT
-%token <text> PROCESS 
-%token <text> ALL 
-%token ALIVE PROFILED BT 
-%token ANALYZE ADD REMOVE ANALYZER ANALYZERS PATTERN FILTER SIZE
-%token LEAK DFREE ALLOC TIME FUNCTIONCOUNT
-%token SAVE SYMBOLS MAP
+%token <number> NUMBER      
+%token <text>   TEXT
+%token <text>   TIMESTAMP
+
+%token PROCESS ALL ALIVE
+%token PROFILED
+%token PRINT 
+%token ADD REMOVE 
+%token ANALYZE
+%token PATTERN
+%token ANALYZER LEAK DFREE ALLOC TIME FUNCTIONCOUNT SAVE
+%token SYMBOLS MAP BT 
+%token FILTER SIZE TIME
 %token ON OFF
-%token <number> NUMBER
-%token <text> TEXT
-%token <text> TIMESTAMP
-%token PROMPT
 %token HELP
 %token EXIT_COMMAND
 %token UNRECOGNIZED_TOKEN
+
 
 
 
@@ -121,16 +117,11 @@ static pthread_t FIFO_read_thread_id;
 static pthread_t overload_FIFO_read_thread_id;
 
 extern "C" {
-void yyerror(const char *s){
-		cout << s << endl;
+	void yyerror(const char *s){
+			cout << s << endl;
 	}
-	
-string remove_end(string s){
-		s = s.substr(0, s.size()-1);
-		return s;
-	}	
 }
-
+	
 void Print_help(){
 	
 	cout << "HELP:" << endl;
@@ -232,8 +223,7 @@ void* Read_FIFO_thread(void *arg) {
 		mem_prof.Read_FIFO();
 		usleep(500000);
 		
-	}
-	return 0;
+	}	
 }
 
 void* Read_overload_FIFO_thread(void *arg) {
@@ -241,8 +231,7 @@ void* Read_overload_FIFO_thread(void *arg) {
 	while (true) {
 		mem_prof.Read_overload_FIFO();
 		usleep(100);
-	}
-	return 0;
+	}	
 }
 
 
@@ -264,11 +253,6 @@ int main() {
 		//cout << "Read_overload_FIFO_thread created" << endl;
 	}
 	
-
-	mem_prof.Create_new_pattern("p");
-	mem_prof.Create_new_analyzer(*(new Memory_Leak_Analyzer()));
-	mem_prof.Add_analyzer_to_pattern_by_name(0,"p");
-
 
 	cout << ">> "; 
 	return yyparse();

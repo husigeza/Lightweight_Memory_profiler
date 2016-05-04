@@ -12,47 +12,37 @@
 
 class Memory_Profiler {
 
-        map<pid_t const, template_handler<Process_handler> > Processes;
-        string fifo_path;
-        string mem_prof_overload_fifo_path;
-        int mem_prof_fifo;
-        int mem_prof_overload_fifo;
+		string fifo_path;
+		string mem_prof_overload_fifo_path;
+		int mem_prof_fifo;
+		int mem_prof_overload_fifo;
 
-        void Set_process_alive_flag(const pid_t PID, bool value);
+		sem_t save_sem;
 
-        void Start_stop_profiling(const pid_t PID);
-        void Start_stop_profiling_all_processes();
-
+		map<pid_t const, template_handler<Process_handler> > Processes;
         vector< template_handler<Pattern> > Patterns_vector;
         vector< template_handler<Analyzer> > Analyzers_vector;
         vector< template_handler<Filter> > Filters_vector;
 
+        void Start_stop_profiling(const pid_t PID);
+        void Start_stop_profiling_all_processes();
+
         void Save_process_shared_memory(pid_t PID);
-
-        sem_t save_sem;
-
 
     public:
         Memory_Profiler();
         Memory_Profiler(string fifo_path, string overload_fifo_path);
         ~Memory_Profiler();
 
+        void Read_FIFO();
+        void Read_overload_FIFO();
+
         bool Add_Process_to_list(const pid_t PID);
 
         void Add_process_to_profiling(const pid_t PID);
         void Add_all_process_to_profiling();
-
         void Remove_process_from_profiling(const pid_t PID);
         void Remove_all_process_from_profiling();
-
-        bool Get_process_alive_flag(const pid_t PID);
-        bool Get_process_shared_memory_initilized_flag(const pid_t PID);
-
-
-        void Read_FIFO();
-        void Read_overload_FIFO();
-
-        bool Process_analyze_ready(const pid_t PID);
 
         void Create_new_pattern(string name);
         vector< template_handler<Pattern> >::iterator Find_pattern_by_name(string Pattern_name);
@@ -60,13 +50,14 @@ class Memory_Profiler {
         void Print_pattern(string pattern_name);
 
         void Create_new_analyzer(Analyzer& analyzer);
+        void Remove_analyzer(unsigned int analyzer_index);
         void Print_analyzers() const;
         void Print_analyzer(unsigned int index) const;
 
-        void Create_new_size_filter_cli(unsigned long size_p, string operation_p);
-        void Create_new_time_filter_cli(string time,__suseconds_t usec,string time_type, string operation_p);
-
         void Create_new_filter(Filter& filter);
+        void Create_new_size_filter_cli(unsigned long size_p, string operation_p);
+		void Create_new_time_filter_cli(string time,__suseconds_t usec,string time_type, string operation_p);
+        void Remove_filter(unsigned int filter_index);
         void Print_filters() const;
         void Print_filter(unsigned int index) const;
 
@@ -75,10 +66,8 @@ class Memory_Profiler {
         void Add_filter_to_pattern(unsigned int filter_index,unsigned int pattern_index);
         void Add_filter_to_pattern_by_name(unsigned int analyzer_index,string pattern_name);
 
-        void Remove_analyzer(unsigned int analyzer_index);
         void Remove_analyzer_from_pattern(unsigned int analyzer_index,unsigned int pattern_index);
         void Remove_analyzer_from_pattern_by_name(unsigned int analyzer_index,string pattern_name);
-        void Remove_filter(unsigned int filter_index);
         void Remove_filter_from_pattern(unsigned int filter_index,unsigned int pattern_index);
         void Remove_filter_from_pattern_by_name(unsigned int filter_index,string pattern_name);
 
@@ -91,7 +80,6 @@ class Memory_Profiler {
         void Print_all_processes() const;
         void Print_alive_processes() const;
         void Print_profiled_processes() const;
-
 
 };
 

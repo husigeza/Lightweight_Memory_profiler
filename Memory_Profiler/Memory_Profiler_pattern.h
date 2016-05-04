@@ -11,6 +11,7 @@
 
 using namespace std;
 
+// Forwarding declaration is needed
 class Analyzer;
 class Filter;
 
@@ -33,23 +34,18 @@ public:
 	~Pattern();
 
 	bool operator==(const string Pattern_name);
-
 	const string Get_name() const;
-
 	void Print() const;
-
 	bool Check_process(template_handler<Process_handler> process);
 
 	unsigned int Get_number_of_analyzers();
 	unsigned int Get_number_of_filters();
 
 	void Analyzer_register(template_handler<Analyzer> analyzer);
-
 	void Analyzer_deregister(unsigned int index);
 	void Analyzer_deregister(const Analyzer *analyzer);
 
 	void Filter_register(template_handler<Filter> filter);
-
 	void Filter_deregister(unsigned int index);
 	void Filter_deregister(const Filter *filter);
 

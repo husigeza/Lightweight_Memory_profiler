@@ -1,11 +1,6 @@
 %{
 #include "stdio.h"
-#include <iostream>
 #include "Memory_Profiler_tab.tab.h"
-
-using namespace std;
-
-
 
 extern "C" {
 
@@ -29,7 +24,6 @@ extern "C" {
 "add"				{return ADD;}
 "remove"			{return REMOVE;}
 "analyzer"			{return ANALYZER;}
-"analyzers"			{return ANALYZERS;}
 "pattern"			{return PATTERN;}
 "leak"				{return LEAK;}
 "dfree"				{return DFREE;}

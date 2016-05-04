@@ -13,23 +13,18 @@ symbol_table_entry_class::symbol_table_entry_class(const symbol_table_entry_clas
 	}
 
 symbol_table_entry_class& symbol_table_entry_class::operator=(const symbol_table_entry_class &obj){
-		address = obj.address;
-		name = obj.name;
+		if(this != &obj){
+			address = obj.address;
+			name = obj.name;
+		}
 		return *this;
 	}
 
-bool operator == (const uint64_t &address, const symbol_table_entry_class& entry){ return (address == entry.address);}
-bool operator != (const uint64_t &address, const symbol_table_entry_class& entry){ return !(address == entry.address);}
-bool operator <  (const uint64_t &address, const symbol_table_entry_class& entry){ return (address < entry.address);}
-bool operator >  (const uint64_t &address, const symbol_table_entry_class& entry){ return !(address < entry.address);}
-bool operator <= (const uint64_t &address, const symbol_table_entry_class& entry){ return (address < entry.address);}
-bool operator >= (const uint64_t &address, const symbol_table_entry_class& entry){ return !(address < entry.address);}
 
-bool operator == (const symbol_table_entry_class& entry, const uint64_t &address){return (entry.address == address);}
-bool operator != (const symbol_table_entry_class& entry, const uint64_t &address){return !(entry.address == address);}
-bool operator <  (const symbol_table_entry_class& entry, const uint64_t &address){return (entry.address < address);}
-bool operator >  (const symbol_table_entry_class& entry, const uint64_t &address){return !(entry.address < address);}
-bool operator <= (const symbol_table_entry_class& entry, const uint64_t &address){return (entry.address < address);}
-bool operator >= (const symbol_table_entry_class& entry, const uint64_t &address){return (entry.address > address);}
-
+bool operator == ( const uint64_t &address, const symbol_table_entry_class& entry){ return (address == entry.address);};
+bool operator != ( const uint64_t &address, const symbol_table_entry_class& entry){ return !(address == entry.address);};
+bool operator <  ( const uint64_t &address, const symbol_table_entry_class& entry){ return (entry.address < address);};
+bool operator >  ( const uint64_t &address, const symbol_table_entry_class& entry){ return (entry.address > address);};
+bool operator <= ( const uint64_t &address, const symbol_table_entry_class& entry){ return (entry.address <= address);};
+bool operator >= ( const uint64_t &address, const symbol_table_entry_class& entry){ return (entry.address >= address);};
 

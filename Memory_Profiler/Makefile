@@ -1,9 +1,15 @@
+dir = mkdir -p Debug
+
 objects = Debug/Memory_Profiler_class.o Debug/Memory_Profiler_process.o Debug/Memory_Profiler_printing_functions.o \
           Debug/Memory_Profiler_memory_map.o Debug/Memory_Profiler_symbol_table.o \
           Debug/Memory_Profiler_analyzer.o \
           Debug/Memory_Profiler_pattern.o \
           Debug/Memory_Profiler_filter.o \
-		  Debug/Memory_Profiler_tab.tab.o Debug/Memory_Profiler_lex.yy.o
+		  Debug/Memory_Profiler_tab.tab.o Debug/Memory_Profiler_lex.yy.o 
+		  
+DIR_obj: 
+	$(dir)
+	
 		           
 Debug/Memory_Profiler_class.o : Memory_Profiler_class.cc
 	g++ -c -g3  Memory_Profiler_class.cc -o Debug/Memory_Profiler_class.o
@@ -37,8 +43,8 @@ Debug/Memory_Profiler_lex.yy.o: Memory_Profiler_lex.l
 	 lex -o Debug/Memory_Profiler_lex.yy.c Memory_Profiler_lex.l
 	 g++ -c -g3  Debug/Memory_Profiler_lex.yy.c -o Debug/Memory_Profiler_lex.yy.o	
 
-Debug/Memory_Profiler : $(objects)
-	g++  -o Debug/Memory_Profiler -g3 $(objects) -lpthread -lrt -lbfd	-ldl
+Debug/Memory_Profiler : $(objects) | DIR_obj
+	g++  -o Debug/Memory_Profiler -g3 $(objects) -lpthread -lrt -lbfd -ldl
 	
 	
 #Debug/Memory_Profiler_STATIC: $(objects)
@@ -50,7 +56,7 @@ Debug/Memory_Profiler : $(objects)
 	/home/egezhus/binutils/build/zlib/libz.a \
 	-ldl 
 
-all: Debug/Memory_Profiler #Debug/Memory_Profiler_STATIC
+all: DIR_obj Debug/Memory_Profiler 
 
 clean:
 	rm -rf Debug/Memory_*

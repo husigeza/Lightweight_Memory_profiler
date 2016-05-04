@@ -1,14 +1,11 @@
-#include "Memory_Profiler_process.h"
-
 #include <iostream>
 #include <iterator>
 #include <vector>
 #include <memory>
 #include <algorithm>
 
-
+#include "Memory_Profiler_process.h"
 #include "Memory_Profiler_handler_template.h"
-
 #include "Memory_Profiler_analyzer.h"
 #include "Memory_Profiler_filter.h"
 #include "Memory_Profiler_pattern.h"
@@ -17,11 +14,6 @@ using namespace std;
 
 bool operator==(template_handler<Pattern> pattern_1, const template_handler<Pattern> pattern_2){
 	if(pattern_1.object == pattern_2.object) return true;
-	else return false;
-}
-
-bool operator==(template_handler<Analyzer> analyzer, const Analyzer* analyzer_ptr){
-	if(analyzer.object == analyzer_ptr) return true;
 	else return false;
 }
 
@@ -130,12 +122,12 @@ void Pattern::Analyzer_register(template_handler<Analyzer> analyzer){
 void Pattern::Filter_register(template_handler<Filter> filter){
 
 	vector<template_handler<Filter> >::iterator it = find(Filter_vector.begin(),Filter_vector.end(),filter);
-		if(it == Filter_vector.end()){
-			Filter_vector.push_back(filter);
-		}
-		else {
-			cout << "This filter has been already added to this pattern!" << endl;
-		}
+	if(it == Filter_vector.end()){
+		Filter_vector.push_back(filter);
+	}
+	else {
+		cout << "This filter has been already added to this pattern!" << endl;
+	}
 }
 
 void Pattern::Analyzer_deregister(unsigned int index){
@@ -169,12 +161,6 @@ void Pattern::Filter_deregister(unsigned int index){
 		Notify_filter(index);
 		Filter_vector.erase(Filter_vector.begin() + index);
 	}
-}
-
-
-bool operator==(template_handler<Filter> filter, const Filter *filter_ptr){
-	if(filter.object == filter_ptr) return true;
-	else return false;
 }
 
 void Pattern::Filter_deregister(const Filter *filter){

@@ -37,25 +37,18 @@ public:
 	}
 	bool operator!=(const string& symbol_name) const {return(!(this->name == symbol_name));}
 	bool operator<(const symbol_table_entry_class& entry) const {return (address < entry.address);}
-	bool operator>(const symbol_table_entry_class& entry) const {return (!(address < entry.address));}
-	bool operator<=(const symbol_table_entry_class& entry) const {return (address < entry.address);}
-	bool operator>=(const symbol_table_entry_class& entry) const {return (!(address > entry.address));}
-
+	bool operator>(const symbol_table_entry_class& entry) const {return (address > entry.address);}
+	bool operator<=(const symbol_table_entry_class& entry) const {return (address <= entry.address);}
+	bool operator>=(const symbol_table_entry_class& entry) const {return (address >= entry.address);}
 
 };
 
-bool operator == (const uint64_t &address, const symbol_table_entry_class& entry);
-bool operator != (const uint64_t &address, const symbol_table_entry_class& entry);
-bool operator <  (const uint64_t &address, const symbol_table_entry_class& entry);
-bool operator >  (const uint64_t &address, const symbol_table_entry_class& entry);
-bool operator <= (const uint64_t &address, const symbol_table_entry_class& entry);
-bool operator >= (const uint64_t &address, const symbol_table_entry_class& entry);
 
-bool operator == (const symbol_table_entry_class& entry, const uint64_t &address);
-bool operator != (const symbol_table_entry_class& entry, const uint64_t &address);
-bool operator <  (const symbol_table_entry_class& entry, const uint64_t &address);
-bool operator >  (const symbol_table_entry_class& entry, const uint64_t &address);
-bool operator <= (const symbol_table_entry_class& entry, const uint64_t &address);
-bool operator >= (const symbol_table_entry_class& entry, const uint64_t &address);
+bool operator == ( const uint64_t &address, const symbol_table_entry_class& entry);
+bool operator != ( const uint64_t &address, const symbol_table_entry_class& entry);
+bool operator <  ( const uint64_t &address, const symbol_table_entry_class& entry);
+bool operator >  ( const uint64_t &address, const symbol_table_entry_class& entry);
+bool operator <= ( const uint64_t &address, const symbol_table_entry_class& entry);
+bool operator >= ( const uint64_t &address, const symbol_table_entry_class& entry);
 
 #endif /* MEMORY_PROFILER_SYMBOL_TABLE_H_ */

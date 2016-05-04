@@ -8,16 +8,18 @@
 
 #include "Memory_Profiler_process.h"
 #include "Memory_Profiler_handler_template.h"
-
 #include "Memory_Profiler_analyzer.h"
 #include "Memory_Profiler_pattern.h"
-
-
 
 using namespace std;
 
 bool operator==(template_handler<Analyzer> analyzer_1, const template_handler<Analyzer> analyzer_2){
 	if(analyzer_1.object == analyzer_2.object) return true;
+	else return false;
+}
+
+bool operator==(template_handler<Analyzer> analyzer, const Analyzer* analyzer_ptr){
+	if(analyzer.object == analyzer_ptr) return true;
 	else return false;
 }
 
@@ -42,9 +44,11 @@ Analyzer::Analyzer(const Analyzer &obj){
 }
 Analyzer& Analyzer::operator=(const Analyzer &obj){
 
-	type = obj.type;
-	type_string = obj.type_string;
-	Pattern_vector = obj.Pattern_vector;
+	if(this != &obj){
+		type = obj.type;
+		type_string = obj.type_string;
+		Pattern_vector = obj.Pattern_vector;
+	}
 
 	return *this;
 }
@@ -65,7 +69,7 @@ void Analyzer::Pattern_register(template_handler<Pattern> pattern){
 		Pattern_vector.push_back(pattern);
 	}
 	else{
-		//cout << "Analyzer has been already added to the pattern!" << endl;
+		cout << "Analyzer has been already added to the pattern!" << endl;
 	}
 }
 
@@ -93,8 +97,8 @@ void Analyzer::Start(template_handler<Process_handler> process){
 	ofstream log_file;
 	log_file.open(("Analyzation_output_"+ process.object->PID_string + ".txt").c_str(), ios::app);
 
-	cout << "Analyzer " << type_string << " starting..." << endl;
-	log_file << "Analyzer " << type_string << " starting..." << endl;
+	cout << endl << "Analyzer " << type_string << " starting..." << endl;
+	log_file << endl << "Analyzer " << type_string << " starting..." << endl;
 
 	log_file.close();
 }
@@ -150,21 +154,27 @@ void Memory_Leak_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_o
 	bool finished = false;
 	bool address_changed = false;
 
+	/*
+	 * Map for frees/reallocs
+	 * key: address which was passed to free/realloc
+	 * value: vector containing the frees, realloc called with the address
+	 */
 	map< unsigned long int, vector<template_handler< memory_profiler_sm_object_log_entry_class> > > free_map;
+	map< unsigned long int, vector<template_handler< memory_profiler_sm_object_log_entry_class> > >::iterator free_it;
 
-	vector<template_handler< memory_profiler_sm_object_log_entry_class> >::iterator it;
-
+	// Vector for mallocs and callocs
 	vector<template_handler< memory_profiler_sm_object_log_entry_class> > malloc_vector;
 	vector<template_handler< memory_profiler_sm_object_log_entry_class> >::iterator it_orig;
-
+	vector<template_handler< memory_profiler_sm_object_log_entry_class> >::iterator it;
 	vector<template_handler< memory_profiler_sm_object_log_entry_class> >::iterator it2;
-	map< unsigned long int, vector<template_handler< memory_profiler_sm_object_log_entry_class> > >::iterator free_it;
+
 
 	entries_size = entries.size();
 
 	cout << "Preparing entries... " << endl;
-	// Create a vector which contains all the mallocs and callocs
-	// Create a map for frees and reallocs where the key is the address they are called -> we can find entry for a specific address easily
+
+	// Fill the vector which contains all the mallocs and callocs
+	// Fill the map for frees and reallocs where the key is the address they are called -> we can find an entry for a specific address easily
 	for(it_orig = entries.begin(); it_orig != entries.end();++it_orig){
 
 		++counter;
@@ -207,27 +217,97 @@ void Memory_Leak_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_o
 			maximum_peak_memory = total_memory_allocated - total_memory_freed;
 		}
 
+		address = it->object->address;	// The address we are searching a free for
+		size_to_free = it->object->size; // shows the deallocation size (may change if realloc will be called)
 
-			address = it->object->address;
-			size_to_free = it->object->size; // shows the deallocation size
+		// Finished shows whether a free is found for the malloc,calloc
+		finished = false;
+		while(finished == false){
 
-			// Finished shows whether a free is found for the malloc,calloc
-			finished = false;
-			while(finished == false){
+			// Whether one of the reallocs changed the address
+			address_changed = false;
 
-				// Whether one of the reallocs changed the address
-				address_changed = false;
+			//Search for entries which were called with address
+			free_it = free_map.find(address);
 
-				//Search for entries which were called with address
-				free_it = free_map.find(address);
+			// No entry (free or realloc) called for that address which needs to be freed, account and then break
+			if(free_it == free_map.end()){
 
-				// No entry (free or realloc) called for that address which needs to be freed, account and then break
-				if(free_it == free_map.end()){
+				size_to_free = 0;
+
+				if(address == it->object->address){
+				log_file << endl << "Memory 0x" << std::hex << it->object->address << " has not been freed yet!" << endl;
+				}
+				else {
+					log_file << endl << "Memory 0x" << std::hex << it->object->address << " has been freed, however "
+							<< " it has been changed (with realloc) to: 0x" << address << " which has not been freed yet! " << endl;
+				}
+
+				it->object->Print(process,log_file);
+
+
+				break;
+
+			}
+			// Frees and/or rellocs have been called with the address
+			else {
+				// Starts evaluating the first entry, they are stored in chronological order
+				for(it2 = free_it->second.begin();it2 != free_it->second.end();){
+
+					if (it2->object->type == free_func){
+							total_memory_freed += size_to_free;
+							size_to_free = 0;
+							// If an entry is "used", erase it not needed anymore
+							free_it->second.erase(it2);
+							finished = true;
+							break;
+					}
+					else if(it2->object->type == realloc_func){
+						// If size in realloc and size from malloc/calloc do not equal
+						// it means the allocated space is expanded (reduced) with (new size - original size) bytes
+						if(it2->object->size != size_to_free){
+
+							// Working with unsigned variables, avoid problem when (new size - original size) is negative...
+							total_memory_allocated -= size_to_free;
+							total_memory_allocated += it2->object->size;
+							// The realloc will contain the new allocated size
+							size_to_free = it2->object->size;
+
+							if(maximum_peak_memory < total_memory_allocated - total_memory_freed){
+								maximum_peak_memory = total_memory_allocated - total_memory_freed;
+							}
+						}
+						 /*
+						  * In case of realloc both address field is interpreted:
+						  * address: realloc returns with this
+						  * realloc_address: pointer passed to realloc
+						  * If those 2 do not equal it means realloc returned with a different address
+						  * thus the object at the original place is moved to the new place
+						  * and freed from the original place. Check realloc manual from GNU C library.
+						  * In this case the newly given address becomes the "original" address which we need to find a free.
+						  *
+						  */
+						if(it2->object->realloc_address != it2->object->address){
+							address_changed = true;
+							address = it2->object->address;
+							// If an entry is "used", erase it not needed anymore
+							free_it->second.erase(it2);
+							break;
+						}
+						free_it->second.erase(it2);
+					}
+				}
+
+				// If free has not been found (only reallocs are stored for that address), possibly leak BUT
+				// If only one realloc is stored in the vector, which changes the address and removed, in that case
+				// the iterator will point to the end, need to indicate this somehow (address_changed flag). If the address has been changed
+				// need to continue the searching with the new address
+				if((it2 == free_it->second.end()) && !address_changed){
 
 					size_to_free = 0;
 
 					if(address == it->object->address){
-					log_file << endl << "Memory 0x" << std::hex << it->object->address << " has not been freed yet!" << endl;
+						log_file << endl << "Memory 0x" << std::hex << it->object->address << " has not been freed yet!" << endl;
 					}
 					else {
 						log_file << endl << "Memory 0x" << std::hex << it->object->address << " has been freed, however "
@@ -236,80 +316,12 @@ void Memory_Leak_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_o
 
 					it->object->Print(process,log_file);
 
-
+					// Break from the cycle, no further searching is needed because no free and address changer realloc has been found
 					break;
-
 				}
-				// Frees and/or rellocs have been called with the address
-				else {
-					// Starts evaluating the first entry, they are stored in chronological order
-					for(it2 = free_it->second.begin();it2 != free_it->second.end();){
 
-						if (it2->object->type == free_func){
-								total_memory_freed += size_to_free;
-								size_to_free = 0;
-								// If an entry is "used", erase it not needed anymore
-								free_it->second.erase(it2);
-								finished = true;
-								break;
-						}
-						else if(it2->object->type == realloc_func){
-							// If size in realloc and size from malloc/calloc do not equal
-							// it means the allocated space is expanded (reduced) with (new size - original size) bytes
-							if(it2->object->size != size_to_free){
-
-								total_memory_allocated -= size_to_free;
-								total_memory_allocated += it2->object->size;
-								// The realloc will contain the new allocated size
-								size_to_free = it2->object->size;
-
-								if(maximum_peak_memory < total_memory_allocated - total_memory_freed){
-									maximum_peak_memory = total_memory_allocated - total_memory_freed;
-								}
-							}
-							 /*
-							  * In case of realloc both address field is interpreted:
-							  * address: realloc returns with this
-							  * realloc_address: pointer passed to realloc
-							  * If those 2 do not equal it means realloc returned with a different address
-							  * thus the object at the original place is moved to the new place
-							  * and freed from the original place.
-							  * In this case the newly given address becomes the "original" address.
-							  *
-							  */
-							if(it2->object->realloc_address != it2->object->address){
-								address_changed = true;
-								address = it2->object->address;
-								free_it->second.erase(it2);
-								break;
-							}
-							free_it->second.erase(it2);
-						}
-					}
-
-					// If free has not been found (only reallocs are stored for that address)
-					// If only one realloc is stored in the vector, which changes the address and removed, in that case
-					// the iterator will point to the end, need to indicate this somehow
-					if((it2 == free_it->second.end()) && !address_changed){
-
-						size_to_free = 0;
-
-						if(address == it->object->address){
-							log_file << endl << "Memory 0x" << std::hex << it->object->address << " has not been freed yet!" << endl;
-						}
-						else {
-							log_file << endl << "Memory 0x" << std::hex << it->object->address << " has been freed, however "
-									<< " it has been changed (with realloc) to: 0x" << address << " which has not been freed yet! " << endl;
-						}
-
-						it->object->Print(process,log_file);
-
-						// Break from the cycle, no further searching is needed because no free and address changer realloc has been found
-						break;
-					}
-
-				}
 			}
+		}
 	}
 
 	total_memory_leaked = total_memory_allocated - total_memory_freed;
@@ -431,6 +443,9 @@ void Malloc_Counter_Analyzer::Analyze(vector<template_handler< memory_profiler_s
 
 	cout << endl << "Number of frees: " << dec << free << endl;
 	log_file << endl << "Number of frees: " << dec << free << endl;
+
+	cout << endl << "For further details about memory usage run ""Memory leak analyzer"" !" << endl;
+	log_file << endl << "For further details about memory usage run ""Memory leak analyzer"" !" << endl;
 
 	log_file.close();
 }
@@ -560,6 +575,9 @@ void Function_counter_Analyzer::Analyze(vector<template_handler< memory_profiler
 	vector < pair<string, unsigned long int> >::const_iterator it_vect;
 	map< string, unsigned long int > countermap;
 	map< string, unsigned long int >::const_iterator it2 = countermap.begin();
+
+	cout << "This analyzer does not count function ""main"" and functions below ""main""!" << endl;
+	log_file << "This analyzer does not count function ""main"" and functions below ""main""!" << endl;
 
 	for (it = entries.begin(); it != entries.end(); it++) {
 		for(i = 0;i < it->object->backtrace_length; i++){

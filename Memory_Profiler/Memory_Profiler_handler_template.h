@@ -5,6 +5,16 @@
 
 using namespace std;
 
+
+/*
+ * This whole class is needed, to provide the compatibility for all compilers: C++98, C++0X, C++11/14.
+ * Every object is reached through this class. In case of any copy, this class is copied and not the original one.
+ * This will avoid problems come from coping (g.e.: coping the shared memory not a good idea...)
+ *
+ * NOT THREAD SAFE!
+ *
+ */
+
 template <class class_template> class template_handler{
 
 	bool delete_enable; //Needed because of shared memory entries, we don't want to delete them in destructor with delete

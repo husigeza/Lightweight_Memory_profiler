@@ -33,20 +33,17 @@ public:
 	memory_map_table_entry_class(const memory_map_table_entry_class &obj);
 	memory_map_table_entry_class& operator=(const memory_map_table_entry_class &obj);
 
-	//memory_map_table_entry_class(memory_map_table_entry_class &&obj);
-	//memory_map_table_entry_class& operator=(memory_map_table_entry_class &&obj);
-
 	bool operator==(const string& path) const {
 	    if(this->path.compare(path) == 0)return true;
 	    else return false;
 	}
 	bool operator!=(const string& path) const {return(!(this->path == path));}
 	bool operator<(const memory_map_table_entry_class& entry) const {return (end_address < entry.end_address);}
-	bool operator>(const memory_map_table_entry_class& entry) const {return (!(end_address < entry.end_address));}
+	bool operator>(const memory_map_table_entry_class& entry) const {return (end_address > entry.end_address);}
 
-	bool operator!=(const uint64_t& address) const {return(!(this->end_address == address));}
-	bool operator<(const uint64_t& address) const {return (end_address < address);}
-	bool operator>(const uint64_t& address) const {return (!(end_address < address));}
+	bool operator!=(const uint64_t& address) const {return(this->end_address != address);}
+	bool operator<(const uint64_t& address) const  {return (end_address < address);}
+	bool operator>(const uint64_t& address) const  {return (end_address > address);}
 };
 
 

@@ -19,6 +19,10 @@
 #include <stdexcept>
 #include <time.h>
 
+// int to string, this is c++98 compliant, other built in methods are not (C++0X is the minimum to use the built in functions)
+#include <sstream>
+#define SSTR( x ) static_cast< std::ostringstream & >( ( std::ostringstream() << std::dec << x ) ).str()
+
 
 
 using namespace std;
@@ -210,13 +214,9 @@ Process_handler::Process_handler() {
 	alive = false;
 	profiled = false;
 	memory_profiler_struct = 0;
-	mapped_size_of_shared_memory = 0;
-	shared_memory = 0;
-	shared_memory_name = "";
 	start_stop_semaphore_shared_memory = 0;
 	start_stop_semaphore_name = "";
 	start_stop_semaphore = 0;
-	elf_path = "";
 	shared_memory_initialized = false;
 	symbol_file_name = "";
 	memory_map_file_name = "";
@@ -242,13 +242,9 @@ Process_handler::Process_handler(pid_t PID) {
 	alive = true;
 	profiled = false;
 	memory_profiler_struct = 0;
-	mapped_size_of_shared_memory = 0;
-	shared_memory = 0;
-	shared_memory_name = PID_string + "_mem_prof";
 	start_stop_semaphore_shared_memory = 0;
 	start_stop_semaphore_name = PID_string + "_start_sem";
 	start_stop_semaphore = 0;
-	elf_path = "/proc/" + this->PID_string + "/exe";
 	shared_memory_initialized = false;
 	symbol_file_name = "Symbol_table_"+ PID_string + ".txt";
 	memory_map_file_name = "Memory_map_"+ PID_string + ".txt";
@@ -268,7 +264,6 @@ Process_handler::Process_handler(pid_t PID) {
 	// Check whether the process starts profiling at the beginning with checking the existence of the corresponding shared memory area
 	shared_memory_A = shm_open(shared_memory_name_A.c_str(),  O_RDWR , S_IRWXU | S_IRWXG | S_IRWXO);
 	if (shared_memory_A >= 0){
-		//cout << "Shared memory: " << shared_memory_name_A << " exists, shared memory handler: " << shared_memory_A <<" errno: " << errno << endl;
 
 		// Map the shared memory because it exists
 		memory_profiler_struct_A = (memory_profiler_sm_object_class_fix*) mmap(
@@ -285,8 +280,6 @@ Process_handler::Process_handler(pid_t PID) {
 
 			shared_memory_B = shm_open(shared_memory_name_B.c_str(),  O_RDWR , S_IRWXU | S_IRWXG | S_IRWXO);
 			if (shared_memory_B >= 0){
-
-				//cout << "Shared memory: " << shared_memory_name_B << " exists, shared memory handler: " << shared_memory_B <<" errno: " << errno << endl;
 
 				// Map the shared memory because it exists
 				memory_profiler_struct_B = (memory_profiler_sm_object_class_fix*) mmap(
@@ -315,7 +308,8 @@ Process_handler::Process_handler(pid_t PID) {
 		}
 	}
 	else {
-		//cout << "Shared memories not exist, errno: " << errno << endl;
+		cout << "Shared memories not exist, errno: " << errno << endl;
+		throw false;
 	}
 
 	if (!Create_symbol_table()) {
@@ -338,13 +332,9 @@ Process_handler::Process_handler(const Process_handler &obj){
 	profiled = obj.profiled;
 	alive = obj.alive;
 	memory_profiler_struct = obj.memory_profiler_struct;
-	shared_memory = obj.shared_memory;
-	shared_memory_name = obj.shared_memory_name;
-	mapped_size_of_shared_memory = obj.mapped_size_of_shared_memory;
 	start_stop_semaphore_shared_memory = obj.start_stop_semaphore_shared_memory;
 	start_stop_semaphore_name = obj.start_stop_semaphore_name;
 	start_stop_semaphore = obj.start_stop_semaphore;
-	elf_path = obj.elf_path;
 	shared_memory_initialized = obj.shared_memory_initialized;
 	all_function_symbol_table = obj.all_function_symbol_table;
 	symbol_file_name = obj.symbol_file_name;
@@ -371,13 +361,9 @@ Process_handler& Process_handler::operator=(const Process_handler &obj){
 			profiled = obj.profiled;
 			alive = obj.alive;
 			memory_profiler_struct = obj.memory_profiler_struct;
-			shared_memory = obj.shared_memory;
-			shared_memory_name = obj.shared_memory_name;
-			mapped_size_of_shared_memory = obj.mapped_size_of_shared_memory;
 			start_stop_semaphore_shared_memory = obj.start_stop_semaphore_shared_memory;
 			start_stop_semaphore = obj.start_stop_semaphore;
 			start_stop_semaphore_name = obj.start_stop_semaphore_name;
-			elf_path = obj.elf_path;
 			shared_memory_initialized = obj.shared_memory_initialized;
 			all_function_symbol_table = obj.all_function_symbol_table;
 			symbol_file_name = obj.symbol_file_name;
@@ -458,13 +444,6 @@ const string Process_handler::Find_function_name(const uint64_t address) const{
 	}
 }
 
-/*
- * Need to free bfd manually after this function !!!
- */
-bfd* Process_handler::Open_ELF() const{
-
-	return Open_ELF(elf_path);
-}
 
 /*
  * Need to close bfd manually after this function !!!
@@ -564,7 +543,7 @@ bool Process_handler::Create_symbol_table(){
 	long number_of_symbols;
 
 	// TODO This needs to be rethinked, define a const (linux MAX_PATH?) for it or a find dynamic way
-	char program_path[1024];
+	char program_path[5000];
 	int len;
 
 	vector<symbol_table_entry_class> tmp_function_symbol_table;
@@ -574,11 +553,6 @@ bool Process_handler::Create_symbol_table(){
 	// Memory mappings are stored in memory_map_table after this
 	if(Read_virtual_memory_mapping() == false){
 		return false;
-	}
-
-	// /proc/PID/exe is a sym link to the executable, read it with readlink because we need the full path of the executable
-	if ((len = readlink(elf_path.c_str(), program_path, sizeof(program_path)-1)) != -1){
-		program_path[len] = '\0';
 	}
 
 	for (it = all_function_symbol_table.begin(); it != all_function_symbol_table.end(); it++) {
@@ -718,7 +692,6 @@ bool Process_handler::Init_start_stop_semaphore() {
 	start_stop_semaphore_shared_memory = shm_open(start_stop_semaphore_name.c_str(), O_CREAT | O_RDWR | O_EXCL, S_IRWXU | S_IRWXG | S_IRWXO);
 	if (start_stop_semaphore_shared_memory < 0){
 		if (errno == EEXIST){
-			//cout << "Start stop semaphore already exists, do not re-create it! Trying to open it...  errno: " << errno << endl;
 			start_stop_semaphore_shared_memory = shm_open(start_stop_semaphore_name.c_str(),  O_RDWR , S_IRWXU | S_IRWXG | S_IRWXO);
 			if(start_stop_semaphore_shared_memory <= 0){
 				cout << "Error while opening start_stop_semaphore shared memory: " << dec << errno << endl;
@@ -726,7 +699,7 @@ bool Process_handler::Init_start_stop_semaphore() {
 			}
 		}
 		else {
-		cout << "Error while opening start_stop_semaphore shared memory: " << dec << errno << endl;
+			cout << "Error while opening start_stop_semaphore shared memory: " << dec << errno << endl;
 		return false;
 		}
 	}
@@ -736,8 +709,6 @@ bool Process_handler::Init_start_stop_semaphore() {
 		cout << "Failed mapping the start_stop_semaphore shared memory: " << dec << errno << endl;
 		return false;
 	}
-
-	//cout << "Start stop semaphore initialized" << endl;
 
 	return true;
 }
@@ -749,8 +720,7 @@ bool Process_handler::Init_shared_memory() {
 
 	if (shared_memory_A < 0) {
 		if (errno == EEXIST){
-			//cout << "Shared memory already exists, do not re-create it! Trying to open it...  errno: " << errno << endl;
-			shared_memory_A = shm_open(shared_memory_name.c_str(),  O_RDWR , S_IRWXU | S_IRWXG | S_IRWXO);
+			shared_memory_A = shm_open(shared_memory_name_A.c_str(),  O_RDWR , S_IRWXU | S_IRWXG | S_IRWXO);
 			if(shared_memory_A <= 0){
 				cout << "Failed opening the shared memory for Process: " << dec << PID << " errno: " << dec << errno << endl;
 				return false;
@@ -786,8 +756,7 @@ bool Process_handler::Init_shared_memory() {
 
 	if (shared_memory_B < 0) {
 		if (errno == EEXIST){
-			//cout << "Shared memory already exists, do not re-create it! Trying to open it...  errno: " << errno << endl;
-			shared_memory_B = shm_open(shared_memory_name.c_str(),  O_RDWR , S_IRWXU | S_IRWXG | S_IRWXO);
+			shared_memory_B = shm_open(shared_memory_name_B.c_str(),  O_RDWR , S_IRWXU | S_IRWXG | S_IRWXO);
 			if(shared_memory_B <= 0){
 				cout << "Failed opening the shared memory for Process: " << dec << PID << " errno: " << dec << errno << endl;
 				return false;
@@ -853,5 +822,6 @@ void Process_handler::Read_shared_memory(){
 		delete memory_profiler_struct;
 		throw e;
 	}
+	cout << "Reading binary file finished successfully!" << endl;
 }
 

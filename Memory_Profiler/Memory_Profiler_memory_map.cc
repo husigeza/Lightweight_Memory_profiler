@@ -16,9 +16,10 @@ memory_map_table_entry_class::memory_map_table_entry_class(const memory_map_tabl
 
 memory_map_table_entry_class& memory_map_table_entry_class::operator=(const memory_map_table_entry_class &obj){
 
-			start_address = obj.start_address;
-			end_address = obj.end_address;
-			path = obj.path;
-
-			return *this;
+	if(this != &obj){
+		start_address = obj.start_address;
+		end_address = obj.end_address;
+		path = obj.path;
 	}
+	return *this;
+}

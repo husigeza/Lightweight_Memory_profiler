@@ -93,5 +93,6 @@ public:
 };
 
 bool operator==(template_handler<Filter> filter_1, const template_handler<Filter> filter_2);
+bool operator==(template_handler<Filter> filter, const Filter *filter_ptr);
 
 #endif /* MEMORY_PROFILER_FILTER_H_ */

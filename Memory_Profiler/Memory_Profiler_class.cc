@@ -67,6 +67,73 @@ Memory_Profiler::~Memory_Profiler() {
 	Processes.clear();
 }
 
+void Memory_Profiler::Read_FIFO() {
+
+	vector<pid_t> alive_processes;
+	pid_t pid;
+	string buffer;
+	size_t buff_size = 6;
+	int res;
+	map<const pid_t, template_handler<Process_handler> >::iterator it;
+
+	while ((res = read(mem_prof_fifo, (char*)buffer.c_str(), buff_size)) != 0) {
+		if (res > 0) {
+			pid = atol( buffer.c_str() );
+			Add_Process_to_list(pid);
+			alive_processes.push_back(pid);
+		} else {
+			//cout << "Failed reading the FIFO" << endl;
+			return;
+		}
+	}
+
+	// IF nobody has written the FIFO, res = 0, alive_processes = 0, all the processes are dead
+	for (it = Processes.begin(); it != Processes.end(); it++) {
+		if(it->second.object->Get_alive() == true){
+			if(find(alive_processes.begin(), alive_processes.end(), it->first) == alive_processes.end()) {
+				Processes[it->first].object->Set_alive(false);
+				cout << "Process " << dec << it->first <<" is no more alive!" << endl;
+				Remove_process_from_profiling(it->first);
+				try{
+					Save_process_shared_memory(it->first);
+				}
+				catch(ofstream::failure &e){
+					cout << e.what() << endl;
+					cout << "Shared memory saving failed!" << endl;
+				}
+			}
+			else {
+				Processes[it->first].object->Set_alive(true);
+			}
+		}
+	}
+	alive_processes.clear();
+}
+
+void Memory_Profiler::Read_overload_FIFO(){
+
+	pid_t pid;
+	int res;
+	string buffer;
+	size_t buff_size = 6;
+
+	mem_prof_overload_fifo = open(mem_prof_overload_fifo_path.c_str(), O_RDONLY /*| O_NONBLOCK*/);
+
+	while ((res = read(mem_prof_overload_fifo, (char*)buffer.c_str(), buff_size)) != 0) {
+
+		if (res > 0) {
+			pid = atol( buffer.c_str() );
+			try{
+				Save_process_shared_memory(pid);
+			}
+			catch(ofstream::failure &e){
+				cout << e.what() << endl;
+				cout << "Shared memory saving failed!" << endl;
+			}
+		}
+	}
+}
+
 bool Memory_Profiler::Add_Process_to_list(const pid_t PID) {
 
 
@@ -139,20 +206,6 @@ void Memory_Profiler::Add_all_process_to_profiling() {
 	}
 }
 
-void Memory_Profiler::Set_process_alive_flag(const pid_t PID, bool value){
-
-	Processes[PID].object->Set_alive(value);
-}
-
-bool Memory_Profiler::Get_process_alive_flag(const pid_t PID){
-
-	return Processes[PID].object->Get_alive();
-}
-
-bool Memory_Profiler::Get_process_shared_memory_initilized_flag(const pid_t PID){
-
-	return Processes[PID].object->Is_shared_memory_initialized();
-}
 
 void Memory_Profiler::Remove_process_from_profiling(const pid_t PID){
 
@@ -195,72 +248,7 @@ void Memory_Profiler::Start_stop_profiling_all_processes(){
 	}
 }
 
-void Memory_Profiler::Read_FIFO() {
 
-	vector<pid_t> alive_processes;
-	pid_t pid;
-	string buffer;
-	size_t buff_size = 6;
-	int res;
-	map<const pid_t, template_handler<Process_handler> >::iterator it;
-
-	while ((res = read(mem_prof_fifo, (char*)buffer.c_str(), buff_size)) != 0) {
-		if (res > 0) {
-			pid = atol( buffer.c_str() );
-			Add_Process_to_list(pid);
-			alive_processes.push_back(pid);
-		} else {
-			//cout << "Failed reading the FIFO" << endl;
-			return;
-		}
-	}
-
-	// IF nobody has written the FIFO, res = 0, alive_processes = 0, all the processes are dead
-	for (it = Processes.begin(); it != Processes.end(); it++) {
-		if(it->second.object->Get_alive() == true){
-			if(find(alive_processes.begin(), alive_processes.end(), it->first) == alive_processes.end()) {
-				Set_process_alive_flag(it->first,false);
-				cout << "Process " << dec << it->first <<" is no more alive!" << endl;
-				Remove_process_from_profiling(it->first);
-				try{
-					Save_process_shared_memory(it->first);
-				}
-				catch(ofstream::failure &e){
-					cout << e.what() << endl;
-					cout << "Shared memory saving failed!" << endl;
-				}
-			}
-			else {
-				Set_process_alive_flag(it->first,true);
-			}
-		}
-	}
-	alive_processes.clear();
-}
-
-void Memory_Profiler::Read_overload_FIFO(){
-
-	pid_t pid;
-	int res;
-	string buffer;
-	size_t buff_size = 6;
-
-	mem_prof_overload_fifo = open(mem_prof_overload_fifo_path.c_str(), O_RDONLY /*| O_NONBLOCK*/);
-
-	while ((res = read(mem_prof_overload_fifo, (char*)buffer.c_str(), buff_size)) != 0) {
-
-		if (res > 0) {
-			pid = atol( buffer.c_str() );
-			try{
-				Save_process_shared_memory(pid);
-			}
-			catch(ofstream::failure &e){
-				cout << e.what() << endl;
-				cout << "Shared memory saving failed!" << endl;
-			}
-		}
-	}
-}
 
 void Memory_Profiler::Save_process_shared_memory(pid_t PID){
 
@@ -338,6 +326,46 @@ void Memory_Profiler::Save_process_shared_memory(pid_t PID){
 
 }
 
+void Memory_Profiler::Create_new_pattern(string name){
+
+	vector< template_handler<Pattern> >::iterator pattern = Find_pattern_by_name(name);
+
+	if(pattern != Patterns_vector.end()){
+		cout << "Pattern with that name already exists!" << endl;
+	}
+	else{
+		Patterns_vector.push_back( template_handler<Pattern> (*(new Pattern(name))));
+	}
+}
+
+vector< template_handler<Pattern> >::iterator Memory_Profiler::Find_pattern_by_name(string Pattern_name){
+
+	return find(Patterns_vector.begin(),Patterns_vector.end(),Pattern_name);
+
+}
+
+void Memory_Profiler::Print_patterns() const{
+
+	unsigned int i = 0;
+	for(vector< template_handler<Pattern> >::const_iterator pattern = Patterns_vector.begin();pattern != Patterns_vector.end();pattern++){
+		cout << endl;
+		cout <<"Index: " << dec << i << endl;
+		pattern->object->Print();
+		i++;
+	}
+}
+
+void Memory_Profiler::Print_pattern(string pattern_name){
+
+	vector<template_handler<Pattern> >::iterator pattern = Find_pattern_by_name(pattern_name);
+
+		if (pattern == Patterns_vector.end()){
+			cout << "Wrong pattern name!" << endl;
+		}
+		else{
+			pattern->object->Print();
+		}
+}
 
 void Memory_Profiler::Create_new_analyzer(Analyzer& analyzer){
 
@@ -352,6 +380,31 @@ void Memory_Profiler::Remove_analyzer(unsigned int analyzer_index){
 	else{
 		Analyzers_vector.erase(Analyzers_vector.begin() + analyzer_index);
 	}
+}
+
+void Memory_Profiler::Print_analyzers() const{
+
+	unsigned int i = 0;
+	for(vector< template_handler<Analyzer> >::const_iterator analyzer = Analyzers_vector.begin();analyzer != Analyzers_vector.end();analyzer++){
+		cout << endl;
+		cout <<"Index: " << dec << i << endl;
+		analyzer->object->Print();
+		i++;
+	}
+}
+
+void Memory_Profiler::Print_analyzer(unsigned int index) const{
+	if(index < Analyzers_vector.size()){
+		Analyzers_vector[index].object->Print();
+	}
+	else{
+		cout <<"Wrong ID!"<< endl;
+	}
+}
+
+void Memory_Profiler::Create_new_filter(Filter& filter){
+
+	Filters_vector.push_back(template_handler<Filter>(filter));
 }
 
 void Memory_Profiler::Create_new_size_filter_cli(unsigned long size_p, string operation_p){
@@ -382,44 +435,14 @@ void Memory_Profiler::Create_new_time_filter_cli(string time,__suseconds_t usec,
 		}
 }
 
-void Memory_Profiler::Create_new_filter(Filter& filter){
+void Memory_Profiler::Remove_filter(unsigned int filter_index){
 
-	Filters_vector.push_back(template_handler<Filter>(filter));
-}
-
-void Memory_Profiler::Create_new_pattern(string name){
-
-	vector< template_handler<Pattern> >::iterator pattern = Find_pattern_by_name(name);
-
-	if(pattern != Patterns_vector.end()){
-		cout << "Pattern with that name already exists!" << endl;
+	if(filter_index >= Filters_vector.size()){
+		cout << "Wrong filter index" << endl;
 	}
 	else{
-		Patterns_vector.push_back( template_handler<Pattern> (*(new Pattern(name))));
+		Filters_vector.erase(Filters_vector.begin() + filter_index);
 	}
-}
-
-void Memory_Profiler::Print_patterns() const{
-
-	unsigned int i = 0;
-	for(vector< template_handler<Pattern> >::const_iterator pattern = Patterns_vector.begin();pattern != Patterns_vector.end();pattern++){
-		cout << endl;
-		cout <<"Index: " << dec << i << endl;
-		pattern->object->Print();
-		i++;
-	}
-}
-
-void Memory_Profiler::Print_pattern(string pattern_name){
-
-	vector<template_handler<Pattern> >::iterator pattern = Find_pattern_by_name(pattern_name);
-
-		if (pattern == Patterns_vector.end()){
-			cout << "Wrong pattern name!" << endl;
-		}
-		else{
-			pattern->object->Print();
-		}
 }
 
 void Memory_Profiler::Print_filters() const{
@@ -442,32 +465,6 @@ void Memory_Profiler::Print_filter(unsigned int index) const{
 	}
 }
 
-void Memory_Profiler::Print_analyzers() const{
-
-	unsigned int i = 0;
-	for(vector< template_handler<Analyzer> >::const_iterator analyzer = Analyzers_vector.begin();analyzer != Analyzers_vector.end();analyzer++){
-		cout << endl;
-		cout <<"Index: " << dec << i << endl;
-		analyzer->object->Print();
-		i++;
-	}
-}
-
-void Memory_Profiler::Print_analyzer(unsigned int index) const{
-	if(index < Analyzers_vector.size()){
-		Analyzers_vector[index].object->Print();
-	}
-	else{
-		cout <<"Wrong ID!"<< endl;
-	}
-}
-
-vector< template_handler<Pattern> >::iterator Memory_Profiler::Find_pattern_by_name(string Pattern_name){
-
-	return find(Patterns_vector.begin(),Patterns_vector.end(),Pattern_name);
-
-}
-
 void Memory_Profiler::Add_analyzer_to_pattern(unsigned int analyzer_index,unsigned int pattern_index){
 
 	if(analyzer_index >= Analyzers_vector.size()){
@@ -479,19 +476,6 @@ void Memory_Profiler::Add_analyzer_to_pattern(unsigned int analyzer_index,unsign
 	else{
 		Patterns_vector[pattern_index].object->Analyzer_register(Analyzers_vector[analyzer_index]);
 		Analyzers_vector[analyzer_index].object->Pattern_register(Patterns_vector[pattern_index]);
-	}
-}
-
-void Memory_Profiler::Remove_analyzer_from_pattern(unsigned int analyzer_index,unsigned int pattern_index){
-
-	if (pattern_index >= Patterns_vector.size()){
-			cout << "Wrong Pattern ID" << endl;
-	}
-	else if(analyzer_index >= Patterns_vector[pattern_index].object->Get_number_of_analyzers()){
-		cout << "Wrong Analyzer ID" << endl;
-	}
-	else{
-		Patterns_vector[pattern_index].object->Analyzer_deregister(analyzer_index);
 	}
 }
 
@@ -509,43 +493,6 @@ void Memory_Profiler::Add_analyzer_to_pattern_by_name(unsigned int analyzer_inde
 		pattern->object->Analyzer_register(Analyzers_vector[analyzer_index]);
 		Analyzers_vector[analyzer_index].object->Pattern_register(*pattern);
 	}
-}
-
-void Memory_Profiler::Remove_analyzer_from_pattern_by_name(unsigned int analyzer_index,string pattern_name){
-
-	vector< template_handler<Pattern> >::iterator pattern = Find_pattern_by_name(pattern_name);
-
-	pattern->object->Analyzer_deregister(analyzer_index);
-
-}
-
-void Memory_Profiler::Remove_filter(unsigned int filter_index){
-
-	if(filter_index >= Filters_vector.size()){
-		cout << "Wrong filter index" << endl;
-	}
-	else{
-		Filters_vector.erase(Filters_vector.begin() + filter_index);
-	}
-}
-void Memory_Profiler::Remove_filter_from_pattern(unsigned int filter_index,unsigned int pattern_index){
-
-	if (pattern_index >= Patterns_vector.size()){
-			cout << "Wrong Pattern ID" << endl;
-	}
-	else if(filter_index >= Patterns_vector[pattern_index].object->Get_number_of_analyzers()){
-		cout << "Wrong Filter ID" << endl;
-	}
-	else{
-		Patterns_vector[pattern_index].object->Filter_deregister(filter_index);
-	}
-}
-
-void Memory_Profiler::Remove_filter_from_pattern_by_name(unsigned int filter_index,string pattern_name){
-
-	vector< template_handler<Pattern> >::iterator pattern = Find_pattern_by_name(pattern_name);
-
-	pattern->object->Filter_deregister(filter_index);
 }
 
 void Memory_Profiler::Add_filter_to_pattern(unsigned int filter_index,unsigned int pattern_index){
@@ -577,6 +524,50 @@ void Memory_Profiler::Add_filter_to_pattern_by_name(unsigned int filter_index,st
 		pattern->object->Filter_register(Filters_vector[filter_index]);
 		Filters_vector[filter_index].object->Pattern_register(*pattern);
 	}
+}
+
+void Memory_Profiler::Remove_analyzer_from_pattern(unsigned int analyzer_index,unsigned int pattern_index){
+
+	if (pattern_index >= Patterns_vector.size()){
+			cout << "Wrong Pattern ID" << endl;
+	}
+	else if(analyzer_index >= Patterns_vector[pattern_index].object->Get_number_of_analyzers()){
+		cout << "Wrong Analyzer ID" << endl;
+	}
+	else{
+		Patterns_vector[pattern_index].object->Analyzer_deregister(analyzer_index);
+	}
+}
+
+
+
+void Memory_Profiler::Remove_analyzer_from_pattern_by_name(unsigned int analyzer_index,string pattern_name){
+
+	vector< template_handler<Pattern> >::iterator pattern = Find_pattern_by_name(pattern_name);
+
+	pattern->object->Analyzer_deregister(analyzer_index);
+
+}
+
+
+void Memory_Profiler::Remove_filter_from_pattern(unsigned int filter_index,unsigned int pattern_index){
+
+	if (pattern_index >= Patterns_vector.size()){
+			cout << "Wrong Pattern ID" << endl;
+	}
+	else if(filter_index >= Patterns_vector[pattern_index].object->Get_number_of_analyzers()){
+		cout << "Wrong Filter ID" << endl;
+	}
+	else{
+		Patterns_vector[pattern_index].object->Filter_deregister(filter_index);
+	}
+}
+
+void Memory_Profiler::Remove_filter_from_pattern_by_name(unsigned int filter_index,string pattern_name){
+
+	vector< template_handler<Pattern> >::iterator pattern = Find_pattern_by_name(pattern_name);
+
+	pattern->object->Filter_deregister(filter_index);
 }
 
 void Memory_Profiler::Run_pattern(unsigned int pattern_index, pid_t PID){

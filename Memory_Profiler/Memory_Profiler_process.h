@@ -4,13 +4,8 @@
  *  Created on: Nov 2, 2015
  *      Author: egezhus
  */
-
 #ifndef MEMORY_PROFILER_PROCESS_H_
 #define MEMORY_PROFILER_PROCESS_H_
-
-#ifdef bfd_need_config_h
-#include "config.h"
-#endif
 
 #include <stdint.h>
 #include <semaphore.h>
@@ -22,14 +17,12 @@
 
 #include "bfd.h"
 
-
 #include "Memory_Profiler_memory_map.h"
 #include "Memory_Profiler_symbol_table.h"
-
 #include "Memory_Profiler_handler_template.h"
 
-#include <sstream>
-#define SSTR( x ) dynamic_cast< std::ostringstream & >( std::ostringstream() << std::dec << x ).str()
+//#include <sstream>
+//#define SSTR( x ) dynamic_cast< std::ostringstream & >( std::ostringstream() << std::dec << x ).str()
 
 
 enum {
@@ -45,8 +38,8 @@ using namespace std;
 #define shared_memory_MAX_ENTRY 100000
 #define max_call_stack_depth 100
 
+// Forwarding declaration is needed
 class Process_handler;
-
 
 class memory_profiler_sm_object_log_entry_class{
 
@@ -144,6 +137,8 @@ struct memory_map_table_entry_class_comp {
   {return memory_map_A.end_address < memory_map_B.end_address;}
 };
 
+
+
 class Process_handler {
 
     pid_t PID;
@@ -152,28 +147,30 @@ class Process_handler {
     bool profiled;
     bool alive;
 
-    int shared_memory;
-    string shared_memory_name;
-    bool shared_memory_initialized;
+    //int shared_memory;
+    //string shared_memory_name;
+
 
     int shared_memory_A;
     int shared_memory_B;
     string shared_memory_name_A;
     string shared_memory_name_B;
 
+    bool shared_memory_initialized;
+
     string header;
     string entries;
 
 
-    unsigned long mapped_size_of_shared_memory;
+    //unsigned long mapped_size_of_shared_memory;
 
     int start_stop_semaphore_shared_memory;
     string start_stop_semaphore_name;
     sem_t* start_stop_semaphore;
 
-    string elf_path;
+    //string elf_path;
 
-    bfd* Open_ELF() const;
+    //bfd* Open_ELF() const;
     bfd* Open_ELF(string ELF_path) const;
 
     long Parse_dynamic_symbol_table_from_ELF(bfd* bfd_ptr,asymbol ***symbol_table);
@@ -220,7 +217,6 @@ class Process_handler {
         void Start_Stop_profiling() const;
 
         bool Init_shared_memory();
-
         void Read_shared_memory();
 
         const bool Is_shared_memory_initialized() const {return shared_memory_initialized;} ;
