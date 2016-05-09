@@ -49,11 +49,18 @@ Debug/
 RemoteSystemsTempFiles/
 *.txt
 
-
 #Log files
 *.txt
 *.bin
 
+#Generated files
+*.yy.c
+*.tab.cc
+*.tab.h
+
+#Binaries
+Memory_Profiler
+Memory_Profiler_STATIC
 
 
 

@@ -1,62 +1,24 @@
-dir = mkdir -p Debug
+CUSTOM_BFD = /home/egezhus/binutils/build
 
-objects = Debug/Memory_Profiler_class.o Debug/Memory_Profiler_process.o Debug/Memory_Profiler_printing_functions.o \
-          Debug/Memory_Profiler_memory_map.o Debug/Memory_Profiler_symbol_table.o \
-          Debug/Memory_Profiler_analyzer.o \
-          Debug/Memory_Profiler_pattern.o \
-          Debug/Memory_Profiler_filter.o \
-		  Debug/Memory_Profiler_tab.tab.o Debug/Memory_Profiler_lex.yy.o 
-		  
-DIR_obj: 
-	$(dir)
+Memory_Profiler_tab.tab.cc: Memory_Profiler_language.y
+	yacc -o Memory_Profiler_tab.tab.cc -d Memory_Profiler_language.y
+
+Memory_Profiler_lex.yy.c: Memory_Profiler_lex.l 
+	 lex -o Memory_Profiler_lex.yy.c Memory_Profiler_lex.l
 	
-		           
-Debug/Memory_Profiler_class.o : Memory_Profiler_class.cc
-	g++ -c -g3  Memory_Profiler_class.cc -o Debug/Memory_Profiler_class.o
-	
-Debug/Memory_Profiler_process.o : Memory_Profiler_process.cc
-	g++ -c -g3  Memory_Profiler_process.cc -o Debug/Memory_Profiler_process.o
+Memory_Profiler: Memory_Profiler_tab.tab.cc Memory_Profiler_lex.yy.c
+	g++ -o Memory_Profiler -g3 *.cc *.c -lpthread -lrt -lbfd -ldl
 		
-Debug/Memory_Profiler_printing_functions.o : Memory_Profiler_printing_functions.cc
-	g++ -c -g3  Memory_Profiler_printing_functions.cc -o Debug/Memory_Profiler_printing_functions.o
-
-Debug/Memory_Profiler_memory_map.o : Memory_Profiler_memory_map.cc
-	g++ -c -g3  Memory_Profiler_memory_map.cc -o Debug/Memory_Profiler_memory_map.o
-
-Debug/Memory_Profiler_symbol_table.o : Memory_Profiler_symbol_table.cc
-	g++ -c -g3  Memory_Profiler_symbol_table.cc -o Debug/Memory_Profiler_symbol_table.o
-
-Debug/Memory_Profiler_analyzer.o: Memory_Profiler_analyzer.cc
-	g++ -c -g3  Memory_Profiler_analyzer.cc -o Debug/Memory_Profiler_analyzer.o
-
-Debug/Memory_Profiler_pattern.o: Memory_Profiler_pattern.cc
-	g++ -c -g3  Memory_Profiler_pattern.cc -o Debug/Memory_Profiler_pattern.o
-
-Debug/Memory_Profiler_filter.o: Memory_Profiler_filter.cc
-	g++ -c -g3  Memory_Profiler_filter.cc -o Debug/Memory_Profiler_filter.o
-	
-Debug/Memory_Profiler_tab.tab.o: Memory_Profiler_language.y
-	yacc -o Debug/Memory_Profiler_tab.tab.cc -d Memory_Profiler_language.y
-	g++ -c -g3  Debug/Memory_Profiler_tab.tab.cc -o Debug/Memory_Profiler_tab.tab.o
-
-Debug/Memory_Profiler_lex.yy.o: Memory_Profiler_lex.l 
-	 lex -o Debug/Memory_Profiler_lex.yy.c Memory_Profiler_lex.l
-	 g++ -c -g3  Debug/Memory_Profiler_lex.yy.c -o Debug/Memory_Profiler_lex.yy.o	
-
-Debug/Memory_Profiler : $(objects) | DIR_obj
-	g++  -o Debug/Memory_Profiler -g3 $(objects) -lpthread -lrt -lbfd -ldl
-	
-	
-#Debug/Memory_Profiler_STATIC: $(objects)
-#	g++ -o Debug/Memory_Profiler_STATIC -g3 $(objects) \
+Memory_Profiler_STATIC: Memory_Profiler_tab.tab.cc Memory_Profiler_lex.yy.c
+	g++ -o Memory_Profiler_STATIC -g3 -DPACKAGE -DPACKAGE_VERSION -I$(CUSTOM_BFD)/bfd *.cc *.c \
 	-lrt \
 	-lpthread \
-	/home/egezhus/binutils/build/lib/libbfd.a \
-	/home/egezhus/binutils/build/libiberty/libiberty.a \
-	/home/egezhus/binutils/build/zlib/libz.a \
+	$(CUSTOM_BFD)/lib/libbfd.a \
+	$(CUSTOM_BFD)/libiberty/libiberty.a \
+	$(CUSTOM_BFD)/zlib/libz.a \
 	-ldl 
 
-all: DIR_obj Debug/Memory_Profiler 
+all:  Memory_Profiler Memory_Profiler_STATIC
 
 clean:
-	rm -rf Debug/Memory_*
+	rm -rf Memory_Profiler Memory_Profiler_STATIC

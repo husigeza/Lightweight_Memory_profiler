@@ -6,8 +6,8 @@
 #include <stdlib.h>
 
 
-#include "../Memory_Profiler_class.h"
-#include "../Memory_Profiler_analyzer.h"
+#include "Memory_Profiler_class.h"
+#include "Memory_Profiler_analyzer.h"
 
 extern "C" {    
 	int yylex(void);
