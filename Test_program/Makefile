@@ -9,15 +9,21 @@ Memory_Profiler_USERPROF_shared_lib_IMM = Memory_Profiler_USERPROF_IMM_shared_li
 
 # Tool invocations
 Debug/Test_program: $(source)	
-	gcc $(source) -w -o Debug/Test_Program -lpthread -ldl
+	gcc $(source) -w -o Debug/Test_Program -ldl
 	
 Debug/Test_program_IMM: $(source)
-	gcc -g3 $(source) -w -Wl,-Bdynamic,--no-as-needed -l$(Memory_Profiler_shared_lib_IMM) -o Debug/Test_Program_IMM -lpthread -ldl
+	gcc -g3 $(source) -w -l$(Memory_Profiler_shared_lib_IMM) -o Debug/Test_Program_IMM -ldl
+	
+Debug/Test_Program_USER_IMM: $(source)
+	gcc -g3 $(source) -w -l$(Memory_Profiler_USERPROF_shared_lib_IMM) -o Debug/Test_Program_USER_IMM -ldl
 		
 # All Target
-all: Debug/Test_program Debug/Test_program_IMM
+all: Debug/Test_program_IMM Debug/Test_Program_USER_IMM
 
 # Other Targets
 clean: 
-	rm Debug/Test_Program Debug/Test_Program_IMM 
+	rm Debug/Test_Program Debug/Test_Program_IMM Debug/Test_Program_USER_IMM
 	@echo ' '
+
+	
+	

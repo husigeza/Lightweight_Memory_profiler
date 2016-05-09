@@ -73,6 +73,8 @@ sem_t enable_semaphore;
  */
 sem_t thread_semaphore;
 
+sem_t user_semaphore;
+
 /**
  * File handler of shared semaphore for starting/stopping the profiling
  */
@@ -172,6 +174,13 @@ void __attribute__ ((constructor)) Memory_profiler_shared_library_init() {
 	else{
 		//sprintf(s,"Initializing thread_semaphore was successful\n");
 		//print_to_log(s);
+	}
+
+	if(sem_init(&user_semaphore,0,1) == -1) {
+
+	}
+	else {
+
 	}
 
 
@@ -722,8 +731,9 @@ void set_profiling(bool value){
 }
 
 void set_user_profiling_flag(bool value){
-
+	sem_wait(&user_semaphore);
 	user_profiling_flag = value;
+	sem_post(&user_semaphore);
 }
 
 bool get_user_profiling_flag(){

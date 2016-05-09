@@ -10,7 +10,7 @@ Memory_Profiler: Memory_Profiler_tab.tab.cc Memory_Profiler_lex.yy.c
 	g++ -o Memory_Profiler -g3 *.cc *.c -lpthread -lrt -lbfd -ldl
 		
 Memory_Profiler_STATIC: Memory_Profiler_tab.tab.cc Memory_Profiler_lex.yy.c
-	g++ -o Memory_Profiler_STATIC -g3 -DPACKAGE -DPACKAGE_VERSION -I$(CUSTOM_BFD)/bfd *.cc *.c \
+	g++ -o Memory_Profiler_STATIC -g3 -DPACKAGE -DPACKAGE_VERSION -I$(CUSTOM_BFD)/include *.cc *.c \
 	-lrt \
 	-lpthread \
 	$(CUSTOM_BFD)/lib/libbfd.a \
