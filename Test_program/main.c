@@ -14,13 +14,13 @@ int *ptr1;
 	//ptr1 = malloc(100);
 	//set_user_profiling_flag(false);
 
-	while(i < 100){
+	//while(i < 3){
     	ptr1 = malloc(sizeof(int));
-    	if(i%2){
+    	//if(i%2){
     		free(ptr1);
-    	}
-    	i++;
-   }
+    	//}
+    	//i++;
+   //}
 
     sleep(1);
 	exit(0);

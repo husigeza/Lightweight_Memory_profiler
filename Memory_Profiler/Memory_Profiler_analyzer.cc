@@ -302,7 +302,7 @@ void Memory_Leak_Analyzer::Analyze(vector<template_handler< memory_profiler_sm_o
 				// If only one realloc is stored in the vector, which changes the address and removed, in that case
 				// the iterator will point to the end, need to indicate this somehow (address_changed flag). If the address has been changed
 				// need to continue the searching with the new address
-				if((it2 == free_it->second.end()) && !address_changed){
+				if((it2 == free_it->second.end() && finished == false) && !address_changed){
 
 					size_to_free = 0;
 
