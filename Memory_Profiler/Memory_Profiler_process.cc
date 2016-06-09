@@ -307,10 +307,6 @@ Process_handler::Process_handler(pid_t PID) {
 			throw false;
 		}
 	}
-	else {
-		cout << "Shared memories not exist, errno: " << errno << endl;
-		throw false;
-	}
 
 	if (!Create_symbol_table()) {
 		cout << "Error creating the symbol table!" << endl;
