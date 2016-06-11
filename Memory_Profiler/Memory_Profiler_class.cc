@@ -17,15 +17,16 @@ using namespace std;
 
 Memory_Profiler::Memory_Profiler(string fifo_path, string overload_fifo_path) {
 
+	umask(0000);
+
 	if(sem_init(&save_sem,0,1) == -1){
 		cout << "Failed initializing semaphore for shared memory reading" << "errno: " << errno << endl;
 		return;
 	}
 
-
 	this->fifo_path = fifo_path;
 
-	if (mkfifo(this->fifo_path.c_str(), 0666) == -1) {
+	if (mkfifo(this->fifo_path.c_str(), 0777) == -1) {
 
 		if (errno == EEXIST) {
 			//cout << "FIFO already exists" << endl;
@@ -42,7 +43,7 @@ Memory_Profiler::Memory_Profiler(string fifo_path, string overload_fifo_path) {
 
 	mem_prof_overload_fifo_path = overload_fifo_path;
 
-	if (mkfifo(overload_fifo_path.c_str(), 0666) == -1) {
+	if (mkfifo(overload_fifo_path.c_str(), 0777) == -1) {
 		if (errno == EEXIST) {
 			//cout << "overload FIFO already exists" << endl;
 		} else {
